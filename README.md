@@ -277,8 +277,8 @@ Binaries are published as release assets, not in git. Checksums: [release/SHA256
 | File | SHA-256 | What |
 |---|---|---|
 | `lk2nd-gts3llte-23.1-fd380ac6.img` | `436ba23f...ce96a` | lk2nd for the SM-T825, tested |
-| `linux-postmarketos-qcom-msm8996-6.19.5-r11.apk` | `d92ed10b...d8582` | kernel package r11 (modules, vmlinuz, device trees) |
-| `vmlinuz-6.19.5-t825-r11` | `927a4d1f...` | the kernel from that package |
+| `linux-postmarketos-qcom-msm8996-6.19.5-r13.apk` | `43cf1ac7...b882c` | kernel package r13 (modules, vmlinuz, device trees) |
+| `vmlinuz-6.19.5-t825-r13` | `a304d67e...` | the kernel from that package |
 | `msm8996-samsung-gts3llte.dtb` | `b1f1bd62...` | SM-T825 device tree with the top speakers |
 | `apq8096-samsung-gts3lwifi.dtb` | `fd727baa...` | SM-T820 device tree, appended next to the SM-T825 one in boot images |
 
