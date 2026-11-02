@@ -286,7 +286,7 @@ not files in git. Download them into `release/` and check them against
 [release/SHA256SUMS](release/SHA256SUMS):
 
 ```sh
-gh release download --repo quantforge-br/sm-t825-archlinux --dir release --clobber
+gh release download --repo quantforge-br/sm-t825-archlinux --pattern '*' --dir release --clobber
 (cd release && sha256sum -c SHA256SUMS)
 ```
 
