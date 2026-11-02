@@ -1,0 +1,31 @@
+#!/bin/sh
+# Reboot into lk2nd's fastboot without writing the boot partition.
+#
+# The PON reboot reason cannot be used: lk2nd reads FASTBOOT_MODE (0x02) from
+# the PMIC spare register, but Samsung's S-Boot runs first and takes the same
+# code as Download mode. Instead, hide extlinux.conf: lk2nd then finds no
+# bootable file system and no Android image after itself, and stays in
+# fastboot. t825-extlinux-restore.service puts the file back on the next boot
+# of this system (normal or through 'fastboot boot').
+set -eu
+
+if [ "$(id -u)" -ne 0 ]; then
+	exec sudo "$0" "$@"
+fi
+
+conf=/boot/extlinux/extlinux.conf
+
+if ! mountpoint -q /boot; then
+	echo "t825-reboot-fastboot: /boot is not mounted" >&2
+	exit 1
+fi
+if [ ! -f "$conf" ]; then
+	echo "t825-reboot-fastboot: $conf not found" >&2
+	exit 1
+fi
+
+mv "$conf" "$conf.fastboot"
+sync
+echo "lk2nd will stay in fastboot. Boot an image with 'fastboot boot <img>'."
+echo "Without a running system, 'fastboot boot boot-usb-persistent.img' also restores $conf."
+systemctl reboot

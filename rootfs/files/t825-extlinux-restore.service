@@ -1,0 +1,12 @@
+[Unit]
+Description=Re-enable lk2nd's extlinux entry after t825-reboot-fastboot
+RequiresMountsFor=/boot
+ConditionPathExists=/boot/extlinux/extlinux.conf.fastboot
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/mv -f /boot/extlinux/extlinux.conf.fastboot /boot/extlinux/extlinux.conf
+ExecStart=/usr/bin/sync
+
+[Install]
+WantedBy=multi-user.target

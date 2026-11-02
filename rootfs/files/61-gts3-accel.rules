@@ -1,0 +1,6 @@
+# Accelerometer mount matrix for this SM-T825 (overrides /usr/lib/udev/rules.d/61-gts3-accel.rules).
+# The pmaports rule turns the axes by 90 degrees for the SM-T825; on this unit that made
+# iio-sensor-proxy report left-up in portrait (Home at the bottom) and normal in landscape.
+# The qcom-smgr driver's own matrix (in_mount_matrix) is the right one here: portrait reads
+# normal, landscape with Home on the right reads right-up (checked 2026-11-02).
+SUBSYSTEM=="iio", ATTR{name}=="qcom-smgr-accel", PROGRAM="/bin/grep -q samsung,gts3llte /sys/firmware/devicetree/base/compatible", ENV{ACCEL_MOUNT_MATRIX}="0, -1, 0; -1, 0, 0; 0, 0, 1"

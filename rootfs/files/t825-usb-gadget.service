@@ -1,0 +1,16 @@
+[Unit]
+Description=Persistent T825 USB network gadget
+DefaultDependencies=no
+After=sys-kernel-config.mount systemd-udevd.service
+Before=systemd-networkd.service NetworkManager.service sshd.service
+Wants=sys-kernel-config.mount
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/t825-usb-gadget
+RemainAfterExit=yes
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=sysinit.target

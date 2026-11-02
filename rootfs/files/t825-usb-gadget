@@ -1,0 +1,50 @@
+#!/bin/sh
+set -eu
+
+configfs=/sys/kernel/config/usb_gadget
+gadget=$configfs/g1
+
+mkdir -p /sys/kernel/config
+if ! mountpoint -q /sys/kernel/config 2>/dev/null; then
+    mount -t configfs configfs /sys/kernel/config
+fi
+
+udc=
+for _ in $(seq 1 30); do
+    udc=$(ls /sys/class/udc 2>/dev/null | head -n 1 || true)
+    [ -n "$udc" ] && break
+    sleep 1
+done
+[ -n "$udc" ] || { echo "No USB device controller found" >&2; exit 1; }
+
+mkdir -p "$gadget"
+[ -e "$gadget/UDC" ] && printf '
+' > "$gadget/UDC" || true
+
+rm -f "$gadget/configs/c.1/ncm.usb0" "$gadget/configs/c.1/rndis.usb0"
+rmdir "$gadget/functions/ncm.usb0" 2>/dev/null || true
+rmdir "$gadget/functions/rndis.usb0" 2>/dev/null || true
+
+printf '0x04e8' > "$gadget/idVendor"
+printf '0x6863' > "$gadget/idProduct"
+mkdir -p "$gadget/strings/0x409"
+printf 'Samsung' > "$gadget/strings/0x409/manufacturer"
+printf 'postmarketOS-mainline' > "$gadget/strings/0x409/product"
+printf 't825-mainline' > "$gadget/strings/0x409/serialnumber"
+
+function=ncm.usb0
+if ! mkdir "$gadget/functions/$function" 2>/dev/null; then
+    function=rndis.usb0
+    mkdir "$gadget/functions/$function"
+fi
+
+mkdir -p "$gadget/configs/c.1/strings/0x409"
+printf 'USB network' > "$gadget/configs/c.1/strings/0x409/configuration"
+ln -sf "$gadget/functions/$function" "$gadget/configs/c.1/$function"
+printf '%s' "$udc" > "$gadget/UDC"
+
+iface=$(cat "$gadget/functions/$function/ifname" 2>/dev/null || true)
+[ -n "$iface" ] || iface=usb0
+ip link set "$iface" up
+ip addr replace 172.16.42.1/24 dev "$iface"
+printf '%s (%s)\n' "$iface" "$udc"

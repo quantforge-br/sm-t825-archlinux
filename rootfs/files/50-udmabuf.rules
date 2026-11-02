@@ -1,0 +1,3 @@
+# libcamera software ISP: give the video group udmabuf access (as postmarketOS does),
+# also for sessions without a seat (SSH).
+KERNEL=="udmabuf", GROUP="video", MODE="0660"
