@@ -1,0 +1,3 @@
+interface:
+  display_name: "Delegate to Codex"
+  short_description: "Delegate implementation and analysis to Codex CLI"

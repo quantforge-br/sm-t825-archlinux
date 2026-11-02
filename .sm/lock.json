@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "skills": {
+    "delegate-codex": {
+      "canonicalPath": "delegate-codex",
+      "baseCommit": "643f92f946d1eac4a27fc31fdd9cfff60d383df4",
+      "baseTree": "0aa3a4b79c105743509ad8133388e61d10d4dff1",
+      "baseTreeHash": "b94b5c10a736bcfcc19478482e5fe02decfafa76982e7b6d109c0d8969d81806",
+      "dirHash": "b94b5c10a736bcfcc19478482e5fe02decfafa76982e7b6d109c0d8969d81806",
+      "syncedAt": "2026-11-02T21:55:22.511910066Z"
+    }
+  }
+}

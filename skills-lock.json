@@ -1,0 +1,11 @@
+{
+  "skills": {
+    "delegate-codex": {
+      "computedHash": "9793c20d739b5fc58321aab11290047263b92d1a772358b146fb58868e79280a",
+      "skillPath": "delegate-codex/SKILL.md",
+      "source": "/home/diogo/dev/skills",
+      "sourceType": "local"
+    }
+  },
+  "version": 1
+}
