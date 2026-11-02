@@ -1,0 +1,14 @@
+# Device dumps, private firmware and build output: never commit
+/artifacts/
+/backup/
+/firmware/
+/out/
+/dl/
+/y/
+/.firecrawl/
+pwhash
+*.ext4
+*.ext2
+# Release binaries are uploaded as release assets; only the checksums are tracked
+/release/*
+!/release/SHA256SUMS
