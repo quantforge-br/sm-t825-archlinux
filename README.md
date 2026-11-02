@@ -315,4 +315,14 @@ initramfs, boot images, the boot file system and the rootfs image. Steps 5-8 mak
 - [lk2nd](https://github.com/msm8916-mainline/lk2nd).
 - [Arch Linux ARM](https://archlinuxarm.org).
 
-The kernel patches and the package files keep the licenses of their sources (the kernel is GPL-2.0).
+## License
+
+- Scripts, tools, desktop files and documentation: MIT, see [LICENSE](LICENSE).
+- Kernel patches in `pmaports/linux-postmarketos-qcom-msm8996/`, including ours (0114, 0201):
+  GPL-2.0, like the Linux kernel. Device tree changes follow the SPDX headers of the files they patch.
+- Everything else that comes from postmarketOS pmaports or from wh1ter0z3/gts3lwifi-mainline (the
+  APKBUILDs, the device package, the device files in `rootfs/files/` taken from it) keeps the
+  license of its source.
+- Release binaries: the kernel package and `vmlinuz` are GPL-2.0; their sources are `pmaports/`
+  plus the kernel tarball named in the APKBUILD. lk2nd is under the licenses of
+  [its repository](https://github.com/msm8916-mainline/lk2nd).
