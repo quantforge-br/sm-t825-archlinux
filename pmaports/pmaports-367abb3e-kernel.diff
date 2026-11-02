@@ -1,5 +1,5 @@
 diff --git a/device/testing/linux-postmarketos-qcom-msm8996/APKBUILD b/device/testing/linux-postmarketos-qcom-msm8996/APKBUILD
-index 601fa9f..e45a7c1 100644
+index 601fa9f..0ab3f04 100644
 --- a/device/testing/linux-postmarketos-qcom-msm8996/APKBUILD
 +++ b/device/testing/linux-postmarketos-qcom-msm8996/APKBUILD
 @@ -3,7 +3,7 @@ maintainer="Yassine Oudjana (Tooniis) <y.oudjana@protonmail.com>"
@@ -7,11 +7,11 @@ index 601fa9f..e45a7c1 100644
  pkgname=linux-$_flavor
  pkgver=6.19.5
 -pkgrel=0
-+pkgrel=12
++pkgrel=13
  pkgdesc="Kernel close to mainline with extra patches for Qualcomm MSM8996 devices"
  arch="aarch64"
  _carch="arm64"
-@@ -32,6 +32,116 @@ _tag=v${pkgver//_/-}-msm8996
+@@ -32,6 +32,117 @@ _tag=v${pkgver//_/-}-msm8996
  source="
  	linux-$_tag.tar.gz::$url/-/archive/$_tag/linux-$_tag.tar.gz
  	config-$_flavor.$arch
@@ -125,10 +125,11 @@ index 601fa9f..e45a7c1 100644
 +	0114-arm64-dts-qcom-gts3llte-top-speakers.patch
 +	0122-drm-msm-locking-put-iova-spaces.patch
 +	0123-drm-msm-shared-vm-keep-mappings-on-close.patch
++	0201-drm-msm-shared-vm-hang-accounting.patch
  "
  builddir="$srcdir/linux-$_tag"
  
-@@ -62,5 +172,115 @@ package() {
+@@ -62,5 +173,116 @@ package() {
  }
  sha512sums="
  dd30dd113ad9f0b4ab3771ea655de2becce7ddaf5066d2f860b7bb1eb78573137313191d9da740b152348f9f89894ace2bb94fb195e340f7b6dabedeebbc929f  linux-v6.19.5-msm8996.tar.gz
@@ -244,6 +245,7 @@ index 601fa9f..e45a7c1 100644
 +be3da2c8f3c2f526ef3fb76c5199ef62d309ab232bef822914559f3da66ab74f28fd4d5bac9f85247254450778063585c85dd1acdd33a26e6732b938a8e06367  0114-arm64-dts-qcom-gts3llte-top-speakers.patch
 +014236501dbf2fd474e1bfead8bf5f18bc53f8235ae328a126fb12e43cf4a32ec8bf149ec06dfff722f0bfe993aa6b838d7b13d431614b393ffcab1d8bc103c6  0122-drm-msm-locking-put-iova-spaces.patch
 +03d8c5d5e0ddcf7e58502a975ba2eca13decf840e25b95a37366fb1899f6fad26dec27e93e9cea9dabfa78cc18569b32714a2f8be8cec47bd896c6bfedcd13ac  0123-drm-msm-shared-vm-keep-mappings-on-close.patch
++e38dd6a448f0a372724f24583862d34c8f4e238e3ac359909e93b0e99da8a18b3e246f5a5dea48d9b6644056719173d15d2745eb72056a03766d754f4ca5a21e  0201-drm-msm-shared-vm-hang-accounting.patch
  "
 diff --git a/device/testing/linux-postmarketos-qcom-msm8996/config-postmarketos-qcom-msm8996.aarch64 b/device/testing/linux-postmarketos-qcom-msm8996/config-postmarketos-qcom-msm8996.aarch64
 index 777bde3..5dfddec 100644

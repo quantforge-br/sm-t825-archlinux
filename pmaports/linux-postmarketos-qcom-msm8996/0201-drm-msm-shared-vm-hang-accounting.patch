@@ -1,0 +1,46 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: quantforge-br <218010578+quantforge-br@users.noreply.github.com>
+Date: Mon, 2 Nov 2026 18:00:00 +0000
+Subject: [PATCH] drm/msm: don't count hangs on the shared VM
+
+On targets without per-process page tables (A5xx, e.g. the A530 in
+MSM8996) every DRM file gets gpu->vm.  recover_worker() increments
+vm->faults for the guilty submit, and MSM_PARAM_FAULTS returns
+global_faults + vm->faults, so one process hanging the GPU changes the
+value every other process reads.  Mesa's freedreno turns that into
+GL_INNOCENT_CONTEXT_RESET for every robust context, and compositors that
+cannot recreate their context abort: Hyprland 0.57 does exactly that
+("glGetGraphicsResetStatus returned GL_INNOCENT_CONTEXT_RESET. Cannot
+continue until proper GPU reset handling is implemented.") whenever a
+browser's GPU process hangs the A530.
+
+Skip the VM count when the submit used the shared gpu->vm.  The guilty
+context still sees its submitqueue fault count change (GUILTY reset),
+and innocent contexts, whose submits are replayed after recovery, see
+no reset, which is what targets with private VMs already do.
+
+---
+diff --git a/drivers/gpu/drm/msm/msm_gpu.c b/drivers/gpu/drm/msm/msm_gpu.c
+index bf9109a..bcc4152 100644
+--- a/drivers/gpu/drm/msm/msm_gpu.c
++++ b/drivers/gpu/drm/msm/msm_gpu.c
+@@ -494,7 +494,16 @@ static void recover_worker(struct kthread_work *work)
+ 	else {
+ 		struct msm_gem_vm *vm = to_msm_vm(submit->vm);
+ 
+-		vm->faults++;
++		/*
++		 * Without per-process page tables every context shares
++		 * gpu->vm, so counting the hang on the VM would make
++		 * MSM_PARAM_FAULTS change for every process and report an
++		 * innocent context reset to all of them.  The submitqueue
++		 * count above still tells the guilty context, the same as on
++		 * targets with private VMs.
++		 */
++		if (!(gpu->vm_shared && submit->vm == gpu->vm))
++			vm->faults++;
+ 
+ 		/*
+ 		 * If userspace has opted-in to VM_BIND (and therefore userspace
+-- 
+2.50.0
