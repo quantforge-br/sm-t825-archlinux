@@ -35,6 +35,28 @@ UCM file is the pmaports one that routes audio to a back-end that does not exist
 tree; `rootfs/files/ucm-HiFi.conf` fixes that. The nodes can take a few seconds to appear after
 PipeWire starts.
 
+## The desktop restarts while a browser is open
+
+Hyprland exits and the session starts again (autologin), usually soon after a Chromium-based browser
+opens or while it loads a page. This is a GPU hang, not memory:
+
+- `~/.cache/hyprland/hyprlandCrashReport<pid>.txt` shows signal 6 (ABRT) with
+  `CHyprOpenGLImpl::begin` in the backtrace: Hyprland saw a GPU reset and gave up.
+- `sudo dmesg | grep -E 'hangcheck|offending task'` shows `hangcheck recover!` and
+  `offending task: brave (... --type=gpu-process)` (or chromium), sometimes followed by more
+  hangs blamed on `qs` or Hyprland.
+- `journalctl -u earlyoom` and `journalctl -k | grep -i 'out of memory'` show no kills.
+
+Fixes, both in this repository:
+
+1. Kernel r13 or newer: a hang in another process no longer counts as a reset for Hyprland
+   ([kernel.md](kernel.md#gpu-hangs-and-the-compositor-patch-0201)).
+2. `--disable-gpu-rasterization` for the browser (`desktop/install.sh` adds it to
+   `~/.config/brave-origin-flags.conf`, `brave-flags.conf` and `chromium-flags.conf`).
+   Restart the browser completely afterwards. In a test that opened a terminal and Brave with
+   Wikipedia and YouTube, then rotated the screen 12 times, GPU rasterization hung the GPU in 3 runs
+   out of 3; without it, 7 runs out of 7 had no hang.
+
 ## Rotation goes the wrong way
 
 `monitor-sensor --accel` must print `normal` in portrait with Home at the bottom and `right-up` in

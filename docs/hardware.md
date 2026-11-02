@@ -1,6 +1,6 @@
 # Hardware status on the SM-T825
 
-Tested on one SM-T825 (bootloader T825UBU3CUF1) with kernel 6.19.5-t825 r11 and Arch Linux ARM.
+Tested on one SM-T825 (bootloader T825UBU3CUF1) with kernel 6.19.5-t825 r13 and Arch Linux ARM.
 For the SM-T820 and for details of each driver, see upstream's
 [status table](https://github.com/wh1ter0z3/gts3lwifi-mainline#status).
 
@@ -8,13 +8,13 @@ For the SM-T820 and for details of each driver, see upstream's
 |---|---|---|
 | Boot without a PC | works | S-Boot, lk2nd, extlinux on `cache` |
 | CPU, eMMC (HS400), zram | works | |
-| Display, GPU (Adreno 530, freedreno) | works | 2048x1536, Hyprland at scale 2 |
+| Display, GPU (Adreno 530, freedreno) | works | 2048x1536, Hyprland at scale 2; Chromium's GPU rasterization hangs it, see [troubleshooting](troubleshooting.md) |
 | Touchscreen, S-Pen | works | `synaptics-s5807`, `wacom-w9019-digitizer`; follow the rotation |
 | Keys: power, volume, Home | works | Home opens the launcher, power toggles the panel (desktop/) |
 | Wi-Fi (QCA6174, ath10k) | works | needs `board.bin` from your own `system` partition |
 | Bluetooth | works | address from EFS (`gts3-bdaddr`); RFCOMM/BNEP since r10 |
 | USB network gadget | works | 172.16.42.1 on the tablet, NCM, ID `04e8:6863` |
-| Speakers (4) | works | top pair needs kernel r11 (patch 0114); top = left, bottom = right |
+| Speakers (4) | works | top pair needs kernel r11 or newer (patch 0114); top = left, bottom = right |
 | Microphones (2) | works | |
 | Headphone jack | not tested | no jack detection in the port yet |
 | Cameras (front S5K5E3, rear IMX258) | works | libcamera software ISP, 1280x720 at 30 fps |

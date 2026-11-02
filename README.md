@@ -66,17 +66,18 @@ Upstream: [wh1ter0z3/gts3lwifi-mainline](https://github.com/wh1ter0z3/gts3lwifi-
 | Boot | pmOS boot.img stored behind lk2nd in `boot` | extlinux.conf on `cache` as ext2; kernels are files in `/boot` |
 | Root file system | pmOS install on `userdata` | ext4 on `system`, optionally btrfs over `userdata` + `system` (28.3 GiB) |
 | lk2nd for gts3llte | built, "not tested on hardware" | the image used here, tested on an SM-T825 ([docs/lk2nd.md](docs/lk2nd.md)) |
-| Kernel | r8 | r11 = r8 + Landlock, connmark, RFCOMM/BNEP, MGLRU, THP madvise, `-t825` release suffix ([docs/kernel.md](docs/kernel.md)) |
+| Kernel | r8 | r13 = r8 + Landlock, connmark, RFCOMM/BNEP, MGLRU, THP madvise, `-t825` release suffix, upstream's shared-buffer GPU fix, GPU hang accounting ([docs/kernel.md](docs/kernel.md)) |
 | Top speakers on the SM-T825 | left out "until checked" | enabled (patch 0114); all four speakers play |
 | Firmware | `gts3-firmware` copies it from Android at every boot | extracted once from your partition dumps into the image and the initramfs (Android is gone) |
 | Accelerometer mount matrix (SM-T825) | `1,0,0; 0,-1,0; 0,0,-1`, for KWin's panel orientation handling | `0,-1,0; -1,0,0; 0,0,1` for Hyprland and `t825-autorotate` |
 | Bluetooth address helper | `gts3-bdaddr` | same, plus a retry that rebinds the UART driver when hci0 does not come up |
 | Desktop | KDE Plasma (patched KWin) | optional Hyprland 0.57 + Dux Shell (DankMaterialShell), auto-rotation daemon, power-key panel toggle |
 | Low-RAM tuning | defaults | zram the size of RAM, swappiness 180, MGLRU `min_ttl_ms`, earlyoom |
+| GPU hangs from browsers | (Plasma) | Chromium-based browsers rasterize on the CPU; another process's GPU hang is no longer a reset for the compositor (patch 0201) |
 | Fastboot from a running system | erase the image behind lk2nd | `t825-reboot-fastboot` hides extlinux.conf for one boot |
 
 Upstream has continued since r8 (Book Cover Keyboard hot-plug, sensor timestamps, GPU fault fixes,
-display resume). Those patches are not in this kernel yet.
+display resume). Of those, only the GPU fault fix (0122-0123) is in this kernel.
 
 ## Warnings
 
