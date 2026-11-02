@@ -293,6 +293,7 @@ initramfs, boot images, the boot file system and the rootfs image. Steps 5-8 mak
 | `install/` | backup, firmware extraction, initramfs, boot image, boot fs, flashing, btrfs, kernel update scripts |
 | `desktop/` | Hyprland + Dux Shell setup, auto-rotation, low-RAM tuning, browser flags |
 | `docs/` | partitions, lk2nd, kernel, btrfs, hardware status, troubleshooting |
+| `tools/` | `gpuhang.c`: hangs the GPU on purpose to test how the desktop survives a GPU reset |
 | `release/` | release binaries (git keeps only `SHA256SUMS`) |
 
 ## Credits
