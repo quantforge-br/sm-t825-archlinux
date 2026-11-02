@@ -3,7 +3,7 @@
 # Run on the tablet as the desktop user (sudo needed), from a checkout of this repository:
 #   desktop/install.sh [--no-autologin] [--no-tuning]
 # Steps: packages, "dms setup", tablet.lua (touch/S-Pen/Home/Power), auto-rotation, autologin on tty1,
-# low-RAM tuning (zram, sysctl, THP, MGLRU, earlyoom). Existing files are kept as *.orig once.
+# low-RAM tuning (zram, sysctl, THP, MGLRU, earlyoom), browser flags. Existing files are kept as *.orig once.
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
 H=$HOME/.config/hypr
@@ -50,6 +50,16 @@ sed "s/@USER@/$USER/" "$HERE/autorotate/50-t825-sensor-claim.rules" | sudo insta
 install -Dm644 "$HERE/autorotate/t825-autorotate.service" "$HOME/.config/systemd/user/t825-autorotate.service"
 systemctl --user daemon-reload
 systemctl --user enable t825-autorotate.service
+
+echo "### Chromium-based browsers: rasterize on the CPU (GPU raster hangs the A530)"
+for f in brave-origin-flags.conf brave-flags.conf chromium-flags.conf; do
+	conf=$HOME/.config/$f
+	if [ ! -e "$conf" ]; then
+		install -m644 "$HERE/browser/chromium-flags.conf" "$conf"
+	elif ! grep -qx -- '--disable-gpu-rasterization' "$conf"; then
+		echo '--disable-gpu-rasterization' >> "$conf"
+	fi
+done
 
 if [ $autologin = 1 ]; then
 	echo "### autologin on tty1, Hyprland started from the login shell"

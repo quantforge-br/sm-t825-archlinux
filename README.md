@@ -291,7 +291,7 @@ initramfs, boot images, the boot file system and the rootfs image. Steps 5-8 mak
 | `pmaports/` | kernel and device packages to copy into pmaports at `367abb3e` |
 | `rootfs/` | Arch root builder, chroot setup, device files that go into the image |
 | `install/` | backup, firmware extraction, initramfs, boot image, boot fs, flashing, btrfs, kernel update scripts |
-| `desktop/` | Hyprland + Dux Shell setup, auto-rotation, low-RAM tuning |
+| `desktop/` | Hyprland + Dux Shell setup, auto-rotation, low-RAM tuning, browser flags |
 | `docs/` | partitions, lk2nd, kernel, btrfs, hardware status, troubleshooting |
 | `release/` | release binaries (git keeps only `SHA256SUMS`) |
 
