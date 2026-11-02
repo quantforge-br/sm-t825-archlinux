@@ -1,0 +1,12 @@
+[Unit]
+Description=Auto-rotation for the Galaxy Tab S3 (accelerometer to Hyprland, touch and S-Pen)
+PartOf=hyprland-session.target
+After=hyprland-session.target
+
+[Service]
+ExecStart=/usr/local/bin/t825-autorotate
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=hyprland-session.target

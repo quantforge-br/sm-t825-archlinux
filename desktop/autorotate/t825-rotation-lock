@@ -1,0 +1,15 @@
+#!/bin/sh
+# Keep the current rotation (on), follow the accelerometer again (off), or toggle.
+F="$HOME/.local/state/t825-rotation-lock"
+case "${1:-toggle}" in
+on) mkdir -p "${F%/*}" && : > "$F" ;;
+off) rm -f "$F" ;;
+toggle) if [ -e "$F" ]; then rm -f "$F"; else mkdir -p "${F%/*}" && : > "$F"; fi ;;
+status) ;;
+*) echo "usage: t825-rotation-lock [on|off|toggle|status]" >&2; exit 2 ;;
+esac
+systemctl --user kill --kill-whom=main -s USR1 t825-autorotate.service 2>/dev/null
+if [ -e "$F" ]; then msg="Rotation locked"; else msg="Auto-rotation"; fi
+echo "$msg"
+[ "${1:-toggle}" = status ] || { command -v notify-send >/dev/null && notify-send -t 2000 "$msg"; }
+exit 0

@@ -1,0 +1,5 @@
+# earlyoom for the Galaxy Tab S3 (see /etc/sysctl.d/99-t825-memory.conf).
+# -s 100: ignore the swap check. Swap is zram, so its "free" space stays large even when
+# the RAM behind it is gone; MemAvailable alone (5% ~ 175 MiB, SIGKILL at 2.5%) is the signal.
+# The session (compositor, shell, audio, network, remote access) is never chosen; browsers first.
+EARLYOOM_ARGS="-r 3600 -m 5 -s 100,100 --avoid '(^|/)(init|systemd|systemd-.*|sshd|Hyprland|Xwayland|qs|dms|pipewire|pipewire-pulse|wireplumber|tailscaled|NetworkManager|wpa_supplicant|dbus-broker.*|polkitd|iio-sensor-prox)$' --prefer '(^|/)(brave.*|chrome.*|chromium.*|electron.*|firefox.*|node)$'"

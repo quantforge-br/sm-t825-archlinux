@@ -1,0 +1,114 @@
+#!/usr/bin/env python3
+"""Follow the accelerometer in Hyprland on the Galaxy Tab S3 (SM-T825).
+
+Reads iio-sensor-proxy's orientation through monitor-sensor, writes the
+Hyprland transform for DSI-1 to <instance dir>/t825-transform and reloads the
+config: ~/.config/hypr/rotation.lua puts it into DSI-1's monitor rule and
+tablet.lua turns touch and S-Pen the same way. While the lock file exists
+(t825-rotation-lock) the current rotation is kept.
+"""
+import glob
+import os
+import re
+import signal
+import subprocess
+import sys
+import threading
+
+# The AMS968HH01 scans landscape and is mounted "Left Side Up" (stock Android
+# turns it by 270 degrees), so portrait - iio-sensor-proxy's "normal" - is
+# transform 1. The other orientations add their own rotation, as mutter does.
+TRANSFORMS = {"normal": 1, "left-up": 2, "bottom-up": 3, "right-up": 0}
+SETTLE_S = 0.4
+POLL_S = 5.0
+
+RUNTIME = os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}")
+LOCK_FILE = os.path.expanduser("~/.local/state/t825-rotation-lock")
+ORIENTATION_RE = re.compile(r"orientation(?: changed)?: ([a-z-]+)")
+
+
+def log(msg):
+    print(msg, flush=True)
+
+
+def hyprland_instance():
+    """Return (signature, runtime dir) of the running Hyprland, or (None, None)."""
+    sig = os.environ.get("HYPRLAND_INSTANCE_SIGNATURE", "")
+    if sig:
+        path = os.path.join(RUNTIME, "hypr", sig)
+        if os.path.exists(os.path.join(path, ".socket.sock")):
+            return sig, path
+    sockets = glob.glob(os.path.join(RUNTIME, "hypr", "*", ".socket.sock"))
+    if not sockets:
+        return None, None
+    path = os.path.dirname(max(sockets, key=os.path.getmtime))
+    return os.path.basename(path), path
+
+
+class Rotator:
+    def __init__(self):
+        self.mutex = threading.Lock()
+        self.orientation = None
+        self.timer = None
+
+    def schedule(self, delay=SETTLE_S):
+        with self.mutex:
+            if self.timer:
+                self.timer.cancel()
+            self.timer = threading.Timer(delay, self.sync)
+            self.timer.daemon = True
+            self.timer.start()
+
+    def sync(self):
+        """Write the sensor's transform and reload Hyprland when it changed."""
+        with self.mutex:
+            if os.path.exists(LOCK_FILE) or self.orientation not in TRANSFORMS:
+                return
+            want = TRANSFORMS[self.orientation]
+            sig, path = hyprland_instance()
+            if not path:
+                return
+            state = os.path.join(path, "t825-transform")
+            try:
+                with open(state) as f:
+                    if int(f.read().strip()) == want:
+                        return
+            except (OSError, ValueError):
+                pass
+            with open(state + ".tmp", "w") as f:
+                f.write(f"{want}\n")
+            os.replace(state + ".tmp", state)
+            env = dict(os.environ, HYPRLAND_INSTANCE_SIGNATURE=sig)
+            res = subprocess.run(["hyprctl", "reload"], env=env, capture_output=True, text=True, timeout=15)
+            log(f"{self.orientation} -> transform {want} (hyprctl reload: {res.stdout.strip() or res.stderr.strip()})")
+
+
+def main():
+    rotator = Rotator()
+    signal.signal(signal.SIGUSR1, lambda *_: rotator.schedule(0))
+    signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
+
+
+    sensor = subprocess.Popen(["stdbuf", "-oL", "monitor-sensor", "--accel"],
+                              stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    ticker = threading.Event()
+
+    def tick():
+        while not ticker.wait(POLL_S):
+            rotator.sync()
+
+    threading.Thread(target=tick, daemon=True).start()
+    for line in sensor.stdout:
+        line = line.strip()
+        if "Failed" in line or "No accelerometer" in line:
+            log(line)
+        match = ORIENTATION_RE.search(line)
+        if match and match.group(1) in TRANSFORMS and match.group(1) != rotator.orientation:
+            rotator.orientation = match.group(1)
+            rotator.schedule()
+    log(f"monitor-sensor exited ({sensor.wait()})")
+    return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

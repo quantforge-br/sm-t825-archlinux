@@ -1,0 +1,18 @@
+#!/bin/sh
+# Power key under Hyprland: turn the panel off or back on. While it is off,
+# touch and S-Pen are disabled too (~/.config/hypr/tablet.lua reads the flag),
+# so stray touches do not reach the apps.
+set -eu
+flag="$XDG_RUNTIME_DIR/hypr/$HYPRLAND_INSTANCE_SIGNATURE/t825-panel-off"
+on=$(hyprctl -j monitors | jq -r '.[] | select(.name == "DSI-1") | .dpmsStatus')
+if [ "$on" = "true" ]; then
+	: > "$flag"
+	hyprctl reload config-only > /dev/null
+	hyprctl dispatch 'hl.dsp.dpms({ action = "disable", monitor = "DSI-1" })' > /dev/null
+	logger -t t825-screen "panel off"
+else
+	rm -f "$flag"
+	hyprctl reload config-only > /dev/null
+	hyprctl dispatch 'hl.dsp.dpms({ action = "enable", monitor = "DSI-1" })' > /dev/null
+	logger -t t825-screen "panel on"
+fi

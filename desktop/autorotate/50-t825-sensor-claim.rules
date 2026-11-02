@@ -1,0 +1,8 @@
+// t825-autorotate runs as a systemd user service, outside the logind session,
+// so iio-sensor-proxy's default rule (active sessions only) refuses its claim.
+// desktop/install.sh replaces @USER@ with the desktop user.
+polkit.addRule(function (action, subject) {
+	if (action.id == "net.hadess.SensorProxy.claim-sensor" && subject.user == "@USER@") {
+		return polkit.Result.YES;
+	}
+});
