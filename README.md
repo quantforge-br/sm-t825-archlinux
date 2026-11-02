@@ -281,7 +281,14 @@ so the host gets an address in that range. Wi-Fi is `wlp1s0` (NetworkManager).
 
 ## Release files
 
-Binaries are published as release assets, not in git. Checksums: [release/SHA256SUMS](release/SHA256SUMS).
+Binaries are assets of the [GitHub releases](https://github.com/quantforge-br/sm-t825-archlinux/releases),
+not files in git. Download them into `release/` and check them against
+[release/SHA256SUMS](release/SHA256SUMS):
+
+```sh
+gh release download --repo quantforge-br/sm-t825-archlinux --dir release --clobber
+(cd release && sha256sum -c SHA256SUMS)
+```
 
 | File | SHA-256 | What |
 |---|---|---|
@@ -304,7 +311,7 @@ initramfs, boot images, the boot file system and the rootfs image. Steps 5-8 mak
 | `desktop/` | Hyprland + Dux Shell setup, auto-rotation, low-RAM tuning, browser flags |
 | `docs/` | partitions, lk2nd, kernel, btrfs, hardware status, troubleshooting |
 | `tools/` | `gpuhang.c` (GPU hang test), `ath10k-board-country.py` (Wi-Fi country in the board file) |
-| `release/` | release binaries (git keeps only `SHA256SUMS`) |
+| `release/` | release binaries, downloaded from the GitHub release (git keeps only `SHA256SUMS`) |
 
 ## Credits
 
