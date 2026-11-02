@@ -3,7 +3,7 @@ maintainer="Yassine Oudjana (Tooniis) <y.oudjana@protonmail.com>"
 _flavor="postmarketos-qcom-msm8996"
 pkgname=linux-$_flavor
 pkgver=6.19.5
-pkgrel=11
+pkgrel=12
 pkgdesc="Kernel close to mainline with extra patches for Qualcomm MSM8996 devices"
 arch="aarch64"
 _carch="arm64"
@@ -140,6 +140,8 @@ source="
 	0112-slimbus-qcom-ngd-tx-lock-abba.patch
 	0113-asoc-q6asm-drop-closed-stream-responses.patch
 	0114-arm64-dts-qcom-gts3llte-top-speakers.patch
+	0122-drm-msm-locking-put-iova-spaces.patch
+	0123-drm-msm-shared-vm-keep-mappings-on-close.patch
 "
 builddir="$srcdir/linux-$_tag"
 
@@ -279,4 +281,6 @@ bbd5ea368244dc4a207d17be244beb75a48bd3c427de660136a0091314db6cc3f9b0afd84bed08a8
 3b1326eb6e2f64da5ff537ae6796410f178374a7bb3ade198d2c272698d8e2250135538a3d3a8f8629d348dd16f2cd01d5493204424ee2db48b57fcbc567023e  0112-slimbus-qcom-ngd-tx-lock-abba.patch
 93af951ae3679707f697ac89df28172a081329dbb4e5f7fe57b288c79ebc18adb33cd20f8f81d4eb8f20b8e292dc838e9e01486b38fae91d861b7b9302d9c02a  0113-asoc-q6asm-drop-closed-stream-responses.patch
 be3da2c8f3c2f526ef3fb76c5199ef62d309ab232bef822914559f3da66ab74f28fd4d5bac9f85247254450778063585c85dd1acdd33a26e6732b938a8e06367  0114-arm64-dts-qcom-gts3llte-top-speakers.patch
+014236501dbf2fd474e1bfead8bf5f18bc53f8235ae328a126fb12e43cf4a32ec8bf149ec06dfff722f0bfe993aa6b838d7b13d431614b393ffcab1d8bc103c6  0122-drm-msm-locking-put-iova-spaces.patch
+03d8c5d5e0ddcf7e58502a975ba2eca13decf840e25b95a37366fb1899f6fad26dec27e93e9cea9dabfa78cc18569b32714a2f8be8cec47bd896c6bfedcd13ac  0123-drm-msm-shared-vm-keep-mappings-on-close.patch
 "
