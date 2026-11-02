@@ -1,0 +1,454 @@
+From 0a6dce6c82b7a00d06ae1ad66d47e7db0a60f645 Mon Sep 17 00:00:00 2001
+From: psigod <psigod@example.com>
+Date: Thu, 8 Oct 2026 11:08:46 +0530
+Subject: [PATCH] drm/panel: samsung-ams968hh01: program the mDNIe block to
+ bypass
+
+The ANA38401 DDI has a colour processing block (mDNIe) with an ASCR
+colour-space correction stage. The vendor driver programs it at every
+panel-on; left at its power-on state the panel shows red as green, green
+as magenta and blue as yellow. Send the vendor "bypass" tables (identity
+ASCR matrix, enhancement stages off, linear curves) after the init
+sequence. A module parameter allows skipping this for experiments.
+
+Signed-off-by: psigod <psigod@example.com>
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+---
+ .../gpu/drm/panel/panel-samsung-ams968hh01.c  | 338 ++++++++++++++++--
+ 1 file changed, 306 insertions(+), 32 deletions(-)
+
+diff --git a/drivers/gpu/drm/panel/panel-samsung-ams968hh01.c b/drivers/gpu/drm/panel/panel-samsung-ams968hh01.c
+index 9900bda9f..2d8aa255d 100644
+--- a/drivers/gpu/drm/panel/panel-samsung-ams968hh01.c
++++ b/drivers/gpu/drm/panel/panel-samsung-ams968hh01.c
+@@ -10,16 +10,18 @@
+  * Derived from the downstream Samsung display driver and its device tree
+  * (drivers/video/msm/mdss/samsung/ANA38401_AMS968HH01).
+  *
+- * UNTESTED DRAFT - not yet built or run on hardware.
++ * Tested on hardware; colour processing (mDNIe) programmed to bypass.
+  */
+ 
+ #include <linux/delay.h>
+ #include <linux/gpio/consumer.h>
+ #include <linux/iopoll.h>
++#include <linux/ktime.h>
+ #include <linux/module.h>
+ #include <linux/of.h>
+ #include <linux/of_graph.h>
+ #include <linux/regulator/consumer.h>
++#include <linux/string.h>
+ 
+ #include <drm/drm_mipi_dsi.h>
+ #include <drm/drm_modes.h>
+@@ -41,11 +43,30 @@ static inline struct ams968hh01 *to_ams968hh01(struct drm_panel *panel)
+ }
+ 
+ /*
+- * Full-panel mode. The msm DSI host halves the horizontal timings per link
+- * in bonded mode, so these are twice the downstream per-link values
+- * (1024 active, hfp 212, hpw 16, hbp 108; vfp 10, vpw 2, vbp 6).
++ * Full-panel mode. In command mode the porches never reach the wire; they
++ * only set the link rate (and the tear-check counter via htotal x vtotal x
++ * refresh). The vendor kernel runs each link at 893.2 Mbit/s per lane
++ * (pclk 148.867 MHz, byte clock 111.65 MHz per link, measured on a running
++ * SM-T820), and the DDI's UPLL setting (B0 D0 / B1 1D) is chosen for that
++ * rate. Match it by widening the front porch; vrefresh stays 60.
+  */
+ static const struct drm_display_mode ams968hh01_mode = {
++	.clock = 297733,		/* 3194 * 1554 * 60 Hz / 1000 */
++	.hdisplay = 2048,
++	.hsync_start = 2048 + 898,
++	.hsync_end = 2048 + 898 + 32,
++	.htotal = 2048 + 898 + 32 + 216,
++	.vdisplay = 1536,
++	.vsync_start = 1536 + 10,
++	.vsync_end = 1536 + 10 + 2,
++	.vtotal = 1536 + 10 + 2 + 6,
++	.width_mm = 196,
++	.height_mm = 147,
++	.type = DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED,
++};
++
++/* Previous mode (760.8 Mbit/s per lane), kept for comparison: slow_link=1 */
++static const struct drm_display_mode ams968hh01_mode_slow = {
+ 	.clock = 253613,		/* 2720 * 1554 * 60 Hz / 1000 */
+ 	.hdisplay = 2048,
+ 	.hsync_start = 2048 + 424,
+@@ -60,46 +81,258 @@ static const struct drm_display_mode ams968hh01_mode = {
+ 	.type = DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED,
+ };
+ 
++static bool slow_link;
++module_param(slow_link, bool, 0444);
++MODULE_PARM_DESC(slow_link, "Use the old 760.8 Mbit/s mode instead of the vendor 893.2 Mbit/s");
++
++/*
++ * mDNIe (the DDI's colour processing block) "bypass" tables from the
++ * downstream driver: identity ASCR colour matrix, LCE/NR/DE/CS off, linear
++ * curves. Downstream programs this block at every panel-on; the power-on
++ * state of the block is not an identity mapping.
++ */
++static const u8 ams968hh01_mdnie_addr1[] = { 0xb0, 0xa8 };
++static const u8 ams968hh01_mdnie_bypass1[] = {
++	0xb9, 0x00, 0x67, 0xa9, 0x0c, 0x0c, 0x0c, 0x0c, 0x00, 0xaa, 0xab, 0x00,
++	0xaa, 0xab, 0x00, 0xaa, 0xab, 0x00, 0xaa, 0xab, 0xd5, 0x2c, 0x2a, 0xff,
++	0xf5, 0x63, 0xfe, 0x4a, 0xff, 0xff, 0xf9, 0xf8, 0x00, 0xff, 0xff, 0x00,
++	0xff, 0x00, 0xff, 0x00, 0x00, 0xff, 0xff, 0x00, 0xff, 0x00, 0xff, 0x00,
++	0x00, 0xff, 0xff, 0x00, 0xff, 0x00, 0xff, 0x00,
++};
++static const u8 ams968hh01_mdnie_addr2[] = { 0xb0, 0x42 };
++static const u8 ams968hh01_mdnie_bypass2[] = {
++	0xb9, 0x01, 0x00, 0x00, 0x98, 0x24, 0x00, 0xb3, 0x01, 0x0e, 0x01, 0x00,
++	0x66, 0x17, 0x03, 0x96, 0x00, 0xff, 0x00, 0x00, 0x07, 0xff, 0x07, 0xff,
++	0x14, 0x00, 0x0a, 0x00, 0x32, 0x01, 0xf4, 0x0b, 0x8a, 0x20, 0x2d, 0x6e,
++	0x99, 0x1b, 0x17, 0x14, 0x1e, 0x02, 0x5f, 0x02, 0xc8, 0x03, 0x33, 0x02,
++	0x22, 0x10, 0x10, 0x07, 0x07, 0x01, 0x00, 0x00, 0x20, 0x00, 0x20, 0x00,
++	0x20, 0x00, 0x20, 0x02, 0x1b, 0x02, 0x1b, 0x02, 0x1b, 0x02, 0x1b, 0x09,
++	0xa6, 0x09, 0xa6, 0x09, 0xa6, 0x09, 0xa6, 0x00, 0x20, 0x00, 0x20, 0x00,
++	0x20, 0x00, 0x20, 0x00, 0x20, 0x00, 0x20, 0x00, 0x20, 0x00, 0x20, 0x00,
++	0x20, 0x00, 0x20, 0x00, 0x20, 0x00, 0xff,
++};
++
++static bool gamma_ref = true;
++module_param(gamma_ref, bool, 0444);
++MODULE_PARM_DESC(gamma_ref, "Use the vendor reference gamma table (default) instead of the DTS power-on placeholder");
++
++static void ams968hh01_mode_regs(struct mipi_dsi_multi_context *ctx);
++
++static bool init_in_enable;
++module_param(init_in_enable, bool, 0444);
++MODULE_PARM_DESC(init_in_enable, "Send the init sequence from enable() (link fully up) instead of prepare()");
++
++static bool late_init;
++module_param(late_init, bool, 0444);
++MODULE_PARM_DESC(late_init, "After display-on, send the whole init sequence again and display-on once more");
++
++static unsigned int init_delay_ms;
++module_param(init_delay_ms, uint, 0444);
++MODULE_PARM_DESC(init_delay_ms, "Extra wait after TCON_RDY before sending the init sequence");
++
++static int dual_dsi = 0x06;
++module_param(dual_dsi, int, 0444);
++MODULE_PARM_DESC(dual_dsi, "Value written to B1 at offset 0x51 (vendor: 0x06, 'dual dsi setting')");
++
++static int cmode = 0x08;
++module_param(cmode, int, 0444);
++MODULE_PARM_DESC(cmode, "Value written to B1 at offset 0xD9 (vendor: 0x08, 'Anapass compression mode')");
++
++static bool late_mode;
++module_param(late_mode, bool, 0444);
++MODULE_PARM_DESC(late_mode, "Also rewrite the two mode registers after display-on, in HS mode");
++
++static bool long_writes = true;
++module_param(long_writes, bool, 0444);
++MODULE_PARM_DESC(long_writes, "Send the 1-2 byte register writes as DCS long packets like the vendor driver (default), 0 = short packets");
++
++/*
++ * The vendor init table sends every B1/B2 register write as a DCS long
++ * write (type 0x39) even for one-byte payloads. The generic helpers use
++ * short writes for payloads up to two bytes; keep the vendor packet type.
++ */
++static void ams968hh01_reg_write(struct mipi_dsi_multi_context *ctx,
++				 const u8 *buf, size_t len)
++{
++	struct mipi_dsi_device *dsi = ctx->dsi;
++	struct mipi_dsi_msg msg = {
++		.channel = dsi->channel,
++		.type = MIPI_DSI_DCS_LONG_WRITE,
++		.tx_buf = buf,
++		.tx_len = len,
++	};
++	ssize_t ret;
++
++	if (ctx->accum_err)
++		return;
++
++	if (!long_writes) {
++		mipi_dsi_dcs_write_buffer_multi(ctx, buf, len);
++		return;
++	}
++
++	if (dsi->mode_flags & MIPI_DSI_MODE_LPM)
++		msg.flags |= MIPI_DSI_MSG_USE_LPM;
++
++	ret = dsi->host->ops->transfer(dsi->host, &msg);
++	if (ret < 0) {
++		dev_err(&dsi->dev, "long write %02x failed: %zd\n", buf[0], ret);
++		ctx->accum_err = ret;
++	}
++}
++
++#define ams968hh01_reg(ctx, seq...)					\
++	do {								\
++		static const u8 d[] = { seq };				\
++		ams968hh01_reg_write(ctx, d, ARRAY_SIZE(d));		\
++	} while (0)
++
++static int colmod = -1;
++module_param(colmod, int, 0444);
++MODULE_PARM_DESC(colmod, "Send DCS set_pixel_format with this value at init (e.g. 0x77 for 24 bpp); -1 = don't (default)");
++
++static bool mdnie_bypass = true;
++module_param(mdnie_bypass, bool, 0644);
++MODULE_PARM_DESC(mdnie_bypass, "Program the DDI mDNIe block with the identity (bypass) tables at init");
++
++/* Bring-up aid: does the DDI answer reads, and did the register writes land? */
++/*
++ * Bring-up aid: read DDI registers back. The vendor reads with "B0 <offset>"
++ * (short write) followed by a GENERIC read with two parameters (type 0x24:
++ * register, length), e.g. MTP = B0 5A + read(D8, 8). DCS reads (0x06) of the
++ * B1/B2 write ports are not answered (round 17 got the previous byte back).
++ */
++static void ams968hh01_readback(struct ams968hh01 *ctx, const char *when)
++{
++	struct mipi_dsi_device *dsi = ctx->dsi[0];
++	static const struct { u8 off, reg, len; const char *what; } regs[] = {
++		{ 0x5a, 0xd8, 8, "MTP via D8 (vendor method)" },
++	};
++	u8 id[3] = {}, buf[8];
++	int i, r0, r1, r2, ret;
++
++	r0 = mipi_dsi_dcs_read(dsi, 0xda, &id[0], 1);
++	r1 = mipi_dsi_dcs_read(dsi, 0xdb, &id[1], 1);
++	r2 = mipi_dsi_dcs_read(dsi, 0xdc, &id[2], 1);
++	dev_info(&dsi->dev, "readback %s: ID %02x %02x %02x (ret %d %d %d)\n",
++		 when, id[0], id[1], id[2], r0, r1, r2);
++
++	mipi_dsi_set_maximum_return_packet_size(dsi, sizeof(buf));
++	for (i = 0; i < ARRAY_SIZE(regs); i++) {
++		u8 sel[] = { 0xb0, regs[i].off };
++		u8 rd[] = { regs[i].reg, regs[i].len };
++
++		memset(buf, 0xee, sizeof(buf));
++		mipi_dsi_dcs_write_buffer(dsi, sel, sizeof(sel));
++		ret = mipi_dsi_generic_read(dsi, rd, sizeof(rd), buf, regs[i].len);
++		dev_info(&dsi->dev, "readback %s: %02x@%02x = %*ph (ret %d) %s\n",
++			 when, regs[i].reg, regs[i].off, (int)regs[i].len, buf, ret,
++			 regs[i].what);
++	}
++}
++
++/*
++ * The vendor driver sends the mDNIe tables after display-on, in HS mode,
++ * on the first link only.
++ */
++static void ams968hh01_mdnie_init(struct ams968hh01 *ctx)
++{
++	struct mipi_dsi_device *dsi = ctx->dsi[0];
++	struct mipi_dsi_multi_context dsi_ctx = { .dsi = dsi };
++
++	if (!mdnie_bypass)
++		return;
++
++	dsi->mode_flags &= ~MIPI_DSI_MODE_LPM;
++	if (late_mode) {
++		ams968hh01_mode_regs(&dsi_ctx);
++		dev_info(&dsi->dev, "mode registers rewritten after display-on (dual %#x, cmode %#x)\n",
++			 dual_dsi, cmode);
++	}
++	mipi_dsi_dcs_write_buffer_multi(&dsi_ctx, ams968hh01_mdnie_addr1, sizeof(ams968hh01_mdnie_addr1));
++	mipi_dsi_dcs_write_buffer_multi(&dsi_ctx, ams968hh01_mdnie_bypass1, sizeof(ams968hh01_mdnie_bypass1));
++	mipi_dsi_dcs_write_buffer_multi(&dsi_ctx, ams968hh01_mdnie_addr2, sizeof(ams968hh01_mdnie_addr2));
++	mipi_dsi_dcs_write_buffer_multi(&dsi_ctx, ams968hh01_mdnie_bypass2, sizeof(ams968hh01_mdnie_bypass2));
++	dsi->mode_flags |= MIPI_DSI_MODE_LPM;
++
++	if (dsi_ctx.accum_err)
++		dev_err(&dsi->dev, "mDNIe bypass failed: %d\n", dsi_ctx.accum_err);
++	else
++		dev_info(&dsi->dev, "mDNIe bypass programmed (v14, %s link)\n", slow_link ? "760.8" : "893.2");
++
++	ams968hh01_readback(ctx, "after on");
++}
++
+ /* Downstream qcom,mdss-dsi-on-command. B0 = register offset, B1/B2 = write. */
++/* "dual DSI" and "Anapass compression mode": the two writes the Qualcomm models add */
++static void ams968hh01_mode_regs(struct mipi_dsi_multi_context *ctx)
++{
++	u8 d1[] = { 0xb1, dual_dsi }, d2[] = { 0xb1, cmode };
++
++	mipi_dsi_dcs_write_seq_multi(ctx, 0xb0, 0x51);
++	ams968hh01_reg_write(ctx, d1, sizeof(d1));		/* dual DSI */
++	mipi_dsi_dcs_write_seq_multi(ctx, 0xb0, 0xd9);
++	ams968hh01_reg_write(ctx, d2, sizeof(d2));		/* Anapass compression mode */
++}
++
+ static void ams968hh01_init(struct mipi_dsi_multi_context *ctx)
+ {
+ 	mipi_dsi_dcs_write_seq_multi(ctx, 0xb0, 0x34);
+-	mipi_dsi_dcs_write_seq_multi(ctx, 0xb2, 0x64, 0x00);	/* check fail off */
++	ams968hh01_reg(ctx, 0xb2, 0x64, 0x00);	/* check fail off */
+ 	mipi_dsi_dcs_write_seq_multi(ctx, 0xb0, 0x75);
+-	mipi_dsi_dcs_write_seq_multi(ctx, 0xb2, 0x28);		/* INTR setting */
+-	mipi_dsi_dcs_write_seq_multi(ctx, 0xb0, 0x51);
+-	mipi_dsi_dcs_write_seq_multi(ctx, 0xb1, 0x06);		/* dual DSI */
+-	mipi_dsi_dcs_write_seq_multi(ctx, 0xb0, 0xd9);
+-	mipi_dsi_dcs_write_seq_multi(ctx, 0xb1, 0x08);		/* Anapass compression mode */
++	ams968hh01_reg(ctx, 0xb2, 0x28);		/* INTR setting */
++	ams968hh01_mode_regs(ctx);
+ 	mipi_dsi_dcs_write_seq_multi(ctx, 0xb0, 0x7f);
+-	mipi_dsi_dcs_write_seq_multi(ctx, 0xb2, 0x15);		/* TSP HTE / VTE */
++	ams968hh01_reg(ctx, 0xb2, 0x15);		/* TSP HTE / VTE */
+ 
+-	mipi_dsi_dcs_set_tear_on_multi(ctx, MIPI_DSI_DCS_TEAR_MODE_VBLANK);
+-	mipi_dsi_dcs_set_tear_scanline_multi(ctx, 1526);
++	if (!long_writes)
++		mipi_dsi_dcs_set_tear_on_multi(ctx, MIPI_DSI_DCS_TEAR_MODE_VBLANK);
++	ams968hh01_reg(ctx, 0x44, 0x05, 0xf6);		/* tear scanline 1526 */
+ 
+ 	mipi_dsi_dcs_write_seq_multi(ctx, 0xb0, 0xbc);
+-	mipi_dsi_dcs_write_seq_multi(ctx, 0xb2, 0x04);		/* gamma offset index */
++	ams968hh01_reg(ctx, 0xb2, 0x04);		/* gamma offset index */
+ 
+-	/* Brightness condition set: fixed 360 nit gamma for now */
+-	mipi_dsi_dcs_write_seq_multi(ctx, 0x83,
+-				     0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x00, 0x80, 0x80, 0x00,
+-				     0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x00, 0x80, 0x80, 0x00,
+-				     0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x00, 0x80, 0x80, 0x00);
+-
+-	mipi_dsi_dcs_write_seq_multi(ctx, 0x90, 0x00, 0x00, 0x0e);	/* AID, 360 nit */
++	/*
++	 * Brightness condition set (gamma). Layout from the vendor smart
++	 * dimming code: V255 R/G/B as 9-bit big-endian pairs, then one byte
++	 * per channel for V203, V151, V87, V51, V35, V23, V11, V3 and VT.
++	 * The reference point of the vendor tables is 0x0100 / 0x80 / 0x00
++	 * (about 300 cd/m2); the vendor DTS power-on placeholder (0x80 in
++	 * the V255 high bytes, zeros scattered over the channels) is out of
++	 * range and is replaced by a computed table before anything is shown.
++	 */
++	if (gamma_ref)
++		ams968hh01_reg(ctx, 0x83,
++					     0x01, 0x00, 0x01, 0x00, 0x01, 0x00,
++					     0x80, 0x80, 0x80, 0x80, 0x80, 0x80,
++					     0x80, 0x80, 0x80, 0x80, 0x80, 0x80,
++					     0x80, 0x80, 0x80, 0x80, 0x80, 0x80,
++					     0x80, 0x80, 0x80, 0x80, 0x80, 0x80,
++					     0x00, 0x00, 0x00);
++	else
++		ams968hh01_reg(ctx, 0x83,
++					     0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x00, 0x80, 0x80, 0x00,
++					     0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x00, 0x80, 0x80, 0x00,
++					     0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x00, 0x80, 0x80, 0x00);
++
++	ams968hh01_reg(ctx, 0x90, 0x00, 0x00, 0x0e);	/* AID, 360 nit */
+ 	mipi_dsi_dcs_write_seq_multi(ctx, 0xb0, 0x67);
+-	mipi_dsi_dcs_write_seq_multi(ctx, 0xb2, 0x0f);		/* ELVSS, 360 nit */
++	ams968hh01_reg(ctx, 0xb2, 0x0f);		/* ELVSS, 360 nit */
+ 	mipi_dsi_dcs_write_seq_multi(ctx, 0xb0, 0x4d);
+-	mipi_dsi_dcs_write_seq_multi(ctx, 0xb2, 0x04);		/* 16 frame avg, ACL off */
++	ams968hh01_reg(ctx, 0xb2, 0x04);		/* 16 frame avg, ACL off */
+ 	mipi_dsi_dcs_write_seq_multi(ctx, 0xb0, 0x36);
+-	mipi_dsi_dcs_write_seq_multi(ctx, 0xb2, 0x10);		/* ACL off */
++	ams968hh01_reg(ctx, 0xb2, 0x10);		/* ACL off */
+ 	mipi_dsi_dcs_write_seq_multi(ctx, 0xb0, 0x6d);
+-	mipi_dsi_dcs_write_seq_multi(ctx, 0xb2, 0x85);		/* CAPS on */
++	ams968hh01_reg(ctx, 0xb2, 0x85);		/* CAPS on */
+ 	mipi_dsi_dcs_write_seq_multi(ctx, 0xb0, 0x35);
+-	mipi_dsi_dcs_write_seq_multi(ctx, 0xb2, 0x01);		/* gamma update key */
++	ams968hh01_reg(ctx, 0xb2, 0x01);		/* gamma update key */
+ 	mipi_dsi_dcs_write_seq_multi(ctx, 0xb0, 0xd0);
+-	mipi_dsi_dcs_write_seq_multi(ctx, 0xb1, 0x1d);		/* UPLL_F = 35 */
++	ams968hh01_reg(ctx, 0xb1, 0x1d);		/* UPLL_F = 35 */
+ 	mipi_dsi_msleep(ctx, 215);
++
++	/* bring-up aid: interface pixel format (DCS COLMOD), not sent by the vendor driver */
++	if (colmod >= 0)
++		mipi_dsi_dcs_set_pixel_format_multi(ctx, colmod);
+ }
+ 
+ static void ams968hh01_power_off(struct ams968hh01 *ctx)
+@@ -114,7 +347,8 @@ static int ams968hh01_prepare(struct drm_panel *panel)
+ {
+ 	struct ams968hh01 *ctx = to_ams968hh01(panel);
+ 	struct mipi_dsi_multi_context dsi_ctx = { .dsi = ctx->dsi[0] };
+-	int val, ret;
++	int val, ret, before;
++	ktime_t t0;
+ 
+ 	ret = regulator_enable(ctx->vdd);
+ 	if (ret)
+@@ -126,14 +360,24 @@ static int ams968hh01_prepare(struct drm_panel *panel)
+ 	 * DDI wants 70 ms plus margin between LP11 and reset.
+ 	 */
+ 	msleep(75);
++	before = gpiod_get_value_cansleep(ctx->tcon_ready_gpio);
++	t0 = ktime_get();
+ 	gpiod_set_value_cansleep(ctx->reset_gpio, 0);
+ 
+ 	/* The DDI raises TCON_RDY once it accepts commands (downstream: up to 1 s) */
+ 	ret = read_poll_timeout(gpiod_get_value_cansleep, val, val,
+ 				1000, 1000000, false, ctx->tcon_ready_gpio);
+-	if (ret)
+-		dev_warn(panel->dev, "TCON_RDY not asserted, continuing anyway\n");
++	dev_info(panel->dev, "TCON_RDY: %d before reset release, %s after %lld ms\n",
++		 before, ret ? "NOT high" : "high", ktime_ms_delta(ktime_get(), t0));
+ 	usleep_range(1000, 2000);
++	if (init_delay_ms) {
++		msleep(init_delay_ms);
++		dev_info(panel->dev, "extra %u ms before init\n", init_delay_ms);
++	}
++
++	ams968hh01_readback(ctx, "prepare, before init");
++	if (init_in_enable)
++		return 0;
+ 
+ 	ams968hh01_init(&dsi_ctx);
+ 	if (dsi_ctx.accum_err) {
+@@ -141,6 +385,8 @@ static int ams968hh01_prepare(struct drm_panel *panel)
+ 		return dsi_ctx.accum_err;
+ 	}
+ 
++	ams968hh01_readback(ctx, "prepare, after init");
++
+ 	return 0;
+ }
+ 
+@@ -149,10 +395,37 @@ static int ams968hh01_enable(struct drm_panel *panel)
+ 	struct ams968hh01 *ctx = to_ams968hh01(panel);
+ 	struct mipi_dsi_multi_context dsi_ctx = { .dsi = ctx->dsi[0] };
+ 
++	/* Bring-up aid: does the DDI answer once the display pipeline runs? */
++	if (!init_in_enable)
++		ams968hh01_readback(ctx, "enable, before display-on");
++
++	if (init_in_enable) {
++		ams968hh01_readback(ctx, "enable, before init");
++		ams968hh01_init(&dsi_ctx);
++		if (dsi_ctx.accum_err)
++			return dsi_ctx.accum_err;
++		dev_info(panel->dev, "init sent from enable()\n");
++		ams968hh01_readback(ctx, "enable, after init");
++	}
++
+ 	mipi_dsi_dcs_set_display_on_multi(&dsi_ctx);
+ 	mipi_dsi_msleep(&dsi_ctx, 50);
++	if (dsi_ctx.accum_err)
++		return dsi_ctx.accum_err;
+ 
+-	return dsi_ctx.accum_err;
++	ams968hh01_mdnie_init(ctx);
++
++	if (late_init) {
++		ams968hh01_init(&dsi_ctx);
++		mipi_dsi_dcs_set_display_on_multi(&dsi_ctx);
++		mipi_dsi_msleep(&dsi_ctx, 50);
++		dev_info(panel->dev, "init sent again after display-on (err %d)\n",
++			 dsi_ctx.accum_err);
++		dsi_ctx.accum_err = 0;
++		ams968hh01_readback(ctx, "after late init");
++	}
++
++	return 0;
+ }
+ 
+ static int ams968hh01_disable(struct drm_panel *panel)
+@@ -175,7 +448,8 @@ static int ams968hh01_unprepare(struct drm_panel *panel)
+ static int ams968hh01_get_modes(struct drm_panel *panel,
+ 				struct drm_connector *connector)
+ {
+-	return drm_connector_helper_get_modes_fixed(connector, &ams968hh01_mode);
++	return drm_connector_helper_get_modes_fixed(connector, slow_link ?
++						   &ams968hh01_mode_slow : &ams968hh01_mode);
+ }
+ 
+ static const struct drm_panel_funcs ams968hh01_panel_funcs = {

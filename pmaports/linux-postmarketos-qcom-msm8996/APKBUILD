@@ -1,0 +1,282 @@
+# Kernel config based on: arch/arm64/configs/defconfig
+maintainer="Yassine Oudjana (Tooniis) <y.oudjana@protonmail.com>"
+_flavor="postmarketos-qcom-msm8996"
+pkgname=linux-$_flavor
+pkgver=6.19.5
+pkgrel=11
+pkgdesc="Kernel close to mainline with extra patches for Qualcomm MSM8996 devices"
+arch="aarch64"
+_carch="arm64"
+url="https://gitlab.com/msm8996-mainline/linux"
+license="GPL-2.0-only"
+options="!strip !check !tracedeps
+	pmb:cross-native
+	pmb:kconfigcheck-community
+"
+makedepends="
+	bison
+	clang
+	findutils
+	flex
+	installkernel
+	lld
+	llvm
+	openssl-dev
+	perl
+	python3
+	zstd
+"
+
+# Source
+_tag=v${pkgver//_/-}-msm8996
+source="
+	linux-$_tag.tar.gz::$url/-/archive/$_tag/linux-$_tag.tar.gz
+	config-$_flavor.$arch
+	0001-add-samsung-gts3lwifi-dts.patch
+	0002-drm-panel-add-samsung-ams968hh01.patch
+	0003-drm-msm-mdp5-split-display-bonded-dsi.patch
+	0004-drm-msm-dpu-msm8996-split-display-ctls.patch
+	0005-drm-panel-ams968hh01-mdnie-bypass.patch
+	0006-drm-msm-dsi-rgb-swap-param.patch
+	0007-drm-msm-debugfs-dsi-tpg.patch
+	0008-media-venus-hfi_cmds-h264-8x8-transform-on-hfi-v3.patch
+	0009-media-venus-eos-on-real-buffer-hfi-v3.patch
+	0010-asoc-qcom-apq8096-be-format-s16le.patch
+	0011-asoc-qcom-q6asm-dai-close-stopped-stream-on-prepare.patch
+	0012-dt-bindings-power-supply-sm5705-fuel-gauge.patch
+	0013-power-supply-sm5705-fuel-gauge-driver.patch
+	0014-dt-bindings-power-supply-sm5705-charger.patch
+	0015-power-supply-sm5705-charger-driver.patch
+	0016-dt-bindings-extcon-sm5705-muic.patch
+	0017-extcon-sm5705-muic-driver.patch
+	0018-cpuidle-psci-domain-accept-osi-only-firmware-msm8996.patch
+	0019-extcon-sm5705-afc-qc20.patch
+	0020-power-supply-sm5705-charger-fast-charger-limit.patch
+	0021-power-supply-sm5705-charger-temperature-guard.patch
+	0022-asoc-qcom-q6afe-tdm-frame-control.patch
+	0023-asoc-qcom-q6afe-tdm-slot-mapping-only-with-channel-map.patch
+	0024-asoc-dt-bindings-richtek-rt5508.patch
+	0025-asoc-codecs-rt5508-driver.patch
+	0026-asoc-qcom-q6routing-stream-to-several-ports.patch
+	0027-asoc-qcom-apq8096-tdm-back-ends.patch
+	0028-power-supply-sm5705-charger-fast-charge-current.patch
+	0029-dt-bindings-usb-samsung-s2mm005.patch
+	0030-usb-typec-s2mm005-driver.patch
+	0031-dt-bindings-power-supply-sm5705-charger-typec-supply.patch
+	0032-power-supply-sm5705-charger-usb-c-input-limit.patch
+	0033-dt-bindings-power-supply-sm5705-charger-torch-led.patch
+	0034-power-supply-sm5705-charger-torch.patch
+	0035-extcon-sm5705-hold-vbus-5v.patch
+	0036-power-supply-sm5705-charger-5v-usb-c-and-torch.patch
+	0037-clk-qcom-gcc-msm8996-pcie-gdsc-retention.patch
+	0038-drm-panel-ams968hh01-gamma-register-order.patch
+	0039-drm-panel-ams968hh01-gamma-mtp-offsets.patch
+	0040-drm-panel-ams968hh01-elvss-360.patch
+	0041-drm-msm-dsi-defer-hs-clk-clear-stale-request.patch
+	0042-drm-panel-ams968hh01-brightness.patch
+	0043-drm-panel-ams968hh01-acl.patch
+	0050-drm-mipi-dsi-clock-deferred-hs.patch
+	0051-drm-msm-dsi-clock-deferred-hs.patch
+	0052-drm-panel-ams968hh01-clock-deferred-hs.patch
+	0053-drm-msm-mdp5-no-pp-done-wait-when-disabled.patch
+	0054-drm-panel-ams968hh01-hbm.patch
+	0055-drm-panel-ams968hh01-orientation.patch
+	0056-dt-bindings-input-wacom-w9000.patch
+	0057-input-wacom-w9000.patch
+	0058-dt-bindings-input-wacom-w9019.patch
+	0059-input-wacom-w9000-w9019.patch
+	0060-input-wacom-w9000-kunit.patch
+	0061-input-wacom-w9000-w9019-state.patch
+	0062-dt-bindings-input-wacom-flash-mode-polarity.patch
+	0063-input-wacom-w9000-direct.patch
+	0064-input-rmi4-platform-data-size.patch
+	0065-dt-bindings-display-panel-samsung-ams968hh01.patch
+	0066-dt-bindings-display-panel-ams968hh01-temperature.patch
+	0067-drm-panel-ams968hh01-temperature-elvss.patch
+	0068-drm-msm-mdp5-no-async-cmd-mode.patch
+	0069-dt-bindings-mfd-stmpe-stmpe1801.patch
+	0070-mfd-stmpe-stmpe1801-read-to-clear-irq.patch
+	0071-mfd-stmpe-block-read-results.patch
+	0072-input-stmpe-keypad-stmpe1801.patch
+	0073-input-stmpe-keypad-kunit.patch
+	0074-input-stmpe-keypad-of-match.patch
+	0075-mfd-stmpe-supplies-on-probe-failure.patch
+	0076-iio-qcom-smgr-qmi-release-wrapper.patch
+	0077-iio-qcom-smgr-ambient-light.patch
+	0078-dt-bindings-sm5705-charger-usb-otg-vbus.patch
+	0079-power-sm5705-charger-usb-otg-vbus.patch
+	0080-dt-bindings-usb-s2mm005-source-host.patch
+	0081-usb-typec-s2mm005-source-host.patch
+	0082-dt-bindings-usb-s2mm005-sink-pdos.patch
+	0083-usb-typec-s2mm005-sink-pdos.patch
+	0084-power-sm5705-charger-pd-above-5v.patch
+	0085-arm64-dts-qcom-msm8996-usb3-reset.patch
+	0086-usb-gadget-f-ncm-net-device-lifecycle.patch
+	0087-usb-gadget-u-ether-drvinfo-without-gadget.patch
+	0088-drm-panel-ams968hh01-hbm-attribute.patch
+	0089-media-imx258-wait-after-enabling.patch
+	0090-media-imx258-reset-gpio.patch
+	0091-media-imx258-16-9-modes.patch
+	0092-dt-bindings-media-dw9807-vcm-supplies.patch
+	0093-media-dw9807-vcm-supplies.patch
+	0094-dt-bindings-media-samsung-s5k5e3.patch
+	0095-media-s5k5e3-driver.patch
+	0096-media-camss-ispif-reset-all-vfes.patch
+	0097-media-camss-stream-start-unwind.patch
+	0098-i2c-qcom-cci-retry-timeout.patch
+	0099-media-venus-venc-no-new-buffers-while-running.patch
+	0100-media-venus-venc-timestamps-at-frame-rate.patch
+	0101-media-venus-venc-rgba-input-hfi-v3.patch
+	0102-media-venus-venc-cavlc-baseline.patch
+	0103-media-camss-vfe-frame-drop-period.patch
+	0104-extcon-sm5705-keyboard-dock.patch
+	0105-slimbus-qcom-ngd-of-node-refcount.patch
+	0106-slimbus-qcom-ngd-platform-driver-registration.patch
+	0107-slimbus-qcom-ngd-probe-error-path.patch
+	0108-slimbus-qcom-ngd-pdr-ssr-cleanup.patch
+	0109-slimbus-qcom-ngd-callbacks-after-ngd.patch
+	0110-slimbus-qcom-ngd-resources-in-controller.patch
+	0111-slimbus-qcom-ngd-pm-runtime-balance.patch
+	0112-slimbus-qcom-ngd-tx-lock-abba.patch
+	0113-asoc-q6asm-drop-closed-stream-responses.patch
+	0114-arm64-dts-qcom-gts3llte-top-speakers.patch
+"
+builddir="$srcdir/linux-$_tag"
+
+prepare() {
+	default_prepare
+	cp "$srcdir/config-$_flavor.$CARCH" .config
+}
+
+build() {
+	unset LDFLAGS
+	make ARCH="$_carch" LLVM=1 \
+		KBUILD_BUILD_VERSION="$((pkgrel + 1 ))-$_flavor"
+}
+
+package() {
+	install -Dm644 "$builddir/arch/$_carch/boot/Image.gz" \
+		"$pkgdir/boot/vmlinuz"
+
+	install -D "$builddir/include/config/kernel.release" \
+		"$pkgdir/usr/share/kernel/$_flavor/kernel.release"
+
+	make modules_install dtbs_install \
+		ARCH="$_carch" \
+		LLVM=1 \
+		INSTALL_MOD_PATH="$pkgdir" \
+		INSTALL_MOD_STRIP=1 \
+		INSTALL_DTBS_PATH="$pkgdir"/boot/dtbs
+}
+sha512sums="
+dd30dd113ad9f0b4ab3771ea655de2becce7ddaf5066d2f860b7bb1eb78573137313191d9da740b152348f9f89894ace2bb94fb195e340f7b6dabedeebbc929f  linux-v6.19.5-msm8996.tar.gz
+c0e12c50faa0b82539fd5a288e1f8e8eb15f5dbdc247ec63ab2f5025c745fb1cf7d381a32d6418dfe55eb52ab1d4d31b355472f01f3d13b3e673ae3acd24afdb  config-postmarketos-qcom-msm8996.aarch64
+30858f93ae460989670c537a445476b81ec068dbcc73855d1eb06e833b4b1a0f8bd75022e6664f2eb3ef01d21636247aaba1f448f5cfb513d5777e4b56c95c4d  0001-add-samsung-gts3lwifi-dts.patch
+feede8e07c71e0b9faaac14a97baebcd9ff347f9e6288ca3690bfcf4331b12788167dd69079fedf7856fa3b28494d19b397f8a69c01d00008544aa20785d0064  0002-drm-panel-add-samsung-ams968hh01.patch
+71cef6df692ccaeb8575bce830b32bbf4c11debdda209b7ac3f7a19dee9395f88d0981f46b72534d1d9a2f3cd742e721167afaff91ed7b0ce92c5b481ce05787  0003-drm-msm-mdp5-split-display-bonded-dsi.patch
+81ef96ef5e975c6c7b1249ea37b02f8a69154a399cd1426f234a0e44a8f5e4e9357da99dcd64629da0c7922678c0bb3e42dc8b05e53a72449dc8328c7c3655cb  0004-drm-msm-dpu-msm8996-split-display-ctls.patch
+23637d41a8e587b48454fd0fb8ee688177dba32e5c22f12b5cb322d02f20763e2d9dfe6833ee65550241df9493c4b9ae1e02a84acff78d1252e3d131621e2524  0005-drm-panel-ams968hh01-mdnie-bypass.patch
+ac1c25203f364cc2cff75d1aec875d80c7a3d3326452226ed2c398a2589d2c430ce6569485323e3bd9f7d4e666df5208d9eaabafdb5c491c50241772ee83c1a4  0006-drm-msm-dsi-rgb-swap-param.patch
+8ef106a9eec607d77bb4bcaea3a0c63c36bb0c87998cdcf620003922b0745de960c50f9a48dd39a88fa84defbc231c6ce05b1aa1df6a2eab5ca5944a7802e02c  0007-drm-msm-debugfs-dsi-tpg.patch
+dbc052ee86fdc581fbb3e08557b92a457d5c8a3f30a1b93fb30af80fb903d5f2330d9a59e9e9f4bf3e56544b1601c5b9e186b2050e488b6e8f8c1fbf810f50b0  0008-media-venus-hfi_cmds-h264-8x8-transform-on-hfi-v3.patch
+52c63bcfcd2e21d34a45e25b4caa2ebd7cd9b2617c7d2bb366c3846d0de2f8ddc1be81540345379c8a1d8a62926f76a0d653a2e9fe104e3ffd5c6ed87db0276d  0009-media-venus-eos-on-real-buffer-hfi-v3.patch
+2928e34a1b177273053858e3a58abbb986bba4c76095cc0862ae4aa8ae40993c466b0f3bf2c2487a01fd42eb76fbe1dd9c40037d82278521f1d29e9768cd74ec  0010-asoc-qcom-apq8096-be-format-s16le.patch
+ef02bd500870b8dcc39c0f5d2b7bf334f04ff1053aeca183612aa7930c549102c583e3bd0490cb4962d95f11e688013590f5a0050e6060d92e9511dbc17d7a3b  0011-asoc-qcom-q6asm-dai-close-stopped-stream-on-prepare.patch
+43bbb620380cd368c3f89faeda9659c97f6aefce8fd3e6a6355cc8b34d3734b2a3573d37deb4c6dfb94380af80f95764b6bc5a7d4eb7e952fcf3cd96301c4735  0012-dt-bindings-power-supply-sm5705-fuel-gauge.patch
+0e70c6ef1e361b9f284af8945e9d9844092119fc4c2c4e76e9139be68269f4adaf1e3a34912ba0ab095fbf3375cc929258d71ceec02c32b7facc1dce2ab52424  0013-power-supply-sm5705-fuel-gauge-driver.patch
+8d21fbb68cc62c88bbf7d37198b08d0c3aa29dd76687269cad320c75b9aad9d9d97f63e178916f5e6a814cbfd542f0f23fbcb94bf661e9ed593697f568c03a16  0014-dt-bindings-power-supply-sm5705-charger.patch
+7058b6ad3d2723c1abce238ea18ead03a9ccdd55045d56b9dce16b6e229d8356462468597a902cde2c6751695f146563272f69b424c4ad4bf62e4c08a0c7c806  0015-power-supply-sm5705-charger-driver.patch
+494bb7df17bb3a04cea99dfaeb45b019f5852e2171395b499b636af4e027f8ac57a2c7a50ea300185e27166c4e8bf51bb57d835ea7b8ce117b13507e2a6f2ce4  0016-dt-bindings-extcon-sm5705-muic.patch
+40c9327e2f539966d0f14d597cbdb09386fc5940fc5425fc7c135f663e5cb6630ddf95969013ba82ec05e59b76089acf729346423a3da07d1681950a19fc167a  0017-extcon-sm5705-muic-driver.patch
+de38a04d308c26f42201222ae0792ccdb45755b3c5d1f64e13c123454af2f836bfad2ce2f3db00fb144e692aaa17b01c951af5262aa385865a50906f53912f61  0018-cpuidle-psci-domain-accept-osi-only-firmware-msm8996.patch
+e843ebadc75545e6b32e0321f9d2d0171bb02ad297b1e6c1aff556fa2d4e4bac1221729e754a43e0e6c174d78b6882f346fdcbb9eda803cbf819c3b11274cfb5  0019-extcon-sm5705-afc-qc20.patch
+a204bd70aea0cd94930d49be7c1b3c1474ebc4ad7f14e095caa60bc04676fcdd6b4122920bf9bc999460c5c2ef2d37c60289033a45558f80bc7f0281e37cc30a  0020-power-supply-sm5705-charger-fast-charger-limit.patch
+da3d1a02a46171fcf868efb1b33d020ee8e4e7f82d30245793159bb77fcef0458cff16b82d2964891ce63cf7ec3c0c23479193798b4007b9bc3b64a6bdcd97d3  0021-power-supply-sm5705-charger-temperature-guard.patch
+67b8cfc1d2185364cbdecea53b466873e3d85be99a977ad5080fc0a4587122e0363c4fa9e690d13cd1c09f5e4475394573b91bd68a93492849b5964e8a7e82e2  0022-asoc-qcom-q6afe-tdm-frame-control.patch
+bc7f8db12a79d479bd5c7a584f7c451872d682c08ac88f6d77221125578ae6f1679eb23a7badfbf674d7a6a6a6ce8f9da6b22c5184a6e9667064fd6d5f1b1ffa  0023-asoc-qcom-q6afe-tdm-slot-mapping-only-with-channel-map.patch
+64a3f40ac71fc383a53046c964333aa9ef73529e99e094b11b56a548d7eaaf3b3ed6a03841694a4564f1abf67b5158d10185b2aa3a143dab61e075ed7f8e900e  0024-asoc-dt-bindings-richtek-rt5508.patch
+3bb455d1b09a8897cd9f0d4a03954f35c401d022e6d12456da03939777234d1725785fa28ed782fe3e9035de48f6bbf9344446afe516a0dc2fdaa51860a433f9  0025-asoc-codecs-rt5508-driver.patch
+71bb853ca2d0ab4b49d453ade2385a0bc5e14338039951b8072d5bde75b00446b5bb1773e57efe7f448d61760ad1ebac1f23ca64392a9edef7b11cc4d9bfc5a5  0026-asoc-qcom-q6routing-stream-to-several-ports.patch
+b52451aef1f28f3ae334def1bcb3cf2787cfb4a19b7f95b8b500bb2abe08c6c1f050bbf580f2b2cdf8b4bd4c869c3fd8add3e022432cff56fbbfb060ff4049a2  0027-asoc-qcom-apq8096-tdm-back-ends.patch
+62b6ff7d13f0c92eb0b6bce2e6aa3256462f2036a38b04014224986f5b52585ee76d4716a6b63703ad498e52168316b54c617cd5691027950d79025d5eb20858  0028-power-supply-sm5705-charger-fast-charge-current.patch
+ed3c0c075c605b90368333c2047d78861ec4657757bc5dcef6d82cdc4c6b73090fc8bdb18dbd1af1b36f892c39a4fb3f92789c2867ebba7f02cc242a40b95432  0029-dt-bindings-usb-samsung-s2mm005.patch
+04c950644a6cad7d7d5276d703888a8fdceaf081ad4e03e5cb63715967ba279b9b657d9e81078a17f82d149b4a06cf0f60ca7e877fb32d0fe30a0fe44ab018b3  0030-usb-typec-s2mm005-driver.patch
+67eef3269d037ce31f2d6cb189412c5d27321a24a3c6c589005dde6d06de8846d9fd07036b3e707d4cf2986d51b0a324af8bf3426997c5c8840cd46dc1027af2  0031-dt-bindings-power-supply-sm5705-charger-typec-supply.patch
+a7c701f62480fe5be664dfc8bfb2bfa4eaf5ff59760ccc896eae006fc06c9105da8f27d38045a81972a604ab90a2b6e9683401a703191639dc2882b7f37c7773  0032-power-supply-sm5705-charger-usb-c-input-limit.patch
+76cc656c6a7692d6fcf1dfbb77a226133cc24e954c2905d3199a6050db29bfbbd0e4477d4f2fda17116ccb2e601c55ea900e077604749712e326bae9d343a147  0033-dt-bindings-power-supply-sm5705-charger-torch-led.patch
+f081c36ce6b0d0ad8373b2a67313aad0a36e1f749bf92551f2571e331dd531bf195bc6656a961cde1ca0f201a68353d041d702c0f08e2e37af337030fdbdc4e8  0034-power-supply-sm5705-charger-torch.patch
+6f01864f21353d0c723ddb814fd02c5e76e4f8a7194daceadb806fc418fe78ced9ab9e250c378a193c966db9873bed4c89fc07befb57ea2b9648436ceb98bf82  0035-extcon-sm5705-hold-vbus-5v.patch
+7b4bccc3ff4e528fd3b2d748d739855e441f24ce3e41de6324d31d6a1e4ccf800bcddb20940c9ba5c96069757133cf74422915f1af022182eeb238e3e10f0b8b  0036-power-supply-sm5705-charger-5v-usb-c-and-torch.patch
+3e286133f2eff9b29713b1a9fe498e6ab3812173dbb138d7909da404d1dd07ec77a45acefa68c86b33c09a25ffd4f6e042d1be30886c557cbd1a0bf4c7ae1613  0037-clk-qcom-gcc-msm8996-pcie-gdsc-retention.patch
+5d011babc2891b13818ad83d223a33ebdf96853aeb125bc23a05f12a7abaa281d24807378c3053f1db0a8f50078fda6206bf9cbc61f5e45f75c9413358f54582  0038-drm-panel-ams968hh01-gamma-register-order.patch
+7a4f027b876c93f22f20eb9da01447f424c2f8a59728ec0a945e667195b7fab1dfc140ee4d47c226d1605b9d2989bba4667f1650667b7d5e3b047c869a92af64  0039-drm-panel-ams968hh01-gamma-mtp-offsets.patch
+cd80a38087d69a5234ddd888375d04b2b3f96b0e561b8167e4f8e883b825c3ed478d801a5778894ef649418992adb9c459b366d41c8b6bf16e929ff9da9b90ec  0040-drm-panel-ams968hh01-elvss-360.patch
+36e7e88dd2ebf50a06fe431863695afbfb6c9d7cafdb575a12cfe8d8a4a285dd76785738b504e897c34f358a35139730372fca7abaca121d60ce91203781a5de  0041-drm-msm-dsi-defer-hs-clk-clear-stale-request.patch
+3bc8a9bad50a32688f8f7b1585dab652524b02a735ddb310e9929e2390ad05625bb1517c17d3514aadb0dd9855bc3086e9e3e2f744f8b0a2ec99443a11a6ea30  0042-drm-panel-ams968hh01-brightness.patch
+52d2a7cadb562393c4fbe34026a631388e9b98828e3c870c9e12c42eefa990108c53a178b5900ee1426bec4a564944e542072415de9ed1babf2b43264e4fa786  0043-drm-panel-ams968hh01-acl.patch
+08d256a6fd56fb1f7774c5c2a64814b44f9e94d0059f63bae2a4e60914e2c19aa5665e0d69b1b15162b988f51ce8e03134559df0fcdb2cc42020298d9d372fa0  0050-drm-mipi-dsi-clock-deferred-hs.patch
+cdab3bd4b90d1c07607b87880b820daf7b5d5d27bea8ffe0bd617a3b4a2ccf256e0ebfb72d204a594d7db0859eef1507605d98b7ed486665c6043905c5e2ab87  0051-drm-msm-dsi-clock-deferred-hs.patch
+c27c97d361d2f2d59cef444df04d7ea6a9448b8553df5f11e1e7c1e7335452ac01acb3910d13c913a6e957e9e6f34e305196fb634f1c158686a58cd60e126680  0052-drm-panel-ams968hh01-clock-deferred-hs.patch
+fe7707cfff0ead46ad4da26ac367ee0fced806307349bbf7bf352acad8dcc1866c1c7d9fb276595ad242398e48d464ed0f3e4a568b3693e988f24be7b8f15b33  0053-drm-msm-mdp5-no-pp-done-wait-when-disabled.patch
+8866afcc645e81197099e753593e48fdf9bee04ebc490e48cc2f36b52ae20b02ec20fbc40d9cd2c2a0234949dc88c8324179d74840b8d3bc54582a9d67d6bb3a  0054-drm-panel-ams968hh01-hbm.patch
+4ab97bfd1e5eaf2f0f05f9c53701680291c4418cbd78d988a54deed9fbee6196d3dc5056b22316d7edac69218e88562507cf6c8637b8532cc3cd7d7aa0c7ee3d  0055-drm-panel-ams968hh01-orientation.patch
+14f826e0fb34124c84188aa97d677bfd9b86a57a08e5b8074914fbe9785667482dc98a5c21887ad3a75d497c2fad271416769075a687752665ac73985cc5e3a1  0056-dt-bindings-input-wacom-w9000.patch
+253cd9e0da296ba2287dd40448e7a58c8cec6e1df6ad4f635c6b45f571f23a07a3d58f82838bf2fa55ac316cab958e7bb0b3a715e4c978ccb81e235e2ea49985  0057-input-wacom-w9000.patch
+76ee0a81896686151e7a809365af59aa49a07a49e0f79d8aa68ea0b91236878bee5523ea2aa75cd09f5d65076c2b1eeee74bddccebe4c3a1f213f1a894ae41df  0058-dt-bindings-input-wacom-w9019.patch
+3cc320cebd10fbdf086d83b081cf68442cfc1e483d854431c935177614cf7134af05bced7fe998d074dbb4699db38b7a4dcf93ba9f2fcabcfbfe5637323faf8f  0059-input-wacom-w9000-w9019.patch
+24dee6d195141a9f161e85202364511c63b2a7ba4ad198badbbc5ac9a4a69d7a9ba98456aa47c3eb9eddfbbcd4e8b346a11694f07463ee6bcfc5468a82e45197  0060-input-wacom-w9000-kunit.patch
+4e75eb9c47b75a449511a81b4f384211eb49495b42b793482c92a2803dd944c886a49c302dd78dcd53915612d71788a73ff7d0fc9892a6d3940a29e851c3897c  0061-input-wacom-w9000-w9019-state.patch
+fa85a4f136e523bec6ab2db47d374cd9212529c996917eebf7921a5c25d217c024d3e8cc47584a0afa84f9ef7224b0703746cc6434d6fdaed15e1fc14dc4034d  0062-dt-bindings-input-wacom-flash-mode-polarity.patch
+96e0d8754cb80960e893995a57282783f623dd35c7167662b69d361f1e92152cb3567954f8eb0a65a1e935816e06409f5ceeb37ee68217794f9ae1b045ccc1dd  0063-input-wacom-w9000-direct.patch
+9259ab3c8b894f905859a83ae17a41a697d0f44e01be7b20b1fd8ea34409b4d7ba1ca06e0f38c68334956348218ced84a38f4d53b896d14269bdb6ea7e47c6cb  0064-input-rmi4-platform-data-size.patch
+fe303775a0ee5a609c6fed2e54fe4e57e19836fb94ef4f23402901d84f02f5cf79a35f91c71bb303fe2d46b5eca0f5ec0797888f152de3d42b931e6aaacf512a  0065-dt-bindings-display-panel-samsung-ams968hh01.patch
+872395ca1eb07e97f6d0aa155fc5183cea7afbfb354203eb0b0070db804fd18739539b5e2f24c37d5392bcc3dea63d166a50c6dedc89e99dbfe996497f4f5ca0  0066-dt-bindings-display-panel-ams968hh01-temperature.patch
+2fe077c39a122135853d43516e4b52e421cfc50c1bf892ed8fd17ba9cb04affe9190a0489888e46698a255b4a73acbeb9ef38098635421e2d32e1839a07f9d0e  0067-drm-panel-ams968hh01-temperature-elvss.patch
+6351d51745b5b92dccbef1cfb209e873f4b41e0170b67298d5254c495015220a289bd59d02aef5b9fc24e1fe1efeec167002625284422a3988e9c13502c90547  0068-drm-msm-mdp5-no-async-cmd-mode.patch
+3088008584a9f5d0ee121a63f82b77d7a1ab1b6c01f08eff86ed537587f98862ef4b88203f7940a7e3f55b1dac080f811bd1402755ddedcfbfd9f6e4ea856f82  0069-dt-bindings-mfd-stmpe-stmpe1801.patch
+978ca71779d5ae7d8b1c8c8ba2c50e110b7f2e2f8df176e31961e648dc8b1dd05bb61f5f4b8165ca7458a31a053d68056e0ead754965d0c79502e1196c69f8c0  0070-mfd-stmpe-stmpe1801-read-to-clear-irq.patch
+e5c452ad14096b6cae7413579d09eb6ffd1bba4ce896726bc236f4b11b595d5e433d9fc7c1c9f430efcf9b4da50c5887b0148a9f145747a2022cd9bea9922216  0071-mfd-stmpe-block-read-results.patch
+428be79df2035a2becd543c1f3955a5230297dfc31eadfbb7b79f13464b8a84bf27782563c9479a075e95d0d75e1f886477d6a11ab8ca48087adef9a8385ffd6  0072-input-stmpe-keypad-stmpe1801.patch
+3d1b923e2058730ed1a31de7eec268ec4acdd3e85ba5a2a53182a17a2a0740e30382c732b79f2989592c58ef6b930cde028021a2808d90996c5a4c2ba0420006  0073-input-stmpe-keypad-kunit.patch
+c0b6270992e036039c11778b2f278a721b0c5582d09dc098d00e9d66e4a1bb6e6470fc97d04e7f46e6e0d675089d383468419a1953fc2b10d5b6a2121ed080f9  0074-input-stmpe-keypad-of-match.patch
+b97689a75b337df2295c6c75dc7922273644e6704d0f1ef60c182966c33f1579aca25aa14ede0d9d0570329d2cd8d8a8430508fd8d43ea045f6c216fa59a81ca  0075-mfd-stmpe-supplies-on-probe-failure.patch
+6016cb97968d60d8654fc1af419bb77e7db462cfadf092c576478abb8a238e4044c6c117356a18d4a7c492146589855127c11f15b7f1eee958b555c7bf55ba77  0076-iio-qcom-smgr-qmi-release-wrapper.patch
+efdccc8a0b8cb0bfb6eb21b688a497aa662ae85af49650882e811ab6dd646a08bcb584f11e8f75f71ba4b7895b0822ee144994bbda71d2f98ac587628b7f8a6a  0077-iio-qcom-smgr-ambient-light.patch
+ce8be9f86375e328d4bc070980de6f81767e4f09f8194b832e6d7f6f37f43fd7d5be8d7948c2394cbc61c5b4149db31f9d2f59ab543d3becab66bbd4fd728b67  0078-dt-bindings-sm5705-charger-usb-otg-vbus.patch
+0c47f2821c841fc6fd481e0f97449f8bba7f4ba8450415fb23e7155e7c8f78cc2d1d1f691694ccec38c4a8c298b695deba7118eb1670ac995c202f237cc21d24  0079-power-sm5705-charger-usb-otg-vbus.patch
+f297d990e2e804da0f617b6bee7fee8cebb4e6570169e2739b7ae89cd468a6c714edbd9bf6e8a4a638cdc3ea060cd7d67fae1869816f414aecca0dc7a4f84a06  0080-dt-bindings-usb-s2mm005-source-host.patch
+faecbc064fa783bb9bf99da0e2be659486511185cd44a52bce2f595a5a5f9c0f78624f5c383816ff6bb6f0cc6dd25bf5f209078e6f00ae0f2cbaf4c555ba36d9  0081-usb-typec-s2mm005-source-host.patch
+d511692f8491fdf7a2dbc78320a9a7b11cb28b897dc1f114dfff0c5e29b0487ce262573796761f308e8d86ea42d4a06a044268f3ffad60e9268c48ec8da7dafa  0082-dt-bindings-usb-s2mm005-sink-pdos.patch
+58e497d3ac4e6c9aa321430146c16a1d4136e12389159b292fdc8fbcc48c0f623396df42159766cace096d0e0528d665513d3515dbc36501e402f7bf0d95ec7f  0083-usb-typec-s2mm005-sink-pdos.patch
+e1e5bbb3757e727ce340fd85459c13ec0cbe41e197467ea9f6b617f23292edd386cde9e02089919b7315ebebe3dc5504a8c7c234776a21b7277733d837aed4d9  0084-power-sm5705-charger-pd-above-5v.patch
+fc7ba7a6089335ef1aeffda90a43d5bfde40842a9537a90cfaa4025ecbc31bffe0bf16b86b9984ba2834cac2bd9e5ea4a074cbe3884d65b4cb8bfd0112a9c820  0085-arm64-dts-qcom-msm8996-usb3-reset.patch
+0c550fe7215a77ad64b387458c37219f271e7691c00a9207e1e0e51d3c52a33dffb396d350e93e9f8b415fc83d6b3d3b4e913c5a76f0688e5eff2995e71c660e  0086-usb-gadget-f-ncm-net-device-lifecycle.patch
+b3c78de7d2ef5095409ef2043986f222c4907b56ff28a8d6cb7cc94a3d24e415c22cb45803c91f951a330e3dfd3e51a8d80436e537a449778dcadb24296be18d  0087-usb-gadget-u-ether-drvinfo-without-gadget.patch
+346325f6964fd634ef71b4557b9b4fdc0df6aeed0d204402dbf627dd7f792f1b35399c3c6c822282da550c0e44816f878524aa2ba1ea034da57d16684b700112  0088-drm-panel-ams968hh01-hbm-attribute.patch
+e309c2065ee00cd9a247c4ea3972b0807de7fd789456c65b5b69192929b9d1aaab49f78eb4f3716e63f206a9d0821eede4ca858f8ffb772fb6c37a8c9f4d2870  0089-media-imx258-wait-after-enabling.patch
+fbc39fdb54d168fbe2edf551f637694af4b0d986a8cb91041f480093308fc2d3341232d4f123db55b78c7955ef506707ee1603300079f817ec8e063a795f2bf4  0090-media-imx258-reset-gpio.patch
+4df8e6129afb5e8264c7c6716f7ece9e37ed09110655ed6abb20f3da868c19df36f7e3832509121bb8480bc7246515218ac5910a62d11a70609cc193be8d949c  0091-media-imx258-16-9-modes.patch
+16ed2e6bbaa238f48a8b4c45773f3d7a75db6750d31153440a6b8f14471bf82bf46de5a0dd494c9047e56f431a51979d101b63df4f036e2c29e689dfdc0e3fa7  0092-dt-bindings-media-dw9807-vcm-supplies.patch
+d79fc89da228d7f6b14d1825abff39eaf6f6415d4af6704e427451ce0c790bb735970ff0e74abc4a5ed84a29d358287173afa806e4e1d7bb8fa924a12621d982  0093-media-dw9807-vcm-supplies.patch
+8025418137416284f63c9b7d472d064c6bbcfd530b849ee445b538ebbf10052b001e3963ad3924495b526fc4e64c2863bd07444468d65c964207085434ac7cb6  0094-dt-bindings-media-samsung-s5k5e3.patch
+7194ee253f0d441cb3214ff967e5d78ac2acc4aee730fdb36b2eebb9c4507ef5da534e80a03f65a2cf464c94503c6af6a54f9a75fd46107e8bc077826ba035dc  0095-media-s5k5e3-driver.patch
+0c0aa49d0edf7d3242cb971c42fb95a3252eb8a3d33ec4f6b2903b63cc7fa061f6e687038fdc2192fd371bc72f8ef77a75d008824044278f83947ea5b370ea90  0096-media-camss-ispif-reset-all-vfes.patch
+59c356259dc6067fed5e920e4bfc3db8397c2869c47a9be962269f968d191731751389f08333ad5a3100e3b7b437ace0fe36fbc004dadd53596a46535875d3a7  0097-media-camss-stream-start-unwind.patch
+6ac5939e1d239e88b4caa78c40e5c7f6b01b6c1a6c6e0356e30678860549ab3a9c274cf02b238af201f2b39e2cc74ccc599562900681114ff2b9aa38836c6f9a  0098-i2c-qcom-cci-retry-timeout.patch
+f09e945ec073c7cd498471d35b315a30bb496b62b9dfefd4e7709b8faac5bf8172877cccf2826562985cc50988b6ae37d558ea6f534b221e555d497ea8d8d659  0099-media-venus-venc-no-new-buffers-while-running.patch
+ccf1340349c644332103ee172c2580a29ac4f8982c1ca5606f5e6a9544405bb624fd07799385efee161715880a49264921579e709af4bd21298b52f151589370  0100-media-venus-venc-timestamps-at-frame-rate.patch
+7b3b84a6895d8093cdbb69b3b7120ff9c9d84023e792c6eead5ee111d02db4a3bef1956e853497f59f54af3ba8d76a3bbf621fd73e54ab981d9c6194ab3db7ad  0101-media-venus-venc-rgba-input-hfi-v3.patch
+bc46f571124ea1a340219cadd209bb5a5d7780afb8f18c9d7e40b7b79581529dce46479a595d04bc74ad4b396190eb41dd9b62660603b8f85c6dd022070a9115  0102-media-venus-venc-cavlc-baseline.patch
+63c08fb449f33620b825d95d2bd9734487c9782db49e699e5670827c643933e3b0e28356ba9bc6ac0f5f0984c31893ad1ef44db10e3ad539eeba91d610c0ea7b  0103-media-camss-vfe-frame-drop-period.patch
+fbeb6128ee792b8bbdcbb403d65a1296588d0ee62da0192d21be3d39aa64858b22f7b0d1141b00c2cafff349fd20c78dccad99aa8dbb6b19ade7ad6ce1ec4ad7  0104-extcon-sm5705-keyboard-dock.patch
+99f92a99b5e80f39f4b5f1fc434965e98b084cae3f31edfade3e4dc638fc004c1295513768e74d6bf2cc2f15d898d14aa36871c3f2f9c1f29050752ab784c761  0105-slimbus-qcom-ngd-of-node-refcount.patch
+d1f0b8bdaab403897f878f5d9393a5c825dfc239b392ddac7585eb587ad28cf7b871983917565e0b6e0634dc391bcbd675bf9125927021b15c0146d643ef81d9  0106-slimbus-qcom-ngd-platform-driver-registration.patch
+bbd5ea368244dc4a207d17be244beb75a48bd3c427de660136a0091314db6cc3f9b0afd84bed08a8f20273048e4b187b7fb808e666abc0e291c45a4245b55917  0107-slimbus-qcom-ngd-probe-error-path.patch
+6cc69e701ab65f7a547d4c313f625a823e8127fb35b2445ecb8897fbe285ccbf9a99e81baee0ec56e2ede6f35c13cb67dec85cf6624d58b445417b2bdd306cc1  0108-slimbus-qcom-ngd-pdr-ssr-cleanup.patch
+45eaeacfc177c4cca880216cfed8512b7e490fd01844f300af25bbaf3fca55fa7ceb1fd7cadb79f54cea4fade3028ee6233c7b86afda18f7514c98ecb9fef5ed  0109-slimbus-qcom-ngd-callbacks-after-ngd.patch
+68d5114909fb9e2f3c9e3ff7622ddfb0137b94e2d47588238a6549525d0d23c0fbad59349329096c8224ac7951424b42e298579536f9eeb7a42a0d2caf7869d0  0110-slimbus-qcom-ngd-resources-in-controller.patch
+9d5fd9c8f3981e01279b1b9a5bda278649a81936cb60e153a8d33eed90d1c40a096aa617c7931ce3cd28c25d733aa0952c5ed87ff56e018be2ef539380bc94bb  0111-slimbus-qcom-ngd-pm-runtime-balance.patch
+3b1326eb6e2f64da5ff537ae6796410f178374a7bb3ade198d2c272698d8e2250135538a3d3a8f8629d348dd16f2cd01d5493204424ee2db48b57fcbc567023e  0112-slimbus-qcom-ngd-tx-lock-abba.patch
+93af951ae3679707f697ac89df28172a081329dbb4e5f7fe57b288c79ebc18adb33cd20f8f81d4eb8f20b8e292dc838e9e01486b38fae91d861b7b9302d9c02a  0113-asoc-q6asm-drop-closed-stream-responses.patch
+be3da2c8f3c2f526ef3fb76c5199ef62d309ab232bef822914559f3da66ab74f28fd4d5bac9f85247254450778063585c85dd1acdd33a26e6732b938a8e06367  0114-arm64-dts-qcom-gts3llte-top-speakers.patch
+"
