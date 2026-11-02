@@ -178,6 +178,15 @@ It mounts the dumps read-only and collects, as postmarketOS' `gts3-firmware` doe
 | `system` | `bdwlan30.bin` → `ath10k/QCA6174/hw3.0/board.bin` | Wi-Fi |
 | `efs` | `FactoryApp/sensors/sns.reg` → `qcom/sensors/sns.reg-samsung,gts3llte` | sensor calibration |
 
+Samsung's Wi-Fi board file says country GB, and the radio never goes beyond the rules of that
+country. Put your own country in it now (ISO 3166-1 numeric code: 76 Brazil, 840 United States,
+276 Germany, ...); see [docs/hardware.md](docs/hardware.md#wi-fi-country):
+
+```sh
+sudo python3 tools/ath10k-board-country.py firmware/ath10k/QCA6174/hw3.0/board.bin \
+    firmware/ath10k/QCA6174/hw3.0/board.bin 76
+```
+
 ### 6. Build the initramfs and a debug-shell boot image
 
 ```sh
@@ -294,7 +303,7 @@ initramfs, boot images, the boot file system and the rootfs image. Steps 5-8 mak
 | `install/` | backup, firmware extraction, initramfs, boot image, boot fs, flashing, btrfs, kernel update scripts |
 | `desktop/` | Hyprland + Dux Shell setup, auto-rotation, low-RAM tuning, browser flags |
 | `docs/` | partitions, lk2nd, kernel, btrfs, hardware status, troubleshooting |
-| `tools/` | `gpuhang.c`: hangs the GPU on purpose to test how the desktop survives a GPU reset |
+| `tools/` | `gpuhang.c` (GPU hang test), `ath10k-board-country.py` (Wi-Fi country in the board file) |
 | `release/` | release binaries (git keeps only `SHA256SUMS`) |
 
 ## Credits

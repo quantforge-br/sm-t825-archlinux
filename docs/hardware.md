@@ -11,7 +11,7 @@ For the SM-T820 and for details of each driver, see upstream's
 | Display, GPU (Adreno 530, freedreno) | works | 2048x1536, Hyprland at scale 2; Chromium's GPU rasterization hangs it, see [troubleshooting](troubleshooting.md) |
 | Touchscreen, S-Pen | works | `synaptics-s5807`, `wacom-w9019-digitizer`; follow the rotation |
 | Keys: power, volume, Home | works | Home opens the launcher, power toggles the panel (desktop/) |
-| Wi-Fi (QCA6174, ath10k) | works | needs `board.bin` from your own `system` partition |
+| Wi-Fi (QCA6174, ath10k) | works | needs `board.bin` from your own `system` partition; country GB unless changed ([below](#wi-fi-country)) |
 | Bluetooth | works | address from EFS (`gts3-bdaddr`); RFCOMM/BNEP since r10 |
 | USB network gadget | works | 172.16.42.1 on the tablet, NCM, ID `04e8:6863` |
 | Speakers (4) | works | top pair needs kernel r11 or newer (patch 0114); top = left, bottom = right |
@@ -32,3 +32,30 @@ Messages seen on every boot that do no harm: `qcrypto` probe errors, `bam-dma-en
 "Frame reassembly failed (-84)", `MultiMedia1: ASoC: no backend DAIs enabled`,
 `psci: [Firmware Bug]: failed to set PC/OSI mode`,
 `[pmOS-rd]: Unable to resize root partition: failed to find qualifying partition`.
+
+## Wi-Fi country
+
+The country comes from the Wi-Fi board file (`board.bin`, Android's `bdwlan30.bin`), and
+Samsung's file says GB (`ath: EEPROM regdomain: 0x833a` in the kernel log). ath10k hands that
+country to cfg80211 as the driver's own setting, and cfg80211 never lets a user setting go beyond
+it. `iw reg set` or `WIRELESS_REGDOM` in `/etc/conf.d/wireless-regdom` only shows the new country
+in `iw reg get`, while the radio keeps GB's channels and power limits.
+
+`tools/ath10k-board-country.py` changes the country in the board file: two bytes for the country
+(`0x8000 | ISO 3166-1 numeric code`) and two for the header checksum. On a running system:
+
+```sh
+f=/usr/lib/firmware/ath10k/QCA6174/hw3.0/board.bin
+sudo cp -n $f /var/lib/board.bin.orig
+sudo python3 tools/ath10k-board-country.py $f $f 76    # 76 = Brazil
+sudo reboot
+```
+
+Then `sudo dmesg | grep alpha2` shows `Country alpha2 being used: BR` and `iw reg get` shows
+BR for the global domain and for the phy. Leave `WIRELESS_REGDOM` unset: when that user setting
+comes first, the driver's setting with the same country is taken as "already set", and the radio
+keeps the ath driver's generic world table (channels 1-11, no 5470-5725 MHz).
+
+Checked on the SM-T825 with Brazil: channels 1-13 and 36-165 (52-140 with radar detection), up to
+30 dBm where Brazil allows it, against channels 1-13 and lower limits with GB.
+
