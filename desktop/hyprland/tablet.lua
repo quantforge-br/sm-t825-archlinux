@@ -18,6 +18,12 @@ hl.config({
 	render = { new_render_scheduling = true },
 })
 
+-- A new kitty process takes 0.6-0.9 s to show its window on this CPU; a window from
+-- a running instance shows in about 30 ms. The launcher gets the same flag from
+-- ~/.local/share/applications/kitty.desktop (desktop/install.sh).
+hl.unbind("SUPER + Return")
+hl.bind("SUPER + Return", hl.dsp.exec_cmd("kitty --single-instance"))
+
 -- Home key (KEY_HOMEPAGE) opens the launcher.
 hl.bind("XF86HomePage", hl.dsp.exec_cmd("dms ipc call spotlight toggle"))
 

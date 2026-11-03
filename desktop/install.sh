@@ -27,6 +27,12 @@ fi
 
 echo "### tablet.lua and rotation.lua"
 install -m644 "$HERE/hyprland/tablet.lua" "$HERE/hyprland/rotation.lua" "$H/"
+# Launcher entries start kitty in the shared instance too (see tablet.lua).
+if [ -f /usr/share/applications/kitty.desktop ]; then
+	mkdir -p "$HOME/.local/share/applications"
+	sed 's/^Exec=kitty\b/Exec=kitty --single-instance/' /usr/share/applications/kitty.desktop \
+		> "$HOME/.local/share/applications/kitty.desktop"
+fi
 python3 - "$H/hyprland.lua" <<'EOF'
 import sys
 p = sys.argv[1]; s = open(p).read()
