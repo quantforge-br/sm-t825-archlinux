@@ -277,6 +277,7 @@ so the host gets an address in that range. Wi-Fi is `wlp1s0` (NetworkManager).
 - **Getting to fastboot from the running system:** `sudo t825-reboot-fastboot`.
 - **Never install** `linux-aarch64` or `linux-firmware`: the kernel and firmware come from this
   setup, and pacman would only fail on file conflicts or fill `/boot`.
+- Desktop fluidity, measured: [docs/performance.md](docs/performance.md).
 - Something broke: [docs/troubleshooting.md](docs/troubleshooting.md).
 
 ## Release files
@@ -309,7 +310,7 @@ initramfs, boot images, the boot file system and the rootfs image. Steps 5-8 mak
 | `rootfs/` | Arch root builder, chroot setup, device files that go into the image |
 | `install/` | backup, firmware extraction, initramfs, boot image, boot fs, flashing, btrfs, kernel update scripts |
 | `desktop/` | Hyprland + Dux Shell setup, auto-rotation, low-RAM tuning, browser flags |
-| `docs/` | partitions, lk2nd, kernel, btrfs, hardware status, troubleshooting |
+| `docs/` | partitions, lk2nd, kernel, btrfs, hardware status, performance, troubleshooting |
 | `tools/` | `gpuhang.c` (GPU hang test), `ath10k-board-country.py` (Wi-Fi country in the board file) |
 | `release/` | release binaries, downloaded from the GitHub release (git keeps only `SHA256SUMS`) |
 
