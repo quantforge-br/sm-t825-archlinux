@@ -28,7 +28,7 @@ ROOT_UUID=${ROOT_UUID:-3c1b2d91-6191-410b-8f7d-4d7cd5a21b26}
 BOOT_UUID=${BOOT_UUID:-c5e5c7d5-7019-4c4e-ba93-af3c61a96e1b}
 # Size of the SM-T825 "system" partition.
 IMG_SIZE=${IMG_SIZE:-4194304000}
-KVER=${KVER:-6.19.5-t825}
+KVER=${KVER:-7.3.1-t825}
 USERNAME=${USERNAME:-tab}
 HOSTNAME_=${HOSTNAME_:-tabs3}
 LOCALE=${LOCALE:-en_US.UTF-8}
@@ -103,7 +103,8 @@ copy_dev usr/lib/modules-load.d/00-device-samsung-gts3lwifi.conf usr/lib/modules
 copy_dev usr/lib/systemd/system/gts3-bdaddr.service usr/lib/systemd/system/gts3-bdaddr.service 644
 copy_dev usr/lib/udev/rules.d/90-gts3-bdaddr.rules usr/lib/udev/rules.d/90-gts3-bdaddr.rules 644
 copy_dev usr/lib/udev/rules.d/61-gts3-accel.rules usr/lib/udev/rules.d/61-gts3-accel.rules 644
-# The pmaports matrix is 90 degrees off on the SM-T825 tested here; /etc overrides /usr/lib.
+# Keep this repo's Hyprland orientation matrix; both copies request 12 Hz.
+# /etc overrides /usr/lib, including its sampling-frequency rule.
 install -Dm644 "$FILES/61-gts3-accel.rules" "$MNT/etc/udev/rules.d/61-gts3-accel.rules"
 install -Dm755 "$FILES/gts3-bdaddr" "$MNT/usr/local/sbin/gts3-bdaddr"
 sed -i "s|/usr/sbin/gts3-bdaddr|/usr/local/sbin/gts3-bdaddr|" "$MNT/usr/lib/systemd/system/gts3-bdaddr.service"
@@ -121,7 +122,12 @@ test -s "$MNT/usr/lib/modules/$KVER/modules.dep"
 for f in qcom/msm8996/samsung/gts3/adsp.mdt qcom/msm8996/samsung/gts3/slpi.mdt qcom/msm8996/samsung/gts3/venus.mdt \
          qcom/msm8996/samsung/gts3/a530_zap.mdt qcom/a530_pm4.fw ath10k/QCA6174/hw3.0/board.bin \
          "qcom/sensors/sns.reg-samsung,gts3llte"; do
-  test -e "$MNT/usr/lib/firmware/$f" && echo "fw ok: $f" || { echo "fw MISSING: $f"; exit 1; }
+  if test -e "$MNT/usr/lib/firmware/$f"; then
+    echo "fw ok: $f"
+  else
+    echo "fw MISSING: $f"
+    exit 1
+  fi
 done
 ls "$MNT"/usr/lib/firmware/qca/*00440302*
 grep -E "^($USERNAME|root):" "$MNT/etc/passwd"
