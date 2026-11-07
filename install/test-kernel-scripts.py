@@ -168,6 +168,34 @@ fi''',
                 self.assertIn('does not contain Linux version', result.stderr)
                 self.assertEqual(before, self.snapshot())
 
+    def test_binary_banner_without_strings(self):
+        stub = self.bin / 'strings'
+        stub.write_text('#!/bin/bash\necho strings must not be used >&2\nexit 1\n')
+        stub.chmod(0o755)
+        self.kernel.write_bytes(gzip.compress(
+            b'\xffbinary prefix\0Linux version ' + NEW.encode() + b' (build)\0' +
+            b'\0' * 200000 + b'Linux version ' + NEW.encode() + b' (second banner)\0'))
+        self.update()
+        self.rollback()
+        self.assert_old_boot()
+
+    def test_missing_required_tool_has_explicit_error(self):
+        isolated = self.base / 'isolated-bin'
+        isolated.mkdir()
+        commands = ('grep tar mountpoint mktemp cp chmod sync mv stat df tail rm mkdir cat '
+                    'gzip awk sha256sum').split()
+        for command in commands:
+            (isolated / command).symlink_to(shutil.which(command))
+        for script in ('update-kernel.sh', 'rollback-kernel.sh'):
+            with self.subTest(script=script):
+                before = self.snapshot()
+                result = subprocess.run(
+                    ['/bin/bash', str(REPO / 'install' / script)],
+                    env=self.env | {'PATH': str(isolated)}, capture_output=True, text=True)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn('missing required command: depmod', result.stderr)
+                self.assertEqual(before, self.snapshot())
+
     def test_wrong_modules_rejected(self):
         self.mods = self.package('wrong-release', b'wrong')
         before = self.snapshot()

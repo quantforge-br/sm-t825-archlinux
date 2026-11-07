@@ -4,6 +4,9 @@
 # modules.tar: "tar -C <package>/lib/modules -cf modules.tar 7.3.1-t825"
 # ROOT redirects to an offline root with its boot partition mounted.
 set -euo pipefail
+for tool in grep tar depmod mountpoint mktemp cp chmod sync mv stat df tail rm mkdir cat gzip awk sha256sum; do
+    command -v "$tool" >/dev/null || { echo "missing required command: $tool" >&2; exit 1; }
+done
 mods=${1:?modules tar}; kernel=${2:?vmlinuz}; initramfs=${3:?initramfs}; dtb=${4:-}
 KVER=${KVER:-7.3.1-t825}
 ROOT=${ROOT:-}
@@ -15,8 +18,10 @@ mountpoint -q "$ROOT/boot" || { echo "$ROOT/boot is not mounted" >&2; exit 1; }
 # Consume the full streams: early exits could SIGPIPE gzip/tar under pipefail.
 tar -tf "$mods" | grep -Fx "$KVER/modules.dep" >/dev/null || { echo "$mods has no $KVER/modules.dep" >&2; exit 1; }
 release() {
-    gzip -dc -- "$1" | strings | awk '
-        !release && /^Linux version / {release=$3}
+    # grep scans binary data directly; binutils/strings is not required.
+    # Do not use grep -m1: consume gzip fully so CRC/truncation errors propagate.
+    LC_ALL=C gzip -dc -- "$1" | LC_ALL=C grep -ao 'Linux version [^[:space:][:cntrl:]]* ' | awk '
+        !release {release=$3}
         END {if (release) print release; else exit 1}'
 }
 if ! incoming=$(release "$kernel") || [[ "$incoming" != "$KVER" ]]; then

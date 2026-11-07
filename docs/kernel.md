@@ -200,8 +200,11 @@ including cdc_reset_active, the MultiMedia4 headset link, touch keys and jack su
    initramfs and the DTB `.prev` when present. During the 6.19.5 → 7.3.1 transition,
    the old modules remain in place and no modules archive is needed.
 
-Update validates the incoming gzip kernel's release against `KVER` before writing
-anything to `/boot`. To decide whether to archive modules, it reads the release
+Update checks its required commands up front and validates the incoming gzip
+kernel's release against `KVER` before writing anything to `/boot`. It scans the
+binary banner with `grep -a`, so `strings`/binutils is not required. Both scripts
+report missing commands explicitly; update consumes the entire gzip stream to
+check for corruption or truncation. To decide whether to archive modules, it reads the release
 from the **installed kernel that will become `.prev`**. This also works after a
 RAM test or with an offline root; the host's running kernel is irrelevant.
 When that release equals `KVER` and its module directory exists, update saves
