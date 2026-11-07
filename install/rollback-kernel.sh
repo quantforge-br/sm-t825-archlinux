@@ -3,7 +3,7 @@
 # Cross-release installs leave old modules in place, so no archive is needed.
 # Use the same ROOT as update-kernel.sh for an offline root.
 set -euo pipefail
-for tool in grep tar depmod mountpoint mktemp cp chmod sync mv stat df tail rm mkdir cat; do
+for tool in grep tar depmod mountpoint mktemp cp chmod sync mv stat df tail rm mkdir cat sha256sum; do
     command -v "$tool" >/dev/null || { echo "missing required command: $tool" >&2; exit 1; }
 done
 KVER=${KVER:-7.3.1-t825}
@@ -20,8 +20,29 @@ for f in "${files[@]}"; do
     sources+=("$f.prev")
 done
 if [ -f "$S/modules-prev.tar" ]; then
-    # KVER is the fallback for backups created by the legacy script.
-    if [ -f "$S/modules-version" ]; then KVER=$(cat "$S/modules-version"); fi
+    if [[ -e "$S/modules-binding" ]]; then
+        mapfile -t binding < "$S/modules-binding"
+        if [[ ${#binding[@]} != 3 || ! ${binding[1]:-} =~ ^[0-9a-f]{64}$ || ! ${binding[2]:-} =~ ^[0-9a-f]{64}$ ]]; then
+            echo "invalid modules-binding metadata; refusing module rollback" >&2
+            exit 1
+        fi
+        boot_hash=$(sha256sum "$ROOT/boot/vmlinuz-t825.prev")
+        archive_hash=$(sha256sum "$S/modules-prev.tar")
+        if [[ ${binding[1]} != "${boot_hash%% *}" || ${binding[2]} != "${archive_hash%% *}" ]]; then
+            echo "module backup generation mismatch: modules-prev.tar is not bound to the current vmlinuz-t825.prev; refusing rollback" >&2
+            exit 1
+        fi
+        KVER=${binding[0]}
+    else
+        # Legacy archives cannot prove which build they belong to. Require an
+        # explicit opt-in after the operator verifies their provenance.
+        if [[ ${ALLOW_LEGACY_MODULES:-0} != 1 ]]; then
+            echo "legacy module backup has no generation binding; verify it matches vmlinuz-t825.prev, then set ALLOW_LEGACY_MODULES=1 (and KVER=<previous-release> if modules-version is absent)" >&2
+            exit 1
+        fi
+        echo "warning: restoring an unverified legacy module backup (no generation binding)" >&2
+        if [ -f "$S/modules-version" ]; then KVER=$(cat "$S/modules-version"); fi
+    fi
     case "$KVER" in ''|.|..|*/*) echo "invalid backup KVER" >&2; exit 1;; esac
     tar -tf "$S/modules-prev.tar" | grep -Fx "$KVER/modules.dep" >/dev/null || {
         echo "modules-prev.tar has no $KVER/modules.dep (set KVER=<previous-release> for a legacy backup)" >&2

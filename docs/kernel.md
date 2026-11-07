@@ -215,7 +215,8 @@ On a release transition, even when `/usr/lib/modules/7.3.1-t825` was staged for
 the RAM test, update treats it as a fresh install: it removes any stale archive
 and `modules-version`, leaves the 6.19.5 modules intact, and installs the new
 modules. A legacy 6.19.5 archive without metadata needs
-`sudo KVER=6.19.5-t825 install/rollback-kernel.sh`; a mismatched archive produces
+`sudo ALLOW_LEGACY_MODULES=1 KVER=6.19.5-t825 install/rollback-kernel.sh` after
+verifying the archive belongs to the saved kernel; a mismatched archive produces
 an explicit error before restoration.
 
 The fourth DTB argument is optional for reinstalls that keep an already matching
@@ -245,7 +246,13 @@ a hard interruption requires inspection before retrying.
 Update stages the module backup archive and metadata, then publishes them
 immediately after the matching boot backups; cross-release archive removal also
 happens after boot backup publication. These steps span filesystems and are not
-an atomic transaction across the entire rollback slot.
+an atomic transaction across the entire rollback slot. `modules-binding` records
+three lines: release, SHA-256 of the saved kernel, and SHA-256 of the module archive.
+Rollback checks both hashes before changing anything and refuses mismatched or
+malformed binding metadata. This catches interrupted publication in either direction,
+including a stale archive after a cross-release boot backup. Legacy archives with
+no binding require `ALLOW_LEGACY_MODULES=1` after manual verification and print an
+unverified-backup warning. That option never bypasses a present but invalid binding.
 
 Keep the boot files and modules from the same build together. There is one
 rollback slot; **running update-kernel.sh twice replaces that slot twice**.

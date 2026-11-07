@@ -140,6 +140,13 @@ if [[ "$previous" == "$KVER" && -d "$ROOT/usr/lib/modules/$KVER" ]]; then
     metadata=$(mktemp "$S/modules-version.XXXXXX.tmp")
     temps+=("$metadata")
     printf '%s\n' "$KVER" > "$metadata"
+    binding=$(mktemp "$S/modules-binding.XXXXXX.tmp")
+    temps+=("$binding")
+    # Bind both artifacts so interruption between archive and metadata renames
+    # cannot silently pair a new archive with an old generation marker.
+    boot_hash=$(sha256sum "${temps[backups[0]]}")
+    archive_hash=$(sha256sum "$archive")
+    printf '%s\n%s\n%s\n' "$KVER" "${boot_hash%% *}" "${archive_hash%% *}" > "$binding"
 fi
 publish "${backups[@]}"
 # Publish module backup state only after the matching boot backups. A failure
@@ -148,9 +155,11 @@ if [[ -n "$archive" ]]; then
     sync
     mv -fT -- "$archive" "$S/modules-prev.tar"
     mv -fT -- "$metadata" "$S/modules-version"
+    mv -fT -- "$binding" "$S/modules-binding"
+    sync
 else
     # Staged new-release modules are a first install, not the previous kernel.
-    rm -f "$S/modules-prev.tar" "$S/modules-version"
+    rm -f "$S/modules-prev.tar" "$S/modules-version" "$S/modules-binding"
 fi
 # Without a DTB argument, the installed DTB stays in place. Drop an unrelated
 # old backup so rollback cannot restore a DTB from an earlier update.
