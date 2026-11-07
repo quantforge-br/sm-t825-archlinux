@@ -30,6 +30,7 @@ Revision numbers restart for 7.3.1; “r9–r13” below refers to 6.19.5 histor
 | Kernel 7.3.1 | r0 | Upstream 9f81231 series, retained config below, unchanged 0201 and rebased 0202 |
 | Device 1 | r6 | Upstream headset microphone, jack controls and WirePlumber ACP/jack setup |
 | Device 1 | r7 | Upstream accelerometer matrix and 12 Hz request, enabled by kernel patch 0143 |
+| Device 1 | r8 | Upstream TC305K Back/Recent input-events LED timeout rule |
 
 | Origin | Retained in 7.3.1-r0 | Purpose |
 |---|---|---|
@@ -126,6 +127,12 @@ Arch's `/etc` override retains this repo's Hyprland matrix and repeats the same
 rate rule, because `/etc` replaces the entire `/usr/lib` rule of the same name.
 The rootfs builder already copies the device's WirePlumber audio config into
 `/etc/wireplumber/wireplumber.conf.d/51-gts3lwifi-audio.conf`.
+
+The device package and rootfs builder also install upstream `61-gts3-keys.rules`:
+TC305K Back/Recent LEDs use the `input-events` trigger and turn off after five
+seconds without input. This is independent of KDE key mappings. We exclude
+`61-gts3-keys.hwdb` (it maps Home to Meta, breaking the Hyprland Home bind) and
+`gts3-kglobalshortcutsrc`.
 
 Upstream's newer GNSS services/dependencies, TrustZone firmware extraction and
 KDE key mappings are not needed for this SM-T825 kernel migration and are not
