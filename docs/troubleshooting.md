@@ -1,5 +1,8 @@
 # Troubleshooting and recovery
 
+These hardware observations come from the previous 6.19.5-r13 release. The 7.3.1
+source package needs SM-T825 runtime validation; see [kernel notes](kernel.md).
+
 ## Key combinations
 
 | Keys (hold while powering on) | Result |
@@ -26,13 +29,19 @@ partitions, fix extlinux.conf or rewrite a partition with `install/flash-partiti
 ## Kernel update went wrong
 
 Boot the previous kernel from RAM with `fastboot boot`, then `sudo install/rollback-kernel.sh`.
+For the 6.19.5-t825 → 7.3.1-t825 transition, leave the old module directory in place;
+rollback can restore the boot files without `modules-prev.tar`. Same-release
+reinstalls restore their saved modules too. Restore the previous DTB manually if
+you replaced it; see [the update procedure](kernel.md#updating-and-rolling-back-on-the-tablet).
 If extlinux.conf has a second label pointing at older files, change `default` to it.
 
 ## No sound / audio card missing
 
 `wpctl status` should list "Speakers". If the card has only "off" and "pro-audio" profiles, the
-UCM file is the pmaports one that routes audio to a back-end that does not exist on this device
-tree; `rootfs/files/ucm-HiFi.conf` fixes that. The nodes can take a few seconds to appear after
+UCM file may be an older version that routes audio to a missing back-end. The
+current device UCM and `rootfs/files/ucm-HiFi.conf` both gate the top route on its
+controls and include the new jack/headset support. Update the UCM and device
+`51-gts3lwifi-audio.conf` together. The nodes can take a few seconds to appear after
 PipeWire starts.
 
 ## The desktop restarts while a browser is open
@@ -49,7 +58,7 @@ opens or while it loads a page. This is a GPU hang, not memory:
 
 Fixes, both in this repository:
 
-1. Kernel r13 or newer: a hang in another process no longer counts as a reset for Hyprland
+1. Patch 0201 (tested on 6.19.5-r13, retained in 7.3.1-r0 but untested there): a hang in another process no longer counts as a reset for Hyprland
    ([kernel.md](kernel.md#gpu-hangs-and-the-compositor-patch-0201)).
 2. `--disable-gpu-rasterization` for the browser (`desktop/install.sh` adds it to
    `~/.config/brave-origin-flags.conf`, `brave-flags.conf` and `chromium-flags.conf`).

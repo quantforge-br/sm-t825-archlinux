@@ -1,43 +1,97 @@
 # Kernel
 
-The kernel is postmarketOS' `linux-postmarketos-qcom-msm8996` 6.19.5 with the Galaxy Tab S3
-patches from [wh1ter0z3/gts3lwifi-mainline](https://github.com/wh1ter0z3/gts3lwifi-mainline),
-built with pmbootstrap. It reports itself as `6.19.5-t825`.
+The source package is `linux-postmarketos-qcom-msm8996` **7.3.1-r0**, with release
+string **7.3.1-t825** and modules in `/usr/lib/modules/7.3.1-t825` on Arch
+(`/lib/modules/7.3.1-t825` inside the APK). It replaces the previous 6.19.5-r13
+source package. The files in `release/` remain the previous 6.19.5 release.
 
-## Sources in this repository
+## Sources and relation to upstream
 
-- `pmaports/linux-postmarketos-qcom-msm8996/`: the complete package (APKBUILD, config, patches
-  0001-0114, 0122-0123 and 0201). Copy it over `device/testing/linux-postmarketos-qcom-msm8996` of a pmaports checkout
-  at commit `367abb3e17df1299380271c9e52c0824fc7378d3` (2026-11-01).
-- `pmaports/device-samsung-gts3lwifi/`: the device package (deviceinfo, UCM, udev rules,
-  gts3-bdaddr, gts3-firmware). It covers both the SM-T820 and the SM-T825.
-- `pmaports/pmaports-367abb3e-kernel.diff`: APKBUILD and config against that pmaports commit.
+The baseline is [wh1ter0z3/gts3lwifi-mainline at 9f81231ac11893d46d4b6a8af7abe8e3c863ad05](https://github.com/wh1ter0z3/gts3lwifi-mainline/tree/9f81231ac11893d46d4b6a8af7abe8e3c863ad05).
+All 194 upstream patches are byte-identical: 70 `m001`–`m071` patches (no m056),
+and 124 numbered patches from `0001` through `0182`, with upstream's gaps and
+APKBUILD order. The package uses the kernel.org 7.3.1 tarball; msm8996-mainline's
+last base tag was 6.19.5. Upstream's `APKBUILD.pmaports` is named `APKBUILD` here,
+with our pkgrel reset to 0, config checksum and two appended local patches.
+No a5xx hangcheck backport is included.
 
-## Relation to upstream
+Copy the complete directories in `pmaports/` to `device/testing/` in a pmaports
+checkout at **367abb3e17df1299380271c9e52c0824fc7378d3**. This base still provides
+the package build dependencies and device packaging used here; both packages are
+built against it. `pmaports/pmaports-367abb3e-kernel.diff` records only APKBUILD
+and config against that base; use the complete package directory for the patches.
 
-Patches 0001-0113 and the base config are byte-identical to upstream commit
-`363ed942cc761d7be7cf16ebc8b3d1dc358998d1` (2026-11-01, "kernel r8"). On top of that:
+### Package revisions and retained deltas
 
-| pkgrel | Change | Why |
+Revision numbers restart for 7.3.1; “r9–r13” below refers to 6.19.5 history.
+
+| Package | Revision | Contents |
 |---|---|---|
-| r9 | `CONFIG_LOCALVERSION="-t825"` | modules go to `/usr/lib/modules/6.19.5-t825` and do not clash with an older 6.19.5 |
-| r9 | `CONFIG_SECURITY_LANDLOCK=y`, first in `CONFIG_LSM` | pacman 7 sandboxes its downloads with Landlock |
-| r9 | `CONFIG_NETFILTER_XT_CONNMARK`, `_MATCH_CONNMARK`, `_TARGET_CONNMARK` (=m) | Tailscale's rp_filter workaround |
-| r10 | `CONFIG_BT_RFCOMM` (+TTY), `CONFIG_BT_BNEP` (+filters) (=m) | Bluetooth hands-free profiles and PAN |
-| r10 | `# CONFIG_SECURITY_SELINUX is not set` | the symbol was missing and the build stopped to ask |
-| r11 | `CONFIG_LRU_GEN=y`, `CONFIG_LRU_GEN_ENABLED=y` | Multi-Gen LRU: better reclaim with 3.5 GiB RAM, thrashing protection (`min_ttl_ms`) |
-| r11 | `CONFIG_TRANSPARENT_HUGEPAGE_MADVISE=y` (was ALWAYS) | huge pages only where requested |
-| r11 | patch `0114-arm64-dts-qcom-gts3llte-top-speakers.patch` | enables the top speaker pair on the SM-T825 (below) |
-| r12 | patches `0122` and `0123` from upstream commit `007853c` | GPU mappings of a shared buffer stay until the last reference goes; fixes TRANSLATION faults when a buffer is shared between processes |
-| r13 | patch `0201-drm-msm-shared-vm-hang-accounting.patch` | a GPU hang no longer looks like a reset to every other process (below) |
+| Kernel 7.3.1 | r0 | Upstream 9f81231 series, retained config below, unchanged 0201 and rebased 0202 |
+| Device 1 | r6 | Upstream headset microphone, jack controls and WirePlumber ACP/jack setup |
+| Device 1 | r7 | Upstream accelerometer matrix and 12 Hz request, enabled by kernel patch 0143 |
 
-### Top speakers (patch 0114)
+| Origin | Retained in 7.3.1-r0 | Purpose |
+|---|---|---|
+| r9 | `CONFIG_LOCALVERSION="-t825"` | Separate release/module directory |
+| r9 | `CONFIG_SECURITY_LANDLOCK=y`; `landlock` first in `CONFIG_LSM` | pacman download sandbox |
+| r9 | `CONFIG_NETFILTER_XT_CONNMARK=m`, `CONFIG_NETFILTER_XT_MATCH_CONNMARK=m`, `CONFIG_NETFILTER_XT_TARGET_CONNMARK=m` | Tailscale connmark support |
+| r10 | `CONFIG_BT_RFCOMM=m`, `CONFIG_BT_RFCOMM_TTY=y`, `CONFIG_BT_BNEP=m`, `CONFIG_BT_BNEP_MC_FILTER=y`, `CONFIG_BT_BNEP_PROTO_FILTER=y` | Bluetooth RFCOMM/PAN |
+| r10 | `# CONFIG_SECURITY_SELINUX is not set` | Explicit noninteractive configuration |
+| r11 | `CONFIG_LRU_GEN=y`, `CONFIG_LRU_GEN_ENABLED=y` | Multi-Gen LRU |
+| r11 | `CONFIG_TRANSPARENT_HUGEPAGE_MADVISE=y`; ALWAYS disabled | Huge pages on request |
+| r11 | 0114 → 0202 | SM-T825 top speakers |
+| r12 | Upstream 0122 and 0123 | Shared-buffer GPU mappings; these remain upstream patches |
+| r13 | 0201 | Shared-VM GPU hang accounting |
 
-Upstream's gts3llte device tree leaves the top speaker pair out ("until checked") and reserves TLMM
-GPIOs 58-61. The stock SM-T825 device trees show that those pins are the quaternary TDM bus there as
-well, so 0114 drops the reservation and adds the quaternary TDM link and both RT5508 amplifiers
-(0x34, 0x35). Checked on hardware: four speakers play, top pair left channel, bottom pair right
-(landscape, Home on the right).
+The normalized config also records the build toolchain (Alpine clang 23.1.5),
+Landlock's selected SECURITY_NETWORK/PATH and logging default, and the MGLRU
+WALKS_MMU selection (STATS remains off). These are consequences of the requested
+config and `olddefconfig`, not extra tuning. Upstream disables CRYPTO_DEV_QCE
+because 7.3 marks it BROKEN on ARCH_QCOM; CPU crypto extensions remain available.
+
+### Patch accounting
+
+Source: [upstream migration notes at the pinned commit](https://github.com/wh1ter0z3/gts3lwifi-mainline/blob/9f81231/docs/kernel-7.3.md).
+The commit IDs below were checked in mainline history as ancestors of v7.3
+(and the eight SLIMbus fixes as ancestors of v7.1), hence included in 7.3.1.
+A reverse-apply failure alone is not evidence that a patch is absent.
+
+| Was | Mainline | Subject |
+|---|---|---|
+| 0056 | 185cd1d8cb | dt-bindings: Input: Add Wacom W9000-series penabled touchscreens |
+| 0057 | acaefbacc9 | Input: Add support for Wacom W9000-series penabled touchscreens |
+| 0064 | 9a29ee801f | Input: rmi4 - use platform data instead of query, when available |
+| 0086 | ec35c19696 | usb: gadget: f_ncm: Fix net_device lifecycle with device_move |
+| 0087 | e002e92e88 | usb: gadget: u_ether: Fix NULL pointer deref in eth_get_drvinfo |
+| 0105 | 120134fe75 | slimbus: qcom-ngd-ctrl: fix OF node refcount |
+| 0106 | 8663e8334d | slimbus: qcom-ngd-ctrl: Fix up platform_driver registration |
+| 0107 | 2c22ff152d | slimbus: qcom-ngd-ctrl: Fix probe error path ordering |
+| 0108 | 960b53a3f7 | slimbus: qcom-ngd-ctrl: Correct PDR and SSR cleanup ownership |
+| 0109 | 2a9d50e9ea | slimbus: qcom-ngd-ctrl: Register callbacks after creating the ngd |
+| 0110 | 07c564ea5f | slimbus: qcom-ngd-ctrl: Initialize controller resources in controller |
+| 0111 | 6a003446b7 | slimbus: qcom-ngd-ctrl: Balance pm_runtime enablement for NGD |
+| 0112 | 55f2ea9ff8 | slimbus: qcom-ngd-ctrl: Avoid ABBA on tx_lock/ctrl->lock |
+| 0113 | 8a066a81ee | ASoC: qcom: q6asm: drop DSP responses for closed data streams |
+| msm8996 SSR-notifier patch | no one-to-one commit | slimbus: qcom-ngd-ctrl: Register SSR notifier after all initialization steps: 7.3.1 registers it at the end of probe |
+| old 0011 | cee3e63e71 | Stopped-stream handling is in mainline; replaced by upstream’s reduced `0011-asoc-qcom-q6asm-dai-reset-queue-ptr-on-prepare.patch`, not dropped wholesale |
+| our 0114 | not in mainline | Renamed and rebased as 0202; upstream now uses 0114 for the I2C hot-plug binding |
+
+Upstream's migration document counts the earlier 0001–0148 snapshot (112 patches);
+9f81231 contains 124 numbered patches, including touch keys, headset detection,
+GPU memory OPPs and Venus crop handling through 0182. Patches 0122/0123 are still
+needed: mainline 00dfa76bdfc2 supplies their 7.3 API context, not their fixes.
+
+### Top speakers (patch 0202)
+
+Our former 0114 is now `0202-arm64-dts-qcom-gts3llte-top-speakers.patch`.
+It removes the LTE overrides that reserve TLMM 58–61 and delete the top-speaker
+link. The LTE tree inherits the quaternary TDM pinctrl/link and RT5508 amplifiers
+at 0x34 and 0x35 from the Wi-Fi tree; TLMM 25–28 stay reserved. Both SPI/I2C
+controllers sharing the quaternary pins remain disabled. Decompiled package DTBs
+verify this layout. All four speakers played on this repo's 6.19.5 build (top left,
+bottom right in landscape with Home on the right); 7.3.1 on the SM-T825 is untested
+here and must repeat that check.
 
 ### GPU hangs and the compositor (patch 0201)
 
@@ -51,7 +105,7 @@ reset handling is implemented"). A browser hanging the GPU therefore restarted t
 
 0201 does not count hangs on the shared address space. The process that hung the GPU still reads
 `GL_GUILTY_CONTEXT_RESET` (from its submit queue), and the others see no reset, which is
-what GPUs with per-process page tables already do. Tested with `tools/gpuhang.c`, a shader
+what GPUs with per-process page tables already do. Tested on 6.19.5 with `tools/gpuhang.c`, a shader
 that never ends: with r12 Hyprland restarted at the first hang, with r13 it kept running.
 
 What 0201 cannot fix: the A530 does not always come back cleanly from a reset. Sometimes the next
@@ -59,34 +113,107 @@ submits hang as well (the kernel log shows "ME master split" and another "hangch
 lockup"), and if one of them is Hyprland's, Hyprland is the guilty one and still exits. So the
 browser flag in `desktop/browser/chromium-flags.conf` matters more: it removes the hangs.
 
-### Upstream since then
+The patch is retained unchanged and compiles on 7.3.1. Its runtime behavior must
+be rechecked on the SM-T825; the earlier r13 result is not a 7.3.1 test.
 
-Upstream has moved on (patches 0114-0148 there: Book Cover Keyboard hot-plug, SLPI sensor
-timestamps, GPU fault fixes, display resume). Only the GPU fault fix (0122-0123) is in this kernel.
-Note that upstream's 0114 is a different patch from ours, and 0201 is our number for a patch
-upstream does not have.
+## Device files
 
-## Building
+The headset UCM and `51-gts3lwifi-audio.conf` match upstream 9f81231. The Arch
+`rootfs/files/ucm-HiFi.conf` is identical to the device UCM; routing the top pair
+remains conditional on its controls. The device accelerometer rule matches
+upstream, including `in_accel_sampling_frequency="12"` (about 12.5 Hz).
+Arch's `/etc` override retains this repo's Hyprland matrix and repeats the same
+rate rule, because `/etc` replaces the entire `/usr/lib` rule of the same name.
+The rootfs builder already copies the device's WirePlumber audio config into
+`/etc/wireplumber/wireplumber.conf.d/51-gts3lwifi-audio.conf`.
 
-    pmbootstrap build --force linux-postmarketos-qcom-msm8996
+Upstream's newer GNSS services/dependencies, TrustZone firmware extraction and
+KDE key mappings are not needed for this SM-T825 kernel migration and are not
+imported. The LTE modem DSP is still disabled in this tree; GNSS/LTE enablement
+is a separate task. Arch retains its firmware extraction and desktop key policy.
 
-About 5 minutes on a 16-core x86_64 host (cross-compiled with clang). The package lands in
-`$(pmbootstrap config work)/packages/edge/aarch64/`. `release/` has the r13 package and its
-`vmlinuz` and device trees for reference.
+## Build and validation
 
-## Updating the kernel on the tablet
+Use an isolated pmbootstrap configuration, for example the one used for this move:
 
-The kernel lives in `/boot` (the ext2 on `cache`), which pacman never touches.
+```sh
+pmbootstrap --config /var/tmp/polly-kernel73/pmbootstrap.cfg build --force linux-postmarketos-qcom-msm8996
+pmbootstrap --config /var/tmp/polly-kernel73/pmbootstrap.cfg build --force device-samsung-gts3lwifi
+```
 
-1. Build the package and refresh the initramfs: `FIRMWARE_DIR=... install/make-initramfs.sh out/boot`.
-2. Test from RAM: run `t825-reboot-fastboot` on the tablet, then
-   `KERNEL=out/boot/vmlinuz INITRAMFS=out/boot/initramfs DTB_DIR=out/boot/dtbs
-   CMDLINE_EXTRA="pmos_root_uuid=<root uuid> pmos_rootfsopts=<options>" install/make-boot-image.sh test.img`
-   and `fastboot boot test.img`. Use the `append` line of your extlinux.conf for the two values.
-3. Install: copy the modules tar (`tar -C <pkg>/lib/modules -cf modules.tar 6.19.5-t825`), vmlinuz,
-   initramfs and, if it changed, `dtbs/qcom/msm8996-samsung-gts3llte.dtb` to the tablet, then
-   `sudo install/update-kernel.sh modules.tar vmlinuz initramfs`. `install/rollback-kernel.sh`
-   restores the previous set.
+The APKs land in `/var/tmp/polly-kernel73/work/packages/edge/aarch64/`. Inspect
+`boot/vmlinuz` (gzip-decompress it before `strings`), both DTBs under `boot/dtbs/qcom/`,
+and the build's `.config` or the embedded IKCONFIG with Linux's
+`scripts/extract-ikconfig`. The expected version is `Linux version 7.3.1-t825`.
+Check all retained config symbols above and decompile the LTE DTB with `dtc -I dtb -O dts`.
+Build and static checks are host evidence; they do not validate tablet hardware.
 
-Every build has the same release string, so modules, `vmlinuz-t825` and `initramfs-t825` must be
-changed together.
+## Updating and rolling back on the tablet
+
+The kernel lives in `/boot` (ext2 on `cache`), which pacman never touches.
+Keep a known-good 6.19.5 test image and its device tree for recovery.
+
+1. Build both packages and refresh your pmbootstrap rootfs/initramfs. With your
+   own isolated config, use a wrapper as `PMB` for `install/make-initramfs.sh`
+   (the wrapper must pass `--config /path/to/pmbootstrap.cfg`). Run
+   `PMB=/path/to/wrapper FIRMWARE_DIR=... install/make-initramfs.sh /var/tmp/t825-boot`.
+   Copy the new modules to the tablet's `/usr/lib/modules/7.3.1-t825` before the
+   RAM test; leave `/usr/lib/modules/6.19.5-t825` intact. Userspace may need modules
+   not in the initramfs during the RAM boot.
+2. **Test from RAM first.** On the tablet run `t825-reboot-fastboot`; on the host:
+
+   ```sh
+   KERNEL=/var/tmp/t825-boot/vmlinuz INITRAMFS=/var/tmp/t825-boot/initramfs \
+     DTB_DIR=/var/tmp/t825-boot/dtbs \
+     CMDLINE_EXTRA="pmos_root_uuid=<root uuid> pmos_rootfsopts=<options>" \
+     install/make-boot-image.sh /var/tmp/t825-test.img
+   fastboot boot /var/tmp/t825-test.img
+   ```
+
+   Use the `append` line of your extlinux.conf for the root values. Check Hyprland
+   and `tools/gpuhang.c`, all four speakers, headset insertion/removal and mic,
+   repeated suspend plus Wi-Fi after resume, sensors/rotation, both cameras,
+   Venus decode/encode, S Pen, touch and charging. These are pending human tests.
+3. After the RAM test passes, boot the old installed kernel before updating.
+   Make the archive with `tar -C <extracted-apk>/lib/modules -cf modules.tar 7.3.1-t825`.
+   Copy it, vmlinuz and initramfs to the tablet. Back up the old
+   `/boot/dtbs/qcom/msm8996-samsung-gts3llte.dtb` as `.prev`, then install the new
+   DTB from the package. Run `sudo install/update-kernel.sh modules.tar vmlinuz initramfs`
+   and reboot. The script manages modules and the two boot files; DTB replacement
+   and its backup are manual.
+4. To roll back, boot the known-good RAM image if necessary, restore the saved DTB,
+   then run `sudo install/rollback-kernel.sh` and reboot. During the 6.19.5 → 7.3.1
+   transition the old modules remain in place, so restoring vmlinuz/initramfs is
+   sufficient for the kernel/modules pair even without `modules-prev.tar`.
+
+For same-release reinstalls, update saves the replaced module directory in
+`/var/tmp/t825-kernel/modules-prev.tar` and records its release in `modules-version`;
+rollback restores that archive along with the boot files. A first install of a
+new release removes a stale archive instead of trying to back up a nonexistent
+directory. A legacy 6.19.5 archive without metadata needs
+`sudo KVER=6.19.5-t825 install/rollback-kernel.sh`. Keep the boot files and modules
+from the same build together. There is one rollback slot; each update replaces it.
+`ROOT=/path/to/offline-root` redirects both scripts (its `/boot` must be mounted).
+
+## Runtime evidence, risks and follow-ups
+
+This repo's 7.3.1 build is **untested on the SM-T825**. Upstream's older migration
+notes describe T820 testing only. Its [newer README at 9f81231](https://github.com/wh1ter0z3/gts3lwifi-mainline/blob/9f81231/README.md#needs-testing)
+records one T825 tester's successful 7.3.1 boot, smooth UI, Wi-Fi and audio on
+`t825-modem` (main plus modem work), not this exact build. Do not generalize it to
+our device tree, Arch userspace or the rest of the hardware.
+
+Upstream tested four consecutive 20-second s2idle cycles on the T820 with patches
+0147 (keep PCIe link/Wi-Fi power) and 0148 (MDP5 resume pipe assignment), with
+Wi-Fi traffic after resume. Suspend and Wi-Fi resume remain untested here on T825.
+
+Upstream's migration notes report more `pclk0_clk_src: rcg didn't update its
+configuration` warnings (picture still correct), intermittent Bluetooth
+`Opcode 0x0c03 failed: -110` at boot (also present on 6.19), and occasional
+`wcd9335: overflow error on TX port 1` at capture start (recordings played back).
+A failed Bluetooth controller recovered upstream with `rmmod hci_uart; modprobe hci_uart`.
+7.3.x is not a long-term base and will reach EOL; plan a later supported-kernel move.
+
+Follow-ups: hardware validation above; evaluate the a5xx hangcheck backport
+`65222fbe8` separately (out of scope here); track the clock, Bluetooth and WCD9335
+issues; update published binaries only after tablet testing.

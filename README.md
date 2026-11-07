@@ -1,7 +1,7 @@
 # Arch Linux ARM on the Samsung Galaxy Tab S3 LTE (SM-T825)
 
 Native Arch Linux ARM (aarch64) on the Galaxy Tab S3 LTE, codename **gts3llte**, with a mainline
-6.19 kernel. The tablet boots on its own without a PC: Samsung's S-Boot starts
+7.3.1 kernel source package. The tablet boots on its own without a PC: Samsung's S-Boot starts
 [lk2nd](https://github.com/msm8916-mainline/lk2nd), lk2nd boots Linux from an extlinux.conf, and
 Arch comes up with Wi-Fi, Bluetooth, audio, cameras, sensors and an optional Hyprland desktop.
 
@@ -10,8 +10,9 @@ a postmarketOS port that targets mostly the Wi-Fi model (SM-T820). This reposito
 Arch Linux ARM on the LTE model instead, and holds what that takes beyond upstream: scripts, a few
 kernel changes, configuration and the tested lk2nd image.
 
-> Everything here was tested on one SM-T825 with bootloader **T825UBU3CUF1**. Read the warnings
-> before you start: this replaces Android.
+> The previous 6.19.5-r13 release was tested on one SM-T825 with bootloader **T825UBU3CUF1**.
+> The 7.3.1 source package is build-tested only here; first test it from RAM ([kernel notes](docs/kernel.md)).
+> Read the warnings before you start: this replaces Android.
 
 ## Contents
 
@@ -27,6 +28,8 @@ kernel changes, configuration and the tested lk2nd image.
 - [Credits](#credits)
 
 ## What works
+
+The following describes the previous 6.19.5-r13 hardware results, pending revalidation on 7.3.1:
 
 Display and GPU (Adreno 530, freedreno), touchscreen, S-Pen, power/volume/Home keys, Wi-Fi,
 Bluetooth, all four speakers, both microphones, front and rear cameras (libcamera), hardware video
@@ -58,7 +61,7 @@ S-Boot (Samsung, unlocked)
 ## Differences from upstream
 
 Upstream: [wh1ter0z3/gts3lwifi-mainline](https://github.com/wh1ter0z3/gts3lwifi-mainline), commit
-`363ed94` (2026-11-01, kernel r8), which this work is based on.
+`9f81231` (Linux 7.3.1), which the current kernel package follows.
 
 | | Upstream | This repository |
 |---|---|---|
@@ -66,8 +69,8 @@ Upstream: [wh1ter0z3/gts3lwifi-mainline](https://github.com/wh1ter0z3/gts3lwifi-
 | Boot | pmOS boot.img stored behind lk2nd in `boot` | extlinux.conf on `cache` as ext2; kernels are files in `/boot` |
 | Root file system | pmOS install on `userdata` | ext4 on `system`, optionally btrfs over `userdata` + `system` (28.3 GiB) |
 | lk2nd for gts3llte | built, "not tested on hardware" | the image used here, tested on an SM-T825 ([docs/lk2nd.md](docs/lk2nd.md)) |
-| Kernel | r8 | r13 = r8 + Landlock, connmark, RFCOMM/BNEP, MGLRU, THP madvise, `-t825` release suffix, upstream's shared-buffer GPU fix, GPU hang accounting ([docs/kernel.md](docs/kernel.md)) |
-| Top speakers on the SM-T825 | left out "until checked" | enabled (patch 0114); all four speakers play |
+| Kernel | 7.3.1-r3 | 7.3.1-r0 with Landlock, connmark, RFCOMM/BNEP, MGLRU, THP madvise, `-t825`, GPU hang accounting and top speakers ([docs/kernel.md](docs/kernel.md)) |
+| Top speakers on the SM-T825 | left out "until checked" | enabled (0202, formerly 0114); four speakers tested on 6.19.5 only |
 | Firmware | `gts3-firmware` copies it from Android at every boot | extracted once from your partition dumps into the image and the initramfs (Android is gone) |
 | Accelerometer mount matrix (SM-T825) | `1,0,0; 0,-1,0; 0,0,-1`, for KWin's panel orientation handling | `0,-1,0; -1,0,0; 0,0,1` for Hyprland and `t825-autorotate` |
 | Bluetooth address helper | `gts3-bdaddr` | same, plus a retry that rebinds the UART driver when hci0 does not come up |
@@ -76,8 +79,10 @@ Upstream: [wh1ter0z3/gts3lwifi-mainline](https://github.com/wh1ter0z3/gts3lwifi-
 | GPU hangs from browsers | (Plasma) | Chromium-based browsers rasterize on the CPU; another process's GPU hang is no longer a reset for the compositor (patch 0201) |
 | Fastboot from a running system | erase the image behind lk2nd | `t825-reboot-fastboot` hides extlinux.conf for one boot |
 
-Upstream has continued since r8 (Book Cover Keyboard hot-plug, sensor timestamps, GPU fault fixes,
-display resume). Of those, only the GPU fault fix (0122-0123) is in this kernel.
+This kernel includes upstream's Book Cover Keyboard hot-plug, sensor timestamps/rate control,
+shared-buffer GPU fixes, display resume, touch keys, headset jack and Venus updates through 0182.
+Upstream tested suspend with Wi-Fi resume on the T820; those results still need repeating on T825.
+One upstream tester reported a T825 7.3.1 boot on main plus modem work; this exact build is untested.
 
 ## Warnings
 
@@ -156,6 +161,7 @@ pmbootstrap -p ~/pmaports-t825 init
 #   user interface: console, init system: systemd
 pmbootstrap config aports          # must print ~/pmaports-t825
 pmbootstrap build --force linux-postmarketos-qcom-msm8996
+pmbootstrap build --force device-samsung-gts3lwifi
 pmbootstrap install --no-image     # fills chroot_rootfs_samsung-gts3lwifi; asks for a password
 ```
 
@@ -294,7 +300,7 @@ gh release download --repo quantforge-br/sm-t825-archlinux --pattern '*' --dir r
 | File | SHA-256 | What |
 |---|---|---|
 | `lk2nd-gts3llte-23.1-fd380ac6.img` | `436ba23f...ce96a` | lk2nd for the SM-T825, tested |
-| `linux-postmarketos-qcom-msm8996-6.19.5-r13.apk` | `43cf1ac7...b882c` | kernel package r13 (modules, vmlinuz, device trees) |
+| `linux-postmarketos-qcom-msm8996-6.19.5-r13.apk` | `43cf1ac7...b882c` | previous 6.19.5 kernel package r13 (modules, vmlinuz, device trees) |
 | `vmlinuz-6.19.5-t825-r13` | `a304d67e...` | the kernel from that package |
 | `msm8996-samsung-gts3llte.dtb` | `b1f1bd62...` | SM-T825 device tree with the top speakers |
 | `apq8096-samsung-gts3lwifi.dtb` | `fd727baa...` | SM-T820 device tree, appended next to the SM-T825 one in boot images |
@@ -326,11 +332,12 @@ initramfs, boot images, the boot file system and the rootfs image. Steps 5-8 mak
 ## License
 
 - Scripts, tools, desktop files and documentation: MIT, see [LICENSE](LICENSE).
-- Kernel patches in `pmaports/linux-postmarketos-qcom-msm8996/`, including ours (0114, 0201):
+- Kernel patches in `pmaports/linux-postmarketos-qcom-msm8996/`, including ours (0201, 0202):
   GPL-2.0, like the Linux kernel. Device tree changes follow the SPDX headers of the files they patch.
 - Everything else that comes from postmarketOS pmaports or from wh1ter0z3/gts3lwifi-mainline (the
   APKBUILDs, the device package, the device files in `rootfs/files/` taken from it) keeps the
   license of its source.
 - Release binaries: the kernel package and `vmlinuz` are GPL-2.0; their sources are `pmaports/`
-  plus the kernel tarball named in the APKBUILD. lk2nd is under the licenses of
+  plus the kernel tarball named in the APKBUILD at that release's source revision (the current
+  source package is 7.3.1). lk2nd is under the licenses of
   [its repository](https://github.com/msm8916-mainline/lk2nd).
