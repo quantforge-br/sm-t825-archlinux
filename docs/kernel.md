@@ -232,8 +232,27 @@ This needs space for the staged copies as well as the installed files and any
 existing backups. Individual renames are atomic; a power loss between renames
 can still interrupt the set, so keep the known-good RAM image available.
 
+Module extraction in both scripts goes into `/usr/lib/modules/.$KVER.new` using
+a private `lib/modules/$KVER` layout. `depmod` runs against that staged tree before
+any installed modules move. After successful extraction/indexing, the current
+directory moves to `.$KVER.old`, the new directory takes its place, and the old
+directory is removed. Failed extraction or indexing leaves the installed modules
+untouched; a failed second rename restores the old directory. Rollback prints
+the release and destination path before swapping. Staging needs enough free
+space on the module filesystem for both trees. An unfinished `.new`/`.old` from
+a hard interruption requires inspection before retrying.
+
+Update stages the module backup archive and metadata, then publishes them
+immediately after the matching boot backups; cross-release archive removal also
+happens after boot backup publication. These steps span filesystems and are not
+an atomic transaction across the entire rollback slot.
+
 Keep the boot files and modules from the same build together. There is one
-rollback slot; each update replaces it. `ROOT=/path/to/offline-root` redirects
+rollback slot; **running update-kernel.sh twice replaces that slot twice**.
+After the first 6.19.5 → 7.3.1 update, `.prev` contains 6.19.5. A second run,
+even with identical inputs, makes 7.3.1 the `.prev` kernel and saves its modules;
+rollback then returns to 7.3.1. Keep a separate recovery image if you need 6.19.5.
+`ROOT=/path/to/offline-root` redirects
 both scripts (its `/boot` must be mounted). Run `python3 install/test-kernel-scripts.py`
 for the fake-root tests, including staged modules, same-release reinstalls,
 legacy metadata, DTBs, invalid inputs, free-space checks and failed copies.

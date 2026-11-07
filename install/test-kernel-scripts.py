@@ -25,13 +25,33 @@ class KernelScripts(unittest.TestCase):
         self.bin = self.base / 'bin'
         self.bin.mkdir()
         self.env = dict(os.environ, ROOT=str(self.root), PATH=str(self.bin) + ':' + os.environ['PATH'])
-        for key in ('KVER', 'FAIL_COPY_MATCH', 'LOW_SPACE'):
+        for key in ('KVER', 'FAIL_COPY_MATCH', 'LOW_SPACE', 'FAIL_EXTRACT', 'FAIL_DEPMOD',
+                    'FAIL_MV_MATCH'):
             self.env.pop(key, None)
         real_cp = shutil.which('cp')
         real_df = shutil.which('df')
+        real_tar = shutil.which('tar')
+        real_mv = shutil.which('mv')
         mocks = {
             'mountpoint': 'test "$1" = -q && test -d "$2"',
-            'depmod': 'test "$1" = -b && test -f "$2/usr/lib/modules/$4/modules.dep"',
+            'depmod': '''test "${FAIL_DEPMOD:-}" != 1 || { echo 'injected depmod failure' >&2; exit 1; }
+test "$1" = -b && test "$3" = -m && test "$4" = /lib/modules && test "$5" = -a
+test -f "$2/lib/modules/$6/modules.dep"''',
+            'tar': f'''if [[ "${{FAIL_EXTRACT:-}}" == 1 && " $* " == *" -xf "* ]]; then
+    printf partial > "$2/partial-extract.ko"
+    echo 'injected tar extraction failure' >&2
+    exit 1
+fi
+exec {real_tar} "$@"''',
+            'mv': f'''if [[ -n "${{FAIL_MV_MATCH:-}}" && "${{@: -1}}" == "$FAIL_MV_MATCH" ]]; then
+    # Fail once so the EXIT trap can restore the original directory.
+    if [[ ! -e "$ROOT/mv-failed" ]]; then
+        touch "$ROOT/mv-failed"
+        echo 'injected rename failure' >&2
+        exit 1
+    fi
+fi
+exec {real_mv} "$@"''',
             'sync': 'exit 0',
             'cp': f'''if [[ -n "${{FAIL_COPY_MATCH:-}}" && "${{@: -1}}" == *"$FAIL_COPY_MATCH"* ]]; then
     printf truncated > "${{@: -1}}"
@@ -85,6 +105,8 @@ fi''',
                                 env=self.env | (extra or {}), capture_output=True, text=True)
         self.assertEqual(result.returncode == 0, success, result.stdout + result.stderr)
         self.assertFalse(list(self.root.rglob('*.tmp')), 'temporary files leaked')
+        self.assertFalse(list(self.root.glob('usr/lib/modules/.*.new')), 'module staging leaked')
+        self.assertFalse(list(self.root.glob('usr/lib/modules/.*.old')), 'old modules leaked')
         return result
 
     def update(self, dtb=True, **kwargs):
@@ -208,6 +230,90 @@ fi''',
         before = self.snapshot()
         self.rollback(success=False)
         self.assertEqual(before, self.snapshot())
+
+    def same_release_setup(self):
+        self.put('boot/vmlinuz-t825', self.image(NEW))
+        self.put(f'usr/lib/modules/{NEW}/modules.dep', b'current modules')
+
+    def test_extraction_failure_preserves_modules_update_and_rollback(self):
+        self.same_release_setup()
+        before = self.snapshot()
+        self.update(success=False, extra={'FAIL_EXTRACT': '1'})
+        self.assertEqual(before, self.snapshot())
+        self.update()
+        before = self.snapshot()
+        self.rollback(success=False, extra={'FAIL_EXTRACT': '1'})
+        self.assertEqual(before, self.snapshot())
+
+    def test_depmod_failure_preserves_modules_update_and_rollback(self):
+        self.same_release_setup()
+        before = self.snapshot()
+        self.update(success=False, extra={'FAIL_DEPMOD': '1'})
+        self.assertEqual(before, self.snapshot())
+        self.update()
+        before = self.snapshot()
+        self.rollback(success=False, extra={'FAIL_DEPMOD': '1'})
+        self.assertEqual(before, self.snapshot())
+
+    def test_real_depmod_uses_private_staging_root(self):
+        self.same_release_setup()
+        # Empty module set is enough to verify real kmod's -b/-m layout and
+        # index output, without touching the host's module tree.
+        payload = self.base / (NEW + '-modules')
+        for name in ('modules.order', 'modules.builtin', 'modules.builtin.modinfo'):
+            (payload / name).write_bytes(b'')
+            self.put(f'usr/lib/modules/{NEW}/{name}', b'')
+        self.mods = self.package(NEW, b'')
+        (self.bin / 'depmod').unlink()
+        (self.bin / 'depmod').symlink_to(shutil.which('depmod'))
+        self.update()
+        live = self.root / f'usr/lib/modules/{NEW}'
+        self.assertTrue((live / 'modules.dep.bin').is_file())
+        self.assertEqual((live / 'modules.dep').read_bytes(), b'')
+        self.rollback()
+        self.assertTrue((live / 'modules.dep.bin').is_file())
+        self.assertEqual((live / 'modules.dep').read_bytes(), b'')
+
+    def test_module_swap_failure_restores_old_directory(self):
+        self.same_release_setup()
+        path = f'usr/lib/modules/{NEW}/modules.dep'
+        target = str(self.root / f'usr/lib/modules/{NEW}')
+        self.update(success=False, extra={'FAIL_MV_MATCH': target})
+        self.assertEqual((self.root / path).read_bytes(), b'current modules')
+        (self.root / 'mv-failed').unlink()
+        self.update()
+        self.rollback(success=False, extra={'FAIL_MV_MATCH': target})
+        self.assertEqual((self.root / path).read_bytes(), b'new modules')
+
+    def test_boot_backup_failure_does_not_publish_module_archive(self):
+        self.same_release_setup()
+        self.put('boot/vmlinuz-t825.prev', b'generation Z kernel')
+        self.put(STATE + 'modules-prev.tar', b'generation Z modules')
+        self.put(STATE + 'modules-version', NEW.encode())
+        before = self.snapshot()
+        self.update(success=False, extra={
+            'FAIL_MV_MATCH': str(self.root / 'boot/vmlinuz-t825.prev')})
+        (self.root / 'mv-failed').unlink()
+        self.assertEqual(before, self.snapshot())
+
+    def test_boot_backup_failure_does_not_discard_module_archive(self):
+        self.put(STATE + 'modules-prev.tar', b'old archive')
+        self.put(STATE + 'modules-version', OLD.encode())
+        before = self.snapshot()
+        self.update(success=False, extra={
+            'FAIL_MV_MATCH': str(self.root / 'boot/vmlinuz-t825.prev')})
+        (self.root / 'mv-failed').unlink()
+        self.assertEqual(before, self.snapshot())
+
+    def test_second_update_replaces_single_rollback_slot(self):
+        self.update()
+        self.update()
+        self.assertEqual((self.root / 'boot/vmlinuz-t825.prev').read_bytes(), self.image(NEW))
+        self.assertEqual((self.root / (STATE + 'modules-version')).read_text(), NEW + '\n')
+        result = self.rollback()
+        self.assertIn(f'restoring modules: KVER={NEW} path={self.root}/usr/lib/modules/{NEW}',
+                      result.stdout)
+        self.assertEqual((self.root / 'boot/vmlinuz-t825').read_bytes(), self.image(NEW))
 
     def test_update_space_preflight(self):
         before = self.snapshot()

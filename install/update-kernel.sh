@@ -47,7 +47,22 @@ done
 # This protects individual files against failed copies, not a whole power-loss transaction.
 temps=()
 targets=()
-cleanup() { if ((${#temps[@]})); then rm -f -- "${temps[@]}"; fi; }
+module_stage=
+module_old=
+module_live=
+cleanup() {
+    local result=$?
+    # A failed/interrupted second rename must put the original directory back.
+    if [[ -n "$module_old" && -d "$module_old" && ! -e "$module_live" ]]; then
+        mv -T -- "$module_old" "$module_live" || {
+            echo "restore $module_old to $module_live before rebooting" >&2
+            result=1
+        }
+    fi
+    if [[ -n "$module_stage" ]]; then rm -rf -- "$module_stage"; fi
+    if ((${#temps[@]})); then rm -f -- "${temps[@]}"; fi
+    return "$result"
+}
 trap cleanup EXIT
 stage() {
     local tmp
@@ -80,6 +95,30 @@ check_space() {
         exit 1
     fi
 }
+# Keep staging and saved directories on the module filesystem. A private root
+# layout lets depmod generate indexes before any installed modules are moved.
+stage_modules() {
+    local parent=$ROOT/usr/lib/modules candidate
+    module_live=$parent/$KVER
+    candidate=$parent/.$KVER.new
+    if [[ -e "$candidate" || -L "$candidate" || -e "$parent/.$KVER.old" || -L "$parent/.$KVER.old" ]]; then
+        echo "unfinished module swap: inspect $candidate and $parent/.$KVER.old before retrying" >&2
+        exit 1
+    fi
+    mkdir -p "$parent"
+    mkdir "$candidate"
+    module_stage=$candidate
+    mkdir -p "$module_stage/lib/modules"
+    tar -C "$module_stage/lib/modules" --no-same-owner -xf "$1" "$KVER"
+    depmod -b "$module_stage" -m /lib/modules -a "$KVER"
+}
+swap_modules() {
+    module_old=$ROOT/usr/lib/modules/.$KVER.old
+    if [[ -e "$module_live" ]]; then mv -T -- "$module_live" "$module_old"; fi
+    # cleanup restores .old if this fails, including an EXIT after the first mv.
+    mv -T -- "$module_stage/lib/modules/$KVER" "$module_live"
+    rm -rf -- "$module_old"
+}
 check_space "${files[@]}" "${inputs[@]}"
 # Backups first, then replacements; no destination changes until all copies succeed.
 backups=()
@@ -90,31 +129,33 @@ for index in "${!files[@]}"; do
     replacements+=("${#temps[@]}")
     stage "${inputs[index]}" "${files[index]}"
 done
-mkdir -p "$S" "$ROOT/usr/lib/modules"
+stage_modules "$mods"
+mkdir -p "$S"
+archive=
 if [[ "$previous" == "$KVER" && -d "$ROOT/usr/lib/modules/$KVER" ]]; then
     # Stage the archive too: a failed tar must not truncate a valid backup.
     archive=$(mktemp "$S/modules-prev.tar.XXXXXX.tmp")
     temps+=("$archive")
     tar -C "$ROOT/usr/lib/modules" -cf "$archive" "$KVER"
-    sync
-    mv -fT -- "$archive" "$S/modules-prev.tar"
     metadata=$(mktemp "$S/modules-version.XXXXXX.tmp")
     temps+=("$metadata")
     printf '%s\n' "$KVER" > "$metadata"
-    sync
-    mv -fT -- "$metadata" "$S/modules-version"
-else
-    # A staged new-release directory is still a first install. Old-release
-    # modules stay in place, so neither archive nor release metadata is needed.
-    rm -f "$S/modules-prev.tar" "$S/modules-version"
 fi
 publish "${backups[@]}"
+# Publish module backup state only after the matching boot backups. A failure
+# publishing boot backups must not advance or discard the old module archive.
+if [[ -n "$archive" ]]; then
+    sync
+    mv -fT -- "$archive" "$S/modules-prev.tar"
+    mv -fT -- "$metadata" "$S/modules-version"
+else
+    # Staged new-release modules are a first install, not the previous kernel.
+    rm -f "$S/modules-prev.tar" "$S/modules-version"
+fi
 # Without a DTB argument, the installed DTB stays in place. Drop an unrelated
 # old backup so rollback cannot restore a DTB from an earlier update.
 if [[ -z "$dtb" ]]; then rm -f "$D.prev"; fi
-rm -rf "$ROOT/usr/lib/modules/$KVER"
-tar -C "$ROOT/usr/lib/modules" --no-same-owner -xf "$mods"
-depmod -b "${ROOT:-/}" -a "$KVER"
+swap_modules
 publish "${replacements[@]}"
 sha256sum "${files[@]}"
 echo "installed; reboot. To go back: install/rollback-kernel.sh"
