@@ -26,12 +26,13 @@ class KernelScripts(unittest.TestCase):
         self.bin.mkdir()
         self.env = dict(os.environ, ROOT=str(self.root), PATH=str(self.bin) + ':' + os.environ['PATH'])
         for key in ('KVER', 'FAIL_COPY_MATCH', 'LOW_SPACE', 'FAIL_EXTRACT', 'FAIL_DEPMOD',
-                    'FAIL_MV_MATCH'):
+                    'FAIL_MV_MATCH', 'FAIL_RM_MATCH', 'ALLOW_LEGACY_MODULES'):
             self.env.pop(key, None)
         real_cp = shutil.which('cp')
         real_df = shutil.which('df')
         real_tar = shutil.which('tar')
         real_mv = shutil.which('mv')
+        real_rm = shutil.which('rm')
         mocks = {
             'mountpoint': 'test "$1" = -q && test -d "$2"',
             'depmod': '''test "${FAIL_DEPMOD:-}" != 1 || { echo 'injected depmod failure' >&2; exit 1; }
@@ -52,6 +53,11 @@ exec {real_tar} "$@"''',
     fi
 fi
 exec {real_mv} "$@"''',
+            'rm': f'''if [[ -n "${{FAIL_RM_MATCH:-}}" && " $* " == *"$FAIL_RM_MATCH"* ]]; then
+    echo 'injected removal failure' >&2
+    exit 1
+fi
+exec {real_rm} "$@"''',
             'sync': 'exit 0',
             'cp': f'''if [[ -n "${{FAIL_COPY_MATCH:-}}" && "${{@: -1}}" == *"$FAIL_COPY_MATCH"* ]]; then
     printf truncated > "${{@: -1}}"
@@ -175,10 +181,11 @@ fi''',
         self.update()
         self.put(STATE + 'modules-prev.tar', self.package(OLD, b'legacy modules').read_bytes())
         before = self.snapshot()
-        result = self.rollback(success=False)
+        result = self.rollback(success=False, extra={'ALLOW_LEGACY_MODULES': '1'})
         self.assertIn(f'modules-prev.tar has no {NEW}/modules.dep (set KVER=', result.stderr)
         self.assertEqual(before, self.snapshot())
-        self.rollback(extra={'KVER': OLD})
+        result = self.rollback(extra={'KVER': OLD, 'ALLOW_LEGACY_MODULES': '1'})
+        self.assertIn('unverified legacy module backup', result.stderr)
         self.assertEqual((self.root / f'usr/lib/modules/{OLD}/modules.dep').read_bytes(), b'legacy modules')
 
     def test_wrong_kernel_and_corrupt_gzip_rejected(self):
@@ -314,6 +321,64 @@ fi''',
         self.assertIn(f'restoring modules: KVER={NEW} path={self.root}/usr/lib/modules/{NEW}',
                       result.stdout)
         self.assertEqual((self.root / 'boot/vmlinuz-t825').read_bytes(), self.image(NEW))
+
+    def generation_setup(self):
+        self.same_release_setup()
+        self.update()  # archive Z bound to kernel Z
+        self.put('boot/vmlinuz-t825', gzip.compress(
+            b'\0Linux version ' + NEW.encode() + b' (generation A)\0', mtime=0))
+        self.put(f'usr/lib/modules/{NEW}/modules.dep', b'generation A modules')
+
+    def assert_binding_refusal(self):
+        before = self.snapshot()
+        result = self.rollback(success=False)
+        self.assertIn('generation mismatch', result.stderr)
+        self.assertEqual(before, self.snapshot())
+
+    def test_death_before_archive_publish_rejects_mixed_generation(self):
+        self.generation_setup()
+        self.update(success=False, extra={
+            'FAIL_MV_MATCH': str(self.root / (STATE + 'modules-prev.tar'))})
+        self.assert_binding_refusal()
+
+    def test_death_before_binding_publish_rejects_mixed_generation(self):
+        self.generation_setup()
+        self.update(success=False, extra={
+            'FAIL_MV_MATCH': str(self.root / (STATE + 'modules-binding'))})
+        self.assert_binding_refusal()
+
+    def test_cross_release_stale_archive_rejected_after_boot_backup(self):
+        self.generation_setup()
+        self.put('boot/vmlinuz-t825', self.image(OLD))
+        self.update(success=False, extra={
+            'FAIL_RM_MATCH': str(self.root / (STATE + 'modules-prev.tar'))})
+        self.assert_binding_refusal()
+
+    def test_binding_rejects_changed_archive_even_with_same_kernel(self):
+        self.same_release_setup()
+        self.update()
+        self.put(STATE + 'modules-prev.tar', self.package(NEW, b'wrong build').read_bytes())
+        self.assert_binding_refusal()
+
+    def test_missing_binding_requires_explicit_legacy_opt_in(self):
+        self.same_release_setup()
+        self.update()
+        (self.root / (STATE + 'modules-binding')).unlink()
+        before = self.snapshot()
+        result = self.rollback(success=False)
+        self.assertIn('set ALLOW_LEGACY_MODULES=1', result.stderr)
+        self.assertEqual(before, self.snapshot())
+        result = self.rollback(extra={'ALLOW_LEGACY_MODULES': '1'})
+        self.assertIn('unverified legacy module backup', result.stderr)
+
+    def test_malformed_binding_cannot_use_legacy_bypass(self):
+        self.same_release_setup()
+        self.update()
+        self.put(STATE + 'modules-binding', b'incomplete')
+        before = self.snapshot()
+        result = self.rollback(success=False, extra={'ALLOW_LEGACY_MODULES': '1'})
+        self.assertIn('invalid modules-binding', result.stderr)
+        self.assertEqual(before, self.snapshot())
 
     def test_update_space_preflight(self):
         before = self.snapshot()
