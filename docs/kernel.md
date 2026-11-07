@@ -237,7 +237,10 @@ Module extraction in both scripts goes into `/usr/lib/modules/.$KVER.new` using
 a private `lib/modules/$KVER` layout. `depmod` runs against that staged tree before
 any installed modules move. After successful extraction/indexing, the current
 directory moves to `.$KVER.old`, the new directory takes its place, and the old
-directory is removed. Failed extraction or indexing leaves the installed modules
+directory is removed. If removal of `.old` fails, the script warns and continues
+publishing the matching boot files. Inspect the leftover directory before another
+update or rollback; subsequent swaps refuse to overwrite it.
+Failed extraction or indexing leaves the installed modules
 untouched; a failed second rename restores the old directory. Rollback prints
 the release and destination path before swapping. Staging needs enough free
 space on the module filesystem for both trees. An unfinished `.new`/`.old` from

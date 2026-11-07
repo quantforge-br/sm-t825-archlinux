@@ -106,13 +106,14 @@ fi''',
             tar.add(p, arcname=release)
         return archive
 
-    def run_script(self, script, *args, success=True, extra=None):
+    def run_script(self, script, *args, success=True, extra=None, old_left=False):
         result = subprocess.run(['bash', str(REPO / 'install' / script), *map(str, args)],
                                 env=self.env | (extra or {}), capture_output=True, text=True)
         self.assertEqual(result.returncode == 0, success, result.stdout + result.stderr)
         self.assertFalse(list(self.root.rglob('*.tmp')), 'temporary files leaked')
         self.assertFalse(list(self.root.glob('usr/lib/modules/.*.new')), 'module staging leaked')
-        self.assertFalse(list(self.root.glob('usr/lib/modules/.*.old')), 'old modules leaked')
+        if not old_left:
+            self.assertFalse(list(self.root.glob('usr/lib/modules/.*.old')), 'old modules leaked')
         return result
 
     def update(self, dtb=True, **kwargs):
@@ -379,6 +380,39 @@ fi''',
         result = self.rollback(success=False, extra={'ALLOW_LEGACY_MODULES': '1'})
         self.assertIn('invalid modules-binding', result.stderr)
         self.assertEqual(before, self.snapshot())
+
+    def test_update_old_cleanup_failure_still_publishes_boot_files(self):
+        self.same_release_setup()
+        self.kernel.write_bytes(gzip.compress(
+            b'\0Linux version ' + NEW.encode() + b' (replacement build)\0', mtime=0))
+        old = self.root / f'usr/lib/modules/.{NEW}.old'
+        result = self.update(old_left=True, extra={'FAIL_RM_MATCH': str(old)})
+        self.assertIn(f'warning: could not remove {old}', result.stderr)
+        self.assertEqual((old / 'modules.dep').read_bytes(), b'current modules')
+        self.assertEqual((self.root / f'usr/lib/modules/{NEW}/modules.dep').read_bytes(), b'new modules')
+        self.assertEqual((self.root / 'boot/vmlinuz-t825').read_bytes(), self.kernel.read_bytes())
+        self.assertEqual((self.root / 'boot/initramfs-t825').read_bytes(), b'new initramfs')
+        self.assertEqual((self.root / DTB).read_bytes(), b'new DTB')
+        # Keep the leftovers for inspection, rather than silently removing them
+        # or overwriting them on the next attempt.
+        before = self.snapshot()
+        result = self.update(success=False, old_left=True)
+        self.assertIn('unfinished module swap', result.stderr)
+        self.assertEqual(before, self.snapshot())
+
+    def test_rollback_old_cleanup_failure_still_restores_boot_files(self):
+        self.same_release_setup()
+        previous = self.snapshot()
+        self.kernel.write_bytes(gzip.compress(
+            b'\0Linux version ' + NEW.encode() + b' (replacement build)\0', mtime=0))
+        self.update()
+        old = self.root / f'usr/lib/modules/.{NEW}.old'
+        result = self.rollback(old_left=True, extra={'FAIL_RM_MATCH': str(old)})
+        self.assertIn(f'warning: could not remove {old}', result.stderr)
+        self.assertEqual((old / 'modules.dep').read_bytes(), b'new modules')
+        self.assertEqual((self.root / f'usr/lib/modules/{NEW}/modules.dep').read_bytes(), b'current modules')
+        for name in ('boot/vmlinuz-t825', 'boot/initramfs-t825', DTB):
+            self.assertEqual((self.root / name).read_bytes(), previous[name])
 
     def test_update_space_preflight(self):
         before = self.snapshot()
