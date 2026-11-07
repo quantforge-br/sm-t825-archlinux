@@ -1,0 +1,4 @@
+# Unified diffs contain a leading context space and format-patch signatures.
+# Preserve upstream bytes; these whitespace checks do not apply to patch text.
+*.patch whitespace=-blank-at-eol,-blank-at-eof,-space-before-tab
+*.diff whitespace=-blank-at-eol,-blank-at-eof,-space-before-tab
