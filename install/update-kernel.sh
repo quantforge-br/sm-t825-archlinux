@@ -117,7 +117,11 @@ swap_modules() {
     if [[ -e "$module_live" ]]; then mv -T -- "$module_live" "$module_old"; fi
     # cleanup restores .old if this fails, including an EXIT after the first mv.
     mv -T -- "$module_stage/lib/modules/$KVER" "$module_live"
-    rm -rf -- "$module_old"
+    # Modules are already live; cleanup failure must not prevent publishing
+    # their matching boot files. A leftover .old blocks the next swap.
+    if ! rm -rf -- "$module_old"; then
+        echo "warning: could not remove $module_old; continuing with matching boot files; inspect the leftover directory before another update or rollback" >&2
+    fi
 }
 check_space "${files[@]}" "${inputs[@]}"
 # Backups first, then replacements; no destination changes until all copies succeed.
