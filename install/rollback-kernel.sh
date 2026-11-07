@@ -3,6 +3,9 @@
 # Cross-release installs leave old modules in place, so no archive is needed.
 # Use the same ROOT as update-kernel.sh for an offline root.
 set -euo pipefail
+for tool in grep tar depmod mountpoint mktemp cp chmod sync mv stat df tail rm mkdir cat; do
+    command -v "$tool" >/dev/null || { echo "missing required command: $tool" >&2; exit 1; }
+done
 KVER=${KVER:-7.3.1-t825}
 ROOT=${ROOT:-}
 ROOT=${ROOT%/}
