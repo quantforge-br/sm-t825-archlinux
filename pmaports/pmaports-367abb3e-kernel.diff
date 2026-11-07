@@ -1,20 +1,101 @@
 diff --git a/device/testing/linux-postmarketos-qcom-msm8996/APKBUILD b/device/testing/linux-postmarketos-qcom-msm8996/APKBUILD
-index 601fa9f..0ab3f04 100644
+index 601fa9f44..361b06abe 100644
 --- a/device/testing/linux-postmarketos-qcom-msm8996/APKBUILD
 +++ b/device/testing/linux-postmarketos-qcom-msm8996/APKBUILD
-@@ -3,7 +3,7 @@ maintainer="Yassine Oudjana (Tooniis) <y.oudjana@protonmail.com>"
+@@ -2,12 +2,12 @@
+ maintainer="Yassine Oudjana (Tooniis) <y.oudjana@protonmail.com>"
  _flavor="postmarketos-qcom-msm8996"
  pkgname=linux-$_flavor
- pkgver=6.19.5
--pkgrel=0
-+pkgrel=13
+-pkgver=6.19.5
++pkgver=7.3.1
+ pkgrel=0
  pkgdesc="Kernel close to mainline with extra patches for Qualcomm MSM8996 devices"
  arch="aarch64"
  _carch="arm64"
-@@ -32,6 +32,117 @@ _tag=v${pkgver//_/-}-msm8996
+-url="https://gitlab.com/msm8996-mainline/linux"
++url="https://kernel.org"
+ license="GPL-2.0-only"
+ options="!strip !check !tracedeps
+ 	pmb:cross-native
+@@ -28,12 +28,207 @@ makedepends="
+ "
+ 
+ # Source
+-_tag=v${pkgver//_/-}-msm8996
  source="
- 	linux-$_tag.tar.gz::$url/-/archive/$_tag/linux-$_tag.tar.gz
+-	linux-$_tag.tar.gz::$url/-/archive/$_tag/linux-$_tag.tar.gz
++	https://cdn.kernel.org/pub/linux/kernel/v${pkgver%%.*}.x/linux-$pkgver.tar.xz
  	config-$_flavor.$arch
++	m001-media-qcom-camss-make-ispif-reset-go-though-vfe-user-countin.patch
++	m002-dt-bindings-media-camss-qcom-msm8996-camss-add-camss-power-d.patch
++	m003-arm64-dts-qcom-msm8996-add-camss-power-domain-and-power-doma.patch
++	m004-media-qcom-camss-add-8x96-power-domain-names.patch
++	m005-drm-msm-dsi-improve-power-management.patch
++	m006-arm64-dts-qcom-msm8996-xiaomi-common-fix-tusb320l-interrupt.patch
++	m007-arm64-dts-qcom-msm8996-oneplus3t-rebase-on-msm8996-pro.patch
++	m008-arm64-dts-qcom-msm8996pro-oneplus3t-add-msm-id.patch
++	m009-arm64-dts-qcom-msm8996pro-xiaomi-scorpio-remove-dsi-phy-cloc.patch
++	m010-arm64-dts-qcom-msm8996-xiaomi-oneplus-common-remove-clocks-n.patch
++	m011-arm64-dts-qcom-msm8996-sony-xperia-tone-add-firmware-paths.patch
++	m012-arm64-dts-qcom-msm8996-sony-xperia-tone-remove-maxcpus-2-fro.patch
++	m013-drm-panel-add-support-for-sony-jdi-synaptics-panel.patch
++	m014-arm64-dts-qcom-msm8996-tone-add-display-support.patch
++	m015-arm64-dts-qcom-msm8996-sony-xperia-tone-kagura-add-jdi-panel.patch
++	m016-arm64-dts-qcom-msm8996-sony-xperia-tone-keyaki-add-jdi-panel.patch
++	m017-drm-panel-add-samsung-s6e3fa3-mipi-dsi-panel-driver.patch
++	m018-drm-panel-add-samsung-s6e3fa5-mipi-dsi-panel-driver.patch
++	m019-arm64-dts-qcom-msm8996-oneplus-common-add-display-panel.patch
++	m020-arm64-dts-qcom-msm8996-zte-axon-7-support.patch
++	m021-arm-smmu-implement-qcom-no-smr-check.patch
++	m022-iommu-arm-smmu-implement-qcom-skip-init.patch
++	m023-arm64-dts-qcom-msm8996-xiaomi-scorpio-enable-mdp-smmu.patch
++	m024-hack-arm64-dts-qcom-xiaomi-scorpio-remove-power-domains-from.patch
++	m025-drm-panel-add-driver-for-lg-philips-sw43101-dsi-video-mode-p.patch
++	m026-arm64-dts-qcom-msm8996-xiaomi-scorpio-enable-panel.patch
++	m027-dt-bindings-power-supply-add-dt-schema-for-qualcomm-smbchg.patch
++	m028-arm64-dts-qcom-pmi8994-add-smbchg.patch
++	m029-arm64-dts-qcom-pmi8996-add-smbchg.patch
++	m030-arm64-dts-qcom-msm8996-xiaomi-add-battery-data.patch
++	m031-arm64-dts-qcom-msm8996-xiaomi-enable-smbchg.patch
++	m032-soc-qcom-add-pmic-secure-register-write-helpers.patch
++	m033-util-macros-h-add-macro-to-find-closest-smaller-value-in-arr.patch
++	m034-power-supply-add-driver-for-qualcomm-smbchg.patch
++	m035-arm64-dts-qcom-msm8996-oneplus-common-enable-smbchg.patch
++	m036-arm64-dts-qcom-msm8996-xiaomi-common-add-vbus-power-supply-t.patch
++	m037-arm64-dts-qcom-msm8996-oneplus-common-add-vbus-power-supply.patch
++	m038-usb-dwc3-add-support-for-vbus-power-control.patch
++	m039-dt-bindings-power-supply-add-dt-schema-for-qcom-fg.patch
++	m040-arm64-dts-qcom-pmi8994-add-fuel-gauge.patch
++	m041-arm64-dts-qcom-pmi8996-add-fuel-gauge.patch
++	m042-arm64-dts-qcom-msm8996-xiaomi-enable-pmic-fuel-gauge.patch
++	m043-power-supply-add-driver-for-qualcomm-pmic-fuel-gauge.patch
++	m044-dt-bindings-input-add-qualcomm-spmi-haptics-driver.patch
++	m045-input-add-qualcomm-spmi-haptics-driver.patch
++	m046-arm64-dts-qcom-pmi8994-add-haptics.patch
++	m047-arm64-dts-qcom-msm8996-xiaomi-enable-haptics.patch
++	m048-arm64-dts-qcom-msm8996-add-cpu-cooling-support.patch
++	m049-arm64-dts-qcom-msm8996-xiaomi-common-fix-dsi0-supplies.patch
++	m050-arm64-dts-qcom-msm8996-xiaomi-gemini-add-second-board-id.patch
++	m051-arm64-dts-qcom-msm8996-xiaomi-scorpio-enable-camss.patch
++	m052-media-i2c-add-a-driver-for-sony-imx318.patch
++	m053-dt-bindings-extcon-usbc-fusb301-add-bindings-for-fusb301.patch
++	m054-extcon-add-onsemi-fusb301-driver.patch
++	m055-arm64-dts-qcom-msm8996-oneplus3-add-fusb301.patch
++	m057-remoteproc-qcom-report-last-event-on-ssr-notifier-registrati.patch
++	m058-asoc-dt-bindings-wcd9335-add-aif4-cap.patch
++	m059-asoc-wcd9335-add-aif4-cap.patch
++	m060-arm64-dts-qcom-msm8996-xiaomi-commonize-and-expand-sound-set.patch
++	m061-arm64-dts-qcom-msm8996pro-xiaomi-scorpio-add-rear-camera-len.patch
++	m062-arm64-dts-qcom-msm8996-oneplus3-disable-usb3-clock-to-suppor.patch
++	m063-arm64-dts-qcom-msm8996pro-oneplus3t-use-per-panel-dts.patch
++	m064-dt-bindings-arm-qcom-add-xiaomi-mi-5s.patch
++	m065-arm64-dts-qcom-msm8996pro-xiaomi-capricorn-add-support-for-x.patch
++	m066-net-qrtr-smd-rename-qdev-to-qsdev.patch
++	m067-net-qrtr-turn-qrtr-into-a-bus.patch
++	m068-net-qrtr-define-macro-to-convert-qmi-version-and-instance-to.patch
++	m069-iio-add-qualcomm-sensor-manager-driver.patch
++	m070-soc-qcom-add-in-kernel-sensors-registry-implementation.patch
++	m071-remoteproc-qcom-enable-in-kernel-sns-reg.patch
 +	0001-add-samsung-gts3lwifi-dts.patch
 +	0002-drm-panel-add-samsung-ams968hh01.patch
 +	0003-drm-msm-mdp5-split-display-bonded-dsi.patch
@@ -25,7 +106,7 @@ index 601fa9f..0ab3f04 100644
 +	0008-media-venus-hfi_cmds-h264-8x8-transform-on-hfi-v3.patch
 +	0009-media-venus-eos-on-real-buffer-hfi-v3.patch
 +	0010-asoc-qcom-apq8096-be-format-s16le.patch
-+	0011-asoc-qcom-q6asm-dai-close-stopped-stream-on-prepare.patch
++	0011-asoc-qcom-q6asm-dai-reset-queue-ptr-on-prepare.patch
 +	0012-dt-bindings-power-supply-sm5705-fuel-gauge.patch
 +	0013-power-supply-sm5705-fuel-gauge-driver.patch
 +	0014-dt-bindings-power-supply-sm5705-charger.patch
@@ -64,15 +145,12 @@ index 601fa9f..0ab3f04 100644
 +	0053-drm-msm-mdp5-no-pp-done-wait-when-disabled.patch
 +	0054-drm-panel-ams968hh01-hbm.patch
 +	0055-drm-panel-ams968hh01-orientation.patch
-+	0056-dt-bindings-input-wacom-w9000.patch
-+	0057-input-wacom-w9000.patch
 +	0058-dt-bindings-input-wacom-w9019.patch
 +	0059-input-wacom-w9000-w9019.patch
 +	0060-input-wacom-w9000-kunit.patch
 +	0061-input-wacom-w9000-w9019-state.patch
 +	0062-dt-bindings-input-wacom-flash-mode-polarity.patch
 +	0063-input-wacom-w9000-direct.patch
-+	0064-input-rmi4-platform-data-size.patch
 +	0065-dt-bindings-display-panel-samsung-ams968hh01.patch
 +	0066-dt-bindings-display-panel-ams968hh01-temperature.patch
 +	0067-drm-panel-ams968hh01-temperature-elvss.patch
@@ -94,8 +172,6 @@ index 601fa9f..0ab3f04 100644
 +	0083-usb-typec-s2mm005-sink-pdos.patch
 +	0084-power-sm5705-charger-pd-above-5v.patch
 +	0085-arm64-dts-qcom-msm8996-usb3-reset.patch
-+	0086-usb-gadget-f-ncm-net-device-lifecycle.patch
-+	0087-usb-gadget-u-ether-drvinfo-without-gadget.patch
 +	0088-drm-panel-ams968hh01-hbm-attribute.patch
 +	0089-media-imx258-wait-after-enabling.patch
 +	0090-media-imx258-reset-gpio.patch
@@ -113,145 +189,291 @@ index 601fa9f..0ab3f04 100644
 +	0102-media-venus-venc-cavlc-baseline.patch
 +	0103-media-camss-vfe-frame-drop-period.patch
 +	0104-extcon-sm5705-keyboard-dock.patch
-+	0105-slimbus-qcom-ngd-of-node-refcount.patch
-+	0106-slimbus-qcom-ngd-platform-driver-registration.patch
-+	0107-slimbus-qcom-ngd-probe-error-path.patch
-+	0108-slimbus-qcom-ngd-pdr-ssr-cleanup.patch
-+	0109-slimbus-qcom-ngd-callbacks-after-ngd.patch
-+	0110-slimbus-qcom-ngd-resources-in-controller.patch
-+	0111-slimbus-qcom-ngd-pm-runtime-balance.patch
-+	0112-slimbus-qcom-ngd-tx-lock-abba.patch
-+	0113-asoc-q6asm-drop-closed-stream-responses.patch
-+	0114-arm64-dts-qcom-gts3llte-top-speakers.patch
++	0114-dt-bindings-i2c-hotplug-gpio.patch
++	0115-i2c-muxes-add-i2c-hotplug-gpio.patch
++	0116-i2c-hotplug-gpio-parent-adapter-lookup.patch
++	0117-dt-bindings-i2c-hotplug-extcon.patch
++	0118-i2c-hotplug-gpio-extcon-presence.patch
++	0119-extcon-sm5705-cover-with-vbus.patch
++	0120-mfd-stmpe-irq-domain-after-children.patch
++	0121-input-stmpe-keypad-recover-from-accessory-power-cycle.patch
 +	0122-drm-msm-locking-put-iova-spaces.patch
 +	0123-drm-msm-shared-vm-keep-mappings-on-close.patch
++	0140-iio-qcom-smgr-sample-timestamp.patch
++	0141-iio-qcom-smgr-push-enabled-axes.patch
++	0142-iio-qcom-smgr-push-every-sample.patch
++	0143-iio-qcom-smgr-sampling-frequency.patch
++	0144-iio-qcom-smgr-soft-timestamp-channel.patch
++	0145-iio-qcom-smgr-gyro-magn-mount-matrix.patch
++	0146-net-qrtr-send-pending-hello-first.patch
++	0147-pci-qcom-keep-link-up-across-suspend-msm8996.patch
++	0148-drm-msm-mdp5-assign-pipes-on-resume.patch
++	0159-dt-bindings-input-tm2-touchkey-add-coreriver-tc305k.patch
++	0160-input-tm2-touchkey-add-coreriver-tc305k.patch
++	0162-asoc-wcd-mbhc-v2-plug-type-without-adc.patch
++	0163-asoc-wcd9335-serialise-micbias-and-mclk.patch
++	0164-asoc-wcd9335-irq-off-across-sleep.patch
++	0165-asoc-wcd9335-jack-interrupts.patch
++	0166-asoc-dt-bindings-wcd9335-jack-properties.patch
++	0167-asoc-wcd9335-headset-detection.patch
++	0168-asoc-wcd9335-micbias2-voltage.patch
++	0169-asoc-apq8096-headset-jack.patch
++	0170-arm64-dts-msm8996-gpu-opp-ddr.patch
++	0182-media-venus-vdec-crop-to-stream-size.patch
 +	0201-drm-msm-shared-vm-hang-accounting.patch
++	0202-arm64-dts-qcom-gts3llte-top-speakers.patch
  "
- builddir="$srcdir/linux-$_tag"
+-builddir="$srcdir/linux-$_tag"
++builddir="$srcdir/linux-$pkgver"
  
-@@ -62,5 +173,116 @@ package() {
+ prepare() {
+ 	default_prepare
+@@ -61,6 +256,202 @@ package() {
+ 		INSTALL_DTBS_PATH="$pkgdir"/boot/dtbs
  }
  sha512sums="
- dd30dd113ad9f0b4ab3771ea655de2becce7ddaf5066d2f860b7bb1eb78573137313191d9da740b152348f9f89894ace2bb94fb195e340f7b6dabedeebbc929f  linux-v6.19.5-msm8996.tar.gz
+-dd30dd113ad9f0b4ab3771ea655de2becce7ddaf5066d2f860b7bb1eb78573137313191d9da740b152348f9f89894ace2bb94fb195e340f7b6dabedeebbc929f  linux-v6.19.5-msm8996.tar.gz
 -6a1e3a18fb454378ef5569a6951426d118144985c9028e663f46d28cde6784723296601d3756176045e22d706a9195938804c6a82f02fcf548e18d2e66c35b27  config-postmarketos-qcom-msm8996.aarch64
-+c0e12c50faa0b82539fd5a288e1f8e8eb15f5dbdc247ec63ab2f5025c745fb1cf7d381a32d6418dfe55eb52ab1d4d31b355472f01f3d13b3e673ae3acd24afdb  config-postmarketos-qcom-msm8996.aarch64
-+30858f93ae460989670c537a445476b81ec068dbcc73855d1eb06e833b4b1a0f8bd75022e6664f2eb3ef01d21636247aaba1f448f5cfb513d5777e4b56c95c4d  0001-add-samsung-gts3lwifi-dts.patch
-+feede8e07c71e0b9faaac14a97baebcd9ff347f9e6288ca3690bfcf4331b12788167dd69079fedf7856fa3b28494d19b397f8a69c01d00008544aa20785d0064  0002-drm-panel-add-samsung-ams968hh01.patch
-+71cef6df692ccaeb8575bce830b32bbf4c11debdda209b7ac3f7a19dee9395f88d0981f46b72534d1d9a2f3cd742e721167afaff91ed7b0ce92c5b481ce05787  0003-drm-msm-mdp5-split-display-bonded-dsi.patch
-+81ef96ef5e975c6c7b1249ea37b02f8a69154a399cd1426f234a0e44a8f5e4e9357da99dcd64629da0c7922678c0bb3e42dc8b05e53a72449dc8328c7c3655cb  0004-drm-msm-dpu-msm8996-split-display-ctls.patch
-+23637d41a8e587b48454fd0fb8ee688177dba32e5c22f12b5cb322d02f20763e2d9dfe6833ee65550241df9493c4b9ae1e02a84acff78d1252e3d131621e2524  0005-drm-panel-ams968hh01-mdnie-bypass.patch
-+ac1c25203f364cc2cff75d1aec875d80c7a3d3326452226ed2c398a2589d2c430ce6569485323e3bd9f7d4e666df5208d9eaabafdb5c491c50241772ee83c1a4  0006-drm-msm-dsi-rgb-swap-param.patch
-+8ef106a9eec607d77bb4bcaea3a0c63c36bb0c87998cdcf620003922b0745de960c50f9a48dd39a88fa84defbc231c6ce05b1aa1df6a2eab5ca5944a7802e02c  0007-drm-msm-debugfs-dsi-tpg.patch
-+dbc052ee86fdc581fbb3e08557b92a457d5c8a3f30a1b93fb30af80fb903d5f2330d9a59e9e9f4bf3e56544b1601c5b9e186b2050e488b6e8f8c1fbf810f50b0  0008-media-venus-hfi_cmds-h264-8x8-transform-on-hfi-v3.patch
-+52c63bcfcd2e21d34a45e25b4caa2ebd7cd9b2617c7d2bb366c3846d0de2f8ddc1be81540345379c8a1d8a62926f76a0d653a2e9fe104e3ffd5c6ed87db0276d  0009-media-venus-eos-on-real-buffer-hfi-v3.patch
-+2928e34a1b177273053858e3a58abbb986bba4c76095cc0862ae4aa8ae40993c466b0f3bf2c2487a01fd42eb76fbe1dd9c40037d82278521f1d29e9768cd74ec  0010-asoc-qcom-apq8096-be-format-s16le.patch
-+ef02bd500870b8dcc39c0f5d2b7bf334f04ff1053aeca183612aa7930c549102c583e3bd0490cb4962d95f11e688013590f5a0050e6060d92e9511dbc17d7a3b  0011-asoc-qcom-q6asm-dai-close-stopped-stream-on-prepare.patch
-+43bbb620380cd368c3f89faeda9659c97f6aefce8fd3e6a6355cc8b34d3734b2a3573d37deb4c6dfb94380af80f95764b6bc5a7d4eb7e952fcf3cd96301c4735  0012-dt-bindings-power-supply-sm5705-fuel-gauge.patch
-+0e70c6ef1e361b9f284af8945e9d9844092119fc4c2c4e76e9139be68269f4adaf1e3a34912ba0ab095fbf3375cc929258d71ceec02c32b7facc1dce2ab52424  0013-power-supply-sm5705-fuel-gauge-driver.patch
-+8d21fbb68cc62c88bbf7d37198b08d0c3aa29dd76687269cad320c75b9aad9d9d97f63e178916f5e6a814cbfd542f0f23fbcb94bf661e9ed593697f568c03a16  0014-dt-bindings-power-supply-sm5705-charger.patch
-+7058b6ad3d2723c1abce238ea18ead03a9ccdd55045d56b9dce16b6e229d8356462468597a902cde2c6751695f146563272f69b424c4ad4bf62e4c08a0c7c806  0015-power-supply-sm5705-charger-driver.patch
-+494bb7df17bb3a04cea99dfaeb45b019f5852e2171395b499b636af4e027f8ac57a2c7a50ea300185e27166c4e8bf51bb57d835ea7b8ce117b13507e2a6f2ce4  0016-dt-bindings-extcon-sm5705-muic.patch
-+40c9327e2f539966d0f14d597cbdb09386fc5940fc5425fc7c135f663e5cb6630ddf95969013ba82ec05e59b76089acf729346423a3da07d1681950a19fc167a  0017-extcon-sm5705-muic-driver.patch
-+de38a04d308c26f42201222ae0792ccdb45755b3c5d1f64e13c123454af2f836bfad2ce2f3db00fb144e692aaa17b01c951af5262aa385865a50906f53912f61  0018-cpuidle-psci-domain-accept-osi-only-firmware-msm8996.patch
-+e843ebadc75545e6b32e0321f9d2d0171bb02ad297b1e6c1aff556fa2d4e4bac1221729e754a43e0e6c174d78b6882f346fdcbb9eda803cbf819c3b11274cfb5  0019-extcon-sm5705-afc-qc20.patch
-+a204bd70aea0cd94930d49be7c1b3c1474ebc4ad7f14e095caa60bc04676fcdd6b4122920bf9bc999460c5c2ef2d37c60289033a45558f80bc7f0281e37cc30a  0020-power-supply-sm5705-charger-fast-charger-limit.patch
-+da3d1a02a46171fcf868efb1b33d020ee8e4e7f82d30245793159bb77fcef0458cff16b82d2964891ce63cf7ec3c0c23479193798b4007b9bc3b64a6bdcd97d3  0021-power-supply-sm5705-charger-temperature-guard.patch
-+67b8cfc1d2185364cbdecea53b466873e3d85be99a977ad5080fc0a4587122e0363c4fa9e690d13cd1c09f5e4475394573b91bd68a93492849b5964e8a7e82e2  0022-asoc-qcom-q6afe-tdm-frame-control.patch
-+bc7f8db12a79d479bd5c7a584f7c451872d682c08ac88f6d77221125578ae6f1679eb23a7badfbf674d7a6a6a6ce8f9da6b22c5184a6e9667064fd6d5f1b1ffa  0023-asoc-qcom-q6afe-tdm-slot-mapping-only-with-channel-map.patch
-+64a3f40ac71fc383a53046c964333aa9ef73529e99e094b11b56a548d7eaaf3b3ed6a03841694a4564f1abf67b5158d10185b2aa3a143dab61e075ed7f8e900e  0024-asoc-dt-bindings-richtek-rt5508.patch
-+3bb455d1b09a8897cd9f0d4a03954f35c401d022e6d12456da03939777234d1725785fa28ed782fe3e9035de48f6bbf9344446afe516a0dc2fdaa51860a433f9  0025-asoc-codecs-rt5508-driver.patch
-+71bb853ca2d0ab4b49d453ade2385a0bc5e14338039951b8072d5bde75b00446b5bb1773e57efe7f448d61760ad1ebac1f23ca64392a9edef7b11cc4d9bfc5a5  0026-asoc-qcom-q6routing-stream-to-several-ports.patch
-+b52451aef1f28f3ae334def1bcb3cf2787cfb4a19b7f95b8b500bb2abe08c6c1f050bbf580f2b2cdf8b4bd4c869c3fd8add3e022432cff56fbbfb060ff4049a2  0027-asoc-qcom-apq8096-tdm-back-ends.patch
-+62b6ff7d13f0c92eb0b6bce2e6aa3256462f2036a38b04014224986f5b52585ee76d4716a6b63703ad498e52168316b54c617cd5691027950d79025d5eb20858  0028-power-supply-sm5705-charger-fast-charge-current.patch
-+ed3c0c075c605b90368333c2047d78861ec4657757bc5dcef6d82cdc4c6b73090fc8bdb18dbd1af1b36f892c39a4fb3f92789c2867ebba7f02cc242a40b95432  0029-dt-bindings-usb-samsung-s2mm005.patch
-+04c950644a6cad7d7d5276d703888a8fdceaf081ad4e03e5cb63715967ba279b9b657d9e81078a17f82d149b4a06cf0f60ca7e877fb32d0fe30a0fe44ab018b3  0030-usb-typec-s2mm005-driver.patch
-+67eef3269d037ce31f2d6cb189412c5d27321a24a3c6c589005dde6d06de8846d9fd07036b3e707d4cf2986d51b0a324af8bf3426997c5c8840cd46dc1027af2  0031-dt-bindings-power-supply-sm5705-charger-typec-supply.patch
-+a7c701f62480fe5be664dfc8bfb2bfa4eaf5ff59760ccc896eae006fc06c9105da8f27d38045a81972a604ab90a2b6e9683401a703191639dc2882b7f37c7773  0032-power-supply-sm5705-charger-usb-c-input-limit.patch
-+76cc656c6a7692d6fcf1dfbb77a226133cc24e954c2905d3199a6050db29bfbbd0e4477d4f2fda17116ccb2e601c55ea900e077604749712e326bae9d343a147  0033-dt-bindings-power-supply-sm5705-charger-torch-led.patch
-+f081c36ce6b0d0ad8373b2a67313aad0a36e1f749bf92551f2571e331dd531bf195bc6656a961cde1ca0f201a68353d041d702c0f08e2e37af337030fdbdc4e8  0034-power-supply-sm5705-charger-torch.patch
-+6f01864f21353d0c723ddb814fd02c5e76e4f8a7194daceadb806fc418fe78ced9ab9e250c378a193c966db9873bed4c89fc07befb57ea2b9648436ceb98bf82  0035-extcon-sm5705-hold-vbus-5v.patch
-+7b4bccc3ff4e528fd3b2d748d739855e441f24ce3e41de6324d31d6a1e4ccf800bcddb20940c9ba5c96069757133cf74422915f1af022182eeb238e3e10f0b8b  0036-power-supply-sm5705-charger-5v-usb-c-and-torch.patch
-+3e286133f2eff9b29713b1a9fe498e6ab3812173dbb138d7909da404d1dd07ec77a45acefa68c86b33c09a25ffd4f6e042d1be30886c557cbd1a0bf4c7ae1613  0037-clk-qcom-gcc-msm8996-pcie-gdsc-retention.patch
-+5d011babc2891b13818ad83d223a33ebdf96853aeb125bc23a05f12a7abaa281d24807378c3053f1db0a8f50078fda6206bf9cbc61f5e45f75c9413358f54582  0038-drm-panel-ams968hh01-gamma-register-order.patch
-+7a4f027b876c93f22f20eb9da01447f424c2f8a59728ec0a945e667195b7fab1dfc140ee4d47c226d1605b9d2989bba4667f1650667b7d5e3b047c869a92af64  0039-drm-panel-ams968hh01-gamma-mtp-offsets.patch
-+cd80a38087d69a5234ddd888375d04b2b3f96b0e561b8167e4f8e883b825c3ed478d801a5778894ef649418992adb9c459b366d41c8b6bf16e929ff9da9b90ec  0040-drm-panel-ams968hh01-elvss-360.patch
-+36e7e88dd2ebf50a06fe431863695afbfb6c9d7cafdb575a12cfe8d8a4a285dd76785738b504e897c34f358a35139730372fca7abaca121d60ce91203781a5de  0041-drm-msm-dsi-defer-hs-clk-clear-stale-request.patch
-+3bc8a9bad50a32688f8f7b1585dab652524b02a735ddb310e9929e2390ad05625bb1517c17d3514aadb0dd9855bc3086e9e3e2f744f8b0a2ec99443a11a6ea30  0042-drm-panel-ams968hh01-brightness.patch
-+52d2a7cadb562393c4fbe34026a631388e9b98828e3c870c9e12c42eefa990108c53a178b5900ee1426bec4a564944e542072415de9ed1babf2b43264e4fa786  0043-drm-panel-ams968hh01-acl.patch
-+08d256a6fd56fb1f7774c5c2a64814b44f9e94d0059f63bae2a4e60914e2c19aa5665e0d69b1b15162b988f51ce8e03134559df0fcdb2cc42020298d9d372fa0  0050-drm-mipi-dsi-clock-deferred-hs.patch
-+cdab3bd4b90d1c07607b87880b820daf7b5d5d27bea8ffe0bd617a3b4a2ccf256e0ebfb72d204a594d7db0859eef1507605d98b7ed486665c6043905c5e2ab87  0051-drm-msm-dsi-clock-deferred-hs.patch
-+c27c97d361d2f2d59cef444df04d7ea6a9448b8553df5f11e1e7c1e7335452ac01acb3910d13c913a6e957e9e6f34e305196fb634f1c158686a58cd60e126680  0052-drm-panel-ams968hh01-clock-deferred-hs.patch
-+fe7707cfff0ead46ad4da26ac367ee0fced806307349bbf7bf352acad8dcc1866c1c7d9fb276595ad242398e48d464ed0f3e4a568b3693e988f24be7b8f15b33  0053-drm-msm-mdp5-no-pp-done-wait-when-disabled.patch
-+8866afcc645e81197099e753593e48fdf9bee04ebc490e48cc2f36b52ae20b02ec20fbc40d9cd2c2a0234949dc88c8324179d74840b8d3bc54582a9d67d6bb3a  0054-drm-panel-ams968hh01-hbm.patch
-+4ab97bfd1e5eaf2f0f05f9c53701680291c4418cbd78d988a54deed9fbee6196d3dc5056b22316d7edac69218e88562507cf6c8637b8532cc3cd7d7aa0c7ee3d  0055-drm-panel-ams968hh01-orientation.patch
-+14f826e0fb34124c84188aa97d677bfd9b86a57a08e5b8074914fbe9785667482dc98a5c21887ad3a75d497c2fad271416769075a687752665ac73985cc5e3a1  0056-dt-bindings-input-wacom-w9000.patch
-+253cd9e0da296ba2287dd40448e7a58c8cec6e1df6ad4f635c6b45f571f23a07a3d58f82838bf2fa55ac316cab958e7bb0b3a715e4c978ccb81e235e2ea49985  0057-input-wacom-w9000.patch
-+76ee0a81896686151e7a809365af59aa49a07a49e0f79d8aa68ea0b91236878bee5523ea2aa75cd09f5d65076c2b1eeee74bddccebe4c3a1f213f1a894ae41df  0058-dt-bindings-input-wacom-w9019.patch
-+3cc320cebd10fbdf086d83b081cf68442cfc1e483d854431c935177614cf7134af05bced7fe998d074dbb4699db38b7a4dcf93ba9f2fcabcfbfe5637323faf8f  0059-input-wacom-w9000-w9019.patch
-+24dee6d195141a9f161e85202364511c63b2a7ba4ad198badbbc5ac9a4a69d7a9ba98456aa47c3eb9eddfbbcd4e8b346a11694f07463ee6bcfc5468a82e45197  0060-input-wacom-w9000-kunit.patch
-+4e75eb9c47b75a449511a81b4f384211eb49495b42b793482c92a2803dd944c886a49c302dd78dcd53915612d71788a73ff7d0fc9892a6d3940a29e851c3897c  0061-input-wacom-w9000-w9019-state.patch
-+fa85a4f136e523bec6ab2db47d374cd9212529c996917eebf7921a5c25d217c024d3e8cc47584a0afa84f9ef7224b0703746cc6434d6fdaed15e1fc14dc4034d  0062-dt-bindings-input-wacom-flash-mode-polarity.patch
-+96e0d8754cb80960e893995a57282783f623dd35c7167662b69d361f1e92152cb3567954f8eb0a65a1e935816e06409f5ceeb37ee68217794f9ae1b045ccc1dd  0063-input-wacom-w9000-direct.patch
-+9259ab3c8b894f905859a83ae17a41a697d0f44e01be7b20b1fd8ea34409b4d7ba1ca06e0f38c68334956348218ced84a38f4d53b896d14269bdb6ea7e47c6cb  0064-input-rmi4-platform-data-size.patch
-+fe303775a0ee5a609c6fed2e54fe4e57e19836fb94ef4f23402901d84f02f5cf79a35f91c71bb303fe2d46b5eca0f5ec0797888f152de3d42b931e6aaacf512a  0065-dt-bindings-display-panel-samsung-ams968hh01.patch
-+872395ca1eb07e97f6d0aa155fc5183cea7afbfb354203eb0b0070db804fd18739539b5e2f24c37d5392bcc3dea63d166a50c6dedc89e99dbfe996497f4f5ca0  0066-dt-bindings-display-panel-ams968hh01-temperature.patch
-+2fe077c39a122135853d43516e4b52e421cfc50c1bf892ed8fd17ba9cb04affe9190a0489888e46698a255b4a73acbeb9ef38098635421e2d32e1839a07f9d0e  0067-drm-panel-ams968hh01-temperature-elvss.patch
-+6351d51745b5b92dccbef1cfb209e873f4b41e0170b67298d5254c495015220a289bd59d02aef5b9fc24e1fe1efeec167002625284422a3988e9c13502c90547  0068-drm-msm-mdp5-no-async-cmd-mode.patch
-+3088008584a9f5d0ee121a63f82b77d7a1ab1b6c01f08eff86ed537587f98862ef4b88203f7940a7e3f55b1dac080f811bd1402755ddedcfbfd9f6e4ea856f82  0069-dt-bindings-mfd-stmpe-stmpe1801.patch
-+978ca71779d5ae7d8b1c8c8ba2c50e110b7f2e2f8df176e31961e648dc8b1dd05bb61f5f4b8165ca7458a31a053d68056e0ead754965d0c79502e1196c69f8c0  0070-mfd-stmpe-stmpe1801-read-to-clear-irq.patch
-+e5c452ad14096b6cae7413579d09eb6ffd1bba4ce896726bc236f4b11b595d5e433d9fc7c1c9f430efcf9b4da50c5887b0148a9f145747a2022cd9bea9922216  0071-mfd-stmpe-block-read-results.patch
-+428be79df2035a2becd543c1f3955a5230297dfc31eadfbb7b79f13464b8a84bf27782563c9479a075e95d0d75e1f886477d6a11ab8ca48087adef9a8385ffd6  0072-input-stmpe-keypad-stmpe1801.patch
-+3d1b923e2058730ed1a31de7eec268ec4acdd3e85ba5a2a53182a17a2a0740e30382c732b79f2989592c58ef6b930cde028021a2808d90996c5a4c2ba0420006  0073-input-stmpe-keypad-kunit.patch
-+c0b6270992e036039c11778b2f278a721b0c5582d09dc098d00e9d66e4a1bb6e6470fc97d04e7f46e6e0d675089d383468419a1953fc2b10d5b6a2121ed080f9  0074-input-stmpe-keypad-of-match.patch
-+b97689a75b337df2295c6c75dc7922273644e6704d0f1ef60c182966c33f1579aca25aa14ede0d9d0570329d2cd8d8a8430508fd8d43ea045f6c216fa59a81ca  0075-mfd-stmpe-supplies-on-probe-failure.patch
-+6016cb97968d60d8654fc1af419bb77e7db462cfadf092c576478abb8a238e4044c6c117356a18d4a7c492146589855127c11f15b7f1eee958b555c7bf55ba77  0076-iio-qcom-smgr-qmi-release-wrapper.patch
-+efdccc8a0b8cb0bfb6eb21b688a497aa662ae85af49650882e811ab6dd646a08bcb584f11e8f75f71ba4b7895b0822ee144994bbda71d2f98ac587628b7f8a6a  0077-iio-qcom-smgr-ambient-light.patch
-+ce8be9f86375e328d4bc070980de6f81767e4f09f8194b832e6d7f6f37f43fd7d5be8d7948c2394cbc61c5b4149db31f9d2f59ab543d3becab66bbd4fd728b67  0078-dt-bindings-sm5705-charger-usb-otg-vbus.patch
-+0c47f2821c841fc6fd481e0f97449f8bba7f4ba8450415fb23e7155e7c8f78cc2d1d1f691694ccec38c4a8c298b695deba7118eb1670ac995c202f237cc21d24  0079-power-sm5705-charger-usb-otg-vbus.patch
-+f297d990e2e804da0f617b6bee7fee8cebb4e6570169e2739b7ae89cd468a6c714edbd9bf6e8a4a638cdc3ea060cd7d67fae1869816f414aecca0dc7a4f84a06  0080-dt-bindings-usb-s2mm005-source-host.patch
-+faecbc064fa783bb9bf99da0e2be659486511185cd44a52bce2f595a5a5f9c0f78624f5c383816ff6bb6f0cc6dd25bf5f209078e6f00ae0f2cbaf4c555ba36d9  0081-usb-typec-s2mm005-source-host.patch
-+d511692f8491fdf7a2dbc78320a9a7b11cb28b897dc1f114dfff0c5e29b0487ce262573796761f308e8d86ea42d4a06a044268f3ffad60e9268c48ec8da7dafa  0082-dt-bindings-usb-s2mm005-sink-pdos.patch
-+58e497d3ac4e6c9aa321430146c16a1d4136e12389159b292fdc8fbcc48c0f623396df42159766cace096d0e0528d665513d3515dbc36501e402f7bf0d95ec7f  0083-usb-typec-s2mm005-sink-pdos.patch
-+e1e5bbb3757e727ce340fd85459c13ec0cbe41e197467ea9f6b617f23292edd386cde9e02089919b7315ebebe3dc5504a8c7c234776a21b7277733d837aed4d9  0084-power-sm5705-charger-pd-above-5v.patch
-+fc7ba7a6089335ef1aeffda90a43d5bfde40842a9537a90cfaa4025ecbc31bffe0bf16b86b9984ba2834cac2bd9e5ea4a074cbe3884d65b4cb8bfd0112a9c820  0085-arm64-dts-qcom-msm8996-usb3-reset.patch
-+0c550fe7215a77ad64b387458c37219f271e7691c00a9207e1e0e51d3c52a33dffb396d350e93e9f8b415fc83d6b3d3b4e913c5a76f0688e5eff2995e71c660e  0086-usb-gadget-f-ncm-net-device-lifecycle.patch
-+b3c78de7d2ef5095409ef2043986f222c4907b56ff28a8d6cb7cc94a3d24e415c22cb45803c91f951a330e3dfd3e51a8d80436e537a449778dcadb24296be18d  0087-usb-gadget-u-ether-drvinfo-without-gadget.patch
-+346325f6964fd634ef71b4557b9b4fdc0df6aeed0d204402dbf627dd7f792f1b35399c3c6c822282da550c0e44816f878524aa2ba1ea034da57d16684b700112  0088-drm-panel-ams968hh01-hbm-attribute.patch
-+e309c2065ee00cd9a247c4ea3972b0807de7fd789456c65b5b69192929b9d1aaab49f78eb4f3716e63f206a9d0821eede4ca858f8ffb772fb6c37a8c9f4d2870  0089-media-imx258-wait-after-enabling.patch
-+fbc39fdb54d168fbe2edf551f637694af4b0d986a8cb91041f480093308fc2d3341232d4f123db55b78c7955ef506707ee1603300079f817ec8e063a795f2bf4  0090-media-imx258-reset-gpio.patch
-+4df8e6129afb5e8264c7c6716f7ece9e37ed09110655ed6abb20f3da868c19df36f7e3832509121bb8480bc7246515218ac5910a62d11a70609cc193be8d949c  0091-media-imx258-16-9-modes.patch
-+16ed2e6bbaa238f48a8b4c45773f3d7a75db6750d31153440a6b8f14471bf82bf46de5a0dd494c9047e56f431a51979d101b63df4f036e2c29e689dfdc0e3fa7  0092-dt-bindings-media-dw9807-vcm-supplies.patch
-+d79fc89da228d7f6b14d1825abff39eaf6f6415d4af6704e427451ce0c790bb735970ff0e74abc4a5ed84a29d358287173afa806e4e1d7bb8fa924a12621d982  0093-media-dw9807-vcm-supplies.patch
-+8025418137416284f63c9b7d472d064c6bbcfd530b849ee445b538ebbf10052b001e3963ad3924495b526fc4e64c2863bd07444468d65c964207085434ac7cb6  0094-dt-bindings-media-samsung-s5k5e3.patch
-+7194ee253f0d441cb3214ff967e5d78ac2acc4aee730fdb36b2eebb9c4507ef5da534e80a03f65a2cf464c94503c6af6a54f9a75fd46107e8bc077826ba035dc  0095-media-s5k5e3-driver.patch
-+0c0aa49d0edf7d3242cb971c42fb95a3252eb8a3d33ec4f6b2903b63cc7fa061f6e687038fdc2192fd371bc72f8ef77a75d008824044278f83947ea5b370ea90  0096-media-camss-ispif-reset-all-vfes.patch
-+59c356259dc6067fed5e920e4bfc3db8397c2869c47a9be962269f968d191731751389f08333ad5a3100e3b7b437ace0fe36fbc004dadd53596a46535875d3a7  0097-media-camss-stream-start-unwind.patch
-+6ac5939e1d239e88b4caa78c40e5c7f6b01b6c1a6c6e0356e30678860549ab3a9c274cf02b238af201f2b39e2cc74ccc599562900681114ff2b9aa38836c6f9a  0098-i2c-qcom-cci-retry-timeout.patch
-+f09e945ec073c7cd498471d35b315a30bb496b62b9dfefd4e7709b8faac5bf8172877cccf2826562985cc50988b6ae37d558ea6f534b221e555d497ea8d8d659  0099-media-venus-venc-no-new-buffers-while-running.patch
-+ccf1340349c644332103ee172c2580a29ac4f8982c1ca5606f5e6a9544405bb624fd07799385efee161715880a49264921579e709af4bd21298b52f151589370  0100-media-venus-venc-timestamps-at-frame-rate.patch
-+7b3b84a6895d8093cdbb69b3b7120ff9c9d84023e792c6eead5ee111d02db4a3bef1956e853497f59f54af3ba8d76a3bbf621fd73e54ab981d9c6194ab3db7ad  0101-media-venus-venc-rgba-input-hfi-v3.patch
-+bc46f571124ea1a340219cadd209bb5a5d7780afb8f18c9d7e40b7b79581529dce46479a595d04bc74ad4b396190eb41dd9b62660603b8f85c6dd022070a9115  0102-media-venus-venc-cavlc-baseline.patch
-+63c08fb449f33620b825d95d2bd9734487c9782db49e699e5670827c643933e3b0e28356ba9bc6ac0f5f0984c31893ad1ef44db10e3ad539eeba91d610c0ea7b  0103-media-camss-vfe-frame-drop-period.patch
-+fbeb6128ee792b8bbdcbb403d65a1296588d0ee62da0192d21be3d39aa64858b22f7b0d1141b00c2cafff349fd20c78dccad99aa8dbb6b19ade7ad6ce1ec4ad7  0104-extcon-sm5705-keyboard-dock.patch
-+99f92a99b5e80f39f4b5f1fc434965e98b084cae3f31edfade3e4dc638fc004c1295513768e74d6bf2cc2f15d898d14aa36871c3f2f9c1f29050752ab784c761  0105-slimbus-qcom-ngd-of-node-refcount.patch
-+d1f0b8bdaab403897f878f5d9393a5c825dfc239b392ddac7585eb587ad28cf7b871983917565e0b6e0634dc391bcbd675bf9125927021b15c0146d643ef81d9  0106-slimbus-qcom-ngd-platform-driver-registration.patch
-+bbd5ea368244dc4a207d17be244beb75a48bd3c427de660136a0091314db6cc3f9b0afd84bed08a8f20273048e4b187b7fb808e666abc0e291c45a4245b55917  0107-slimbus-qcom-ngd-probe-error-path.patch
-+6cc69e701ab65f7a547d4c313f625a823e8127fb35b2445ecb8897fbe285ccbf9a99e81baee0ec56e2ede6f35c13cb67dec85cf6624d58b445417b2bdd306cc1  0108-slimbus-qcom-ngd-pdr-ssr-cleanup.patch
-+45eaeacfc177c4cca880216cfed8512b7e490fd01844f300af25bbaf3fca55fa7ceb1fd7cadb79f54cea4fade3028ee6233c7b86afda18f7514c98ecb9fef5ed  0109-slimbus-qcom-ngd-callbacks-after-ngd.patch
-+68d5114909fb9e2f3c9e3ff7622ddfb0137b94e2d47588238a6549525d0d23c0fbad59349329096c8224ac7951424b42e298579536f9eeb7a42a0d2caf7869d0  0110-slimbus-qcom-ngd-resources-in-controller.patch
-+9d5fd9c8f3981e01279b1b9a5bda278649a81936cb60e153a8d33eed90d1c40a096aa617c7931ce3cd28c25d733aa0952c5ed87ff56e018be2ef539380bc94bb  0111-slimbus-qcom-ngd-pm-runtime-balance.patch
-+3b1326eb6e2f64da5ff537ae6796410f178374a7bb3ade198d2c272698d8e2250135538a3d3a8f8629d348dd16f2cd01d5493204424ee2db48b57fcbc567023e  0112-slimbus-qcom-ngd-tx-lock-abba.patch
-+93af951ae3679707f697ac89df28172a081329dbb4e5f7fe57b288c79ebc18adb33cd20f8f81d4eb8f20b8e292dc838e9e01486b38fae91d861b7b9302d9c02a  0113-asoc-q6asm-drop-closed-stream-responses.patch
-+be3da2c8f3c2f526ef3fb76c5199ef62d309ab232bef822914559f3da66ab74f28fd4d5bac9f85247254450778063585c85dd1acdd33a26e6732b938a8e06367  0114-arm64-dts-qcom-gts3llte-top-speakers.patch
-+014236501dbf2fd474e1bfead8bf5f18bc53f8235ae328a126fb12e43cf4a32ec8bf149ec06dfff722f0bfe993aa6b838d7b13d431614b393ffcab1d8bc103c6  0122-drm-msm-locking-put-iova-spaces.patch
-+03d8c5d5e0ddcf7e58502a975ba2eca13decf840e25b95a37366fb1899f6fad26dec27e93e9cea9dabfa78cc18569b32714a2f8be8cec47bd896c6bfedcd13ac  0123-drm-msm-shared-vm-keep-mappings-on-close.patch
++eac8912be329999150a71257adc513e6a52891d122641943c3a440f775267705eff0b275b4d90d5298518ca638ab48fc2b7c3ee109d82f0bb34a1ac081e9c3a2  linux-7.3.1.tar.xz
++e598b865beecfccdcca4c4ff41b10682b30c6f90cd0e8a4ab8d4bc5e79cd5e612945c09a77a0a7ca2bf8eebef16daa147caa92ab5cc837f8b64d7c67a4d9d853  config-postmarketos-qcom-msm8996.aarch64
++0c629e3643e12f339c357ea0d393d39080aef8675fe7ab3b1f49ec711f8bb9bf8d0f6ea5ab1bb2b722bb8b9480798ecf3d589ad9c4c9fe59452dc6c7fa2befda  m001-media-qcom-camss-make-ispif-reset-go-though-vfe-user-countin.patch
++af43f2310312af3b470a7989e707100097a1e1593eb3e6fcad3c542ffb4c29910e268e8be092c523d141bc9182b5a71e9b9266f015da867e62e329ad3c5fb2d4  m002-dt-bindings-media-camss-qcom-msm8996-camss-add-camss-power-d.patch
++21dbaeb5d598852ccefd6963530acdcde70a3b84caf0580a6b4dd2932e1e3e629c2bb7aa6c208864ed74fa3f2b8cc1cccabc1345ac023200ab338fd5fcdbaf66  m003-arm64-dts-qcom-msm8996-add-camss-power-domain-and-power-doma.patch
++d410e0344124e7c9addaaa3e5cbb689ebd27b23e3b15281565abd661eefc0003b9a4d5291ce8b546bed684867051c23bcc39b7ba594d72157e30c4ef69d76f45  m004-media-qcom-camss-add-8x96-power-domain-names.patch
++ebfa5166a3bfcfc4075717219ac6eaadd055df7e864147e3e272b026f48f990b5696063ac741ad95818f5b160921525ccad50ef77a1f4eb1f48b8dcb60ca6142  m005-drm-msm-dsi-improve-power-management.patch
++78523901875c04a3032c73bcf2414e1e878e14b4973f3f4692fc9b712a2969a6a9a7d0bc5b7e13cf332f0da7e363c2fbe467a136f243c2c625c57817c39caa3f  m006-arm64-dts-qcom-msm8996-xiaomi-common-fix-tusb320l-interrupt.patch
++f908d37510266de53f6b76ddc4b80915b7ef9b461648b73e2bac829165c500a186148c5ab7da6ed78a2f033cd059cf1a026c8d581a74a464e5c9c8cd575c8b45  m007-arm64-dts-qcom-msm8996-oneplus3t-rebase-on-msm8996-pro.patch
++16756bbb692f9e93f099855ab0390798f4e90a4896e5c47d14852755b065a5dfd9d3abbe3781d91cc6ca5cf5cba31bc997023cd9108d6e0a64f7df589058d812  m008-arm64-dts-qcom-msm8996pro-oneplus3t-add-msm-id.patch
++1484494ef740c347c02e1935accab05916ef897f6bf2d96290d8374126e6e19cd07463e352a815f2acc7e2f49ea2f0eaf4d46ab427a45f5d5ddf5be99c295048  m009-arm64-dts-qcom-msm8996pro-xiaomi-scorpio-remove-dsi-phy-cloc.patch
++704e50cc80e753ddfcf0de0a6bff3fd1cf0b6aca9ee009be3897fff1ba4b671c86a6a18658fb3fbbc7250fd1879f9884c11d3c7c0d796c4d62aafbf74399d5cc  m010-arm64-dts-qcom-msm8996-xiaomi-oneplus-common-remove-clocks-n.patch
++3ab3994e4f290d8bf12685612502c612a97987c00abdb36394f0cfe9800568c5b8549971d272fa60ddee53a349af3cc90f33182ab52122b7d1db039e167dd7ac  m011-arm64-dts-qcom-msm8996-sony-xperia-tone-add-firmware-paths.patch
++bdbf7d152eebfe2d118f27b3faa9e34a6ea5b9a7894525f4b14d5c0ef7d4040b926ff88075fe0623156d634dac17c1b7e31bc336238acdcf8a6f11ad6908de6e  m012-arm64-dts-qcom-msm8996-sony-xperia-tone-remove-maxcpus-2-fro.patch
++08a688242bca791e5438ce001b71af143e47ca0108e084998667a0b8ed4eb7393c51e7d312243a4c8e6ff283dd19dd63f450c505046aad1dc5158181676c1a33  m013-drm-panel-add-support-for-sony-jdi-synaptics-panel.patch
++3e5993eb746dfccbc551dabacb6ab0fefc4ccc8aa423dec6f5e0d9a1a436a1f8b3115e0cd11b4634ec319e101dd4580d37e9527f91ac8ab5969114bc78460c16  m014-arm64-dts-qcom-msm8996-tone-add-display-support.patch
++93709ccc0d8c7a669fe659a0493b38cab670b6663b82643781f4c58a59e6b3d802743219609344f11a9c58d60dea48121c6ac11691c2cf22575b80c3beb55f34  m015-arm64-dts-qcom-msm8996-sony-xperia-tone-kagura-add-jdi-panel.patch
++49cee9a8380201ef58d86055e28ac6fa70a84bde711fa9cdc66d64f2a98d77239ff4669443c58e1e7412a30f2ed030af01dacec04212099c691bf33c9d394152  m016-arm64-dts-qcom-msm8996-sony-xperia-tone-keyaki-add-jdi-panel.patch
++f3da1aebc70043dd0e6d5b423185a25fad1f1cb205f54b8213d19fa29e1c32553afc119190b19bb16b44bfb56f59edd0c28ef7cd08e3a8f7c01f86f8e3e6a7f7  m017-drm-panel-add-samsung-s6e3fa3-mipi-dsi-panel-driver.patch
++1af568521f02b2c0d5d3eed26de10ad87fded1ca9dfff13e3211a93ef3ca706b71622fcd5b462d9856837b35318e2b0410be6db2060214cd9e69db1dcfb64aa0  m018-drm-panel-add-samsung-s6e3fa5-mipi-dsi-panel-driver.patch
++3752999738ee322d33ded85bd0cce9d9854f7696d7e6b887a4a3e785f3768e29be8c35a5e339d24ba3d25503cac3d7aa840122eeb2ae287b820c029e67f16ef5  m019-arm64-dts-qcom-msm8996-oneplus-common-add-display-panel.patch
++1f8ee06b54fcf12c3b8cf6c0115d3f33671a64df8614f83fdf7789cc0005066cd80ff048571c99209343e94af332396c7b94964e22ae8ac02fcbad7d1e1fde1c  m020-arm64-dts-qcom-msm8996-zte-axon-7-support.patch
++59abae2e5a9af6ef261c1d825df2a5978f9b50e946091406985828e4ffa4105e6fa8add10468902b80b71e806d3373720be0fd549b13d0273d7f7b8e8e9e9020  m021-arm-smmu-implement-qcom-no-smr-check.patch
++98a14ef5a3357110e99db976015c940be47f82c96a557c934d06cbff7337bd37581db4361fa01cde3e9cab48f780c1c890888f270257925bf6db4aec351fff08  m022-iommu-arm-smmu-implement-qcom-skip-init.patch
++7f33b1bdd706e3f5777ba5ea68f2d3acd7174a75ac08c6680be3eefda5d76929aa39945328f9b3961b72c021ce8c43f598ed842c8fbff5850b8c478b3396d47c  m023-arm64-dts-qcom-msm8996-xiaomi-scorpio-enable-mdp-smmu.patch
++5b816f289973b9cf0046fb37742d29036d21fac5566c27c6608a69dc787da2f1b6b37e8d81e89722ecd9d84bc981f83b107842b9141ade11b35a87f63d6546ae  m024-hack-arm64-dts-qcom-xiaomi-scorpio-remove-power-domains-from.patch
++a4c3651e0dec26f019e3518c293434af4c1a58987ccb3c54f5d04e1f2583d3f1e83138cec8d891563ec2023c69dbd0fd04ea05110d84c7340269fd20414b48a0  m025-drm-panel-add-driver-for-lg-philips-sw43101-dsi-video-mode-p.patch
++dc4b23dde6fbf49d98b24bc628507c1dd336012423af1aa62a75a8d06992332ade62890f8c02f146e94a59d2e648b6c308c89b123789090fc6bffe713f01a3c8  m026-arm64-dts-qcom-msm8996-xiaomi-scorpio-enable-panel.patch
++51f053ea62b0751c617214a692a38c7f7bcc5449835cc4df1c4658cc6f10e92e88756f3b4cda9e90687010d59bfad6cb5c9b33f28c19c8548d1c23a7971515ed  m027-dt-bindings-power-supply-add-dt-schema-for-qualcomm-smbchg.patch
++0bd15e0453b8058174f522e8fe21815e79f5d449549297049dca7342faaa3db6c814275405fd65db80e056f41515cc2a9d9dc11343f8737eacf61a79bfe497aa  m028-arm64-dts-qcom-pmi8994-add-smbchg.patch
++e1d61a6bf977531a8c5d404580821d20071c37c75314500f9c18bf44450eab1bc46af7c2948cbfbeb988edf03502f1ef556dffdc7bd4cdfb65563d272e527322  m029-arm64-dts-qcom-pmi8996-add-smbchg.patch
++2738741d97353044e043e5198d964c4defc0e7aba924ed33c00958daddaa1b0ae2ef2980b336dc188246433ad7563952f8dab0ba269e5745602879889e8c3e87  m030-arm64-dts-qcom-msm8996-xiaomi-add-battery-data.patch
++354521ab8aeebbf778bb1be5f67b66d78f7688374dc81f248b91f412e00ca5bb897cb2ed0e837f7374830e25878899a237f7811bc49be1dc52a478791820c4db  m031-arm64-dts-qcom-msm8996-xiaomi-enable-smbchg.patch
++983cd49e02e07e4a16d166822c8504bc03cbcb680e9d3b65da3511bc1cbfc58e1a1bb964afdc37b195edd6c1314f88cf68c6d1eaddbb5d2c4cdc9440d71ea0b9  m032-soc-qcom-add-pmic-secure-register-write-helpers.patch
++ffb9f9ec56dbacda9516802cf1376db6f28d9e6c7375aef14d054608351587fa8d6b50d64f7f74b46890ed088f780903b143cd56d339954a76d7c9088e0876a0  m033-util-macros-h-add-macro-to-find-closest-smaller-value-in-arr.patch
++8a09ff135cc573450c8943fcc18c5ac5e097f21a2062a0589d5696029bcd21cc3f338c0c1738c5f5dd9d8342ad541356e1c7bfd31d2f173acac274a1314b3251  m034-power-supply-add-driver-for-qualcomm-smbchg.patch
++a4b86e85cf05bfe5066f8c91a2498d346062d53060bfc9c552b62a998d33be2c0d10bcf4ae9fc05f1d5c927a938da4e667c9651c931fa779f319a58b2aa66917  m035-arm64-dts-qcom-msm8996-oneplus-common-enable-smbchg.patch
++d55bbb7774bbb41f98ba08541fff296cca72345ca79bf8b930766469a9921707de50c93752154615aab19e0aa64e470a08bb22980a3fec309a5d4d76bd05fff3  m036-arm64-dts-qcom-msm8996-xiaomi-common-add-vbus-power-supply-t.patch
++ab07e46f7ed7a797b1b6d3e66952208c255952f490e9ba859029b90e42d562d367c4147521883a2fe4fa78e6307e363324d3e3a22fd56d17ede6bba1c58b2dbf  m037-arm64-dts-qcom-msm8996-oneplus-common-add-vbus-power-supply.patch
++084728dd717408e8db9345bb31815a126e7e23cd9aa991016ffebc4818b77abf77a6686a99cb16c167caf0d0434ecfef81944fd295b22e6b25024fbd44bb5dbb  m038-usb-dwc3-add-support-for-vbus-power-control.patch
++4489202fc241ec868d15d68a3d567185cbac1c9f72c1646dd3f023bcbbf5752c2178300bff8241a7b0106d0351dedce5a89c9a9519d456bb77cf6aea9fbb9a08  m039-dt-bindings-power-supply-add-dt-schema-for-qcom-fg.patch
++0b1c9f4e4e7c24c228e915db29316bc5f34f4a39d14f25b7662f9f57564b930cff1edf68e76e6f0e99d8f3e0ce4d21eb90f91ecf15f5abf432c1d30fa4128f7a  m040-arm64-dts-qcom-pmi8994-add-fuel-gauge.patch
++8420fb9a00ea2d89ff27ad7a79c74e5a791a0aa3eadb969d076cb63319771e8a3a144702e0a56ffab5e4055429e4f2310405847ef14ca10623ddc59aa9c303d9  m041-arm64-dts-qcom-pmi8996-add-fuel-gauge.patch
++9e985e5b83a64a3f5c18c3127408c9d96814777f014b1bab9df29c97a3e001592f36dc33fd8008fc27bdcb9d309d189c8ea9fb87618bc0a79a81a2563a523d10  m042-arm64-dts-qcom-msm8996-xiaomi-enable-pmic-fuel-gauge.patch
++841798a7cf10bb075ec3905cdfd8e1db86b2e9646f75dea37f57cd4570258158611e0557a24be11f882b616ad8cc63a42ec3a1596207636095603c7e84c6d9f8  m043-power-supply-add-driver-for-qualcomm-pmic-fuel-gauge.patch
++09b0084c32b87e124b21b369fd36407a6e60c46652f6d85f4ca5a641d3716f84588973e0f320e9eff37e998c40b14e09ea10aa9e28e83d1c9578a08667aa94a1  m044-dt-bindings-input-add-qualcomm-spmi-haptics-driver.patch
++a8f90b1e02339bc80446053f573113ad69c8fc512db280ceb0acc2ea5e5ffaa2e036b7ac8e5e006babaa05c2dd06e689b39dbc8809d4d77a7daf13e9785115b4  m045-input-add-qualcomm-spmi-haptics-driver.patch
++0f4d43e1611b1a28217328797715b5a7b5342fb806fd6a81b2b60af738c377f49a5dc8f4eae922aa03343501669ced65dad2d81f9e898a16ba60168cb57947c9  m046-arm64-dts-qcom-pmi8994-add-haptics.patch
++787f9e7033281246f5eee5079752fe1c7a839fb7d695d5d502b826f3bcfa774d7d609e587138ceb484ecfcc612d4f2454f1f8ac0b67b13d6991307f277712213  m047-arm64-dts-qcom-msm8996-xiaomi-enable-haptics.patch
++8fc34b8d8dede1378f4af3b1fbe135a2f6d913f91479de5bc2a72b958524053dca126c118e5a83ad74fbedc8aad626e67ce07e57fd7182ce5ade7d3df8d08c26  m048-arm64-dts-qcom-msm8996-add-cpu-cooling-support.patch
++2e9518f460d6620a89f17f4d9d909becfd89a959cf0cf737d05d00d2eb20d0de78d29d26e7c7746f930a6966a09432c2347c91d57a511322a0a07125611c0b72  m049-arm64-dts-qcom-msm8996-xiaomi-common-fix-dsi0-supplies.patch
++ff4ac0fdc29bedd7cca258de46db50be306b093e9ea196480bac6df27aef36eb288c678d52cd838c7dc615c501c3ecf9af03e0277df23ed8d4ca8b3a2cd0553e  m050-arm64-dts-qcom-msm8996-xiaomi-gemini-add-second-board-id.patch
++17590299fce4dab7f2e40bcbd3c1543c7b7a023d68ec93748d72231b39ae06eb22f83f7477b5d13f8a6769c10fa2698af6d5686b3e1d29d575148235aeb0a652  m051-arm64-dts-qcom-msm8996-xiaomi-scorpio-enable-camss.patch
++d70b9c25be5285714b018716398f97a16fc076babe5cb2cd934876fa9274e9a78aafff55e460f2e7014067eabac3e2adfb3dd857fe6edbb4f536ad3163264ef8  m052-media-i2c-add-a-driver-for-sony-imx318.patch
++d1fc118caa50e5697fb245868d90457455f39b076b3b41d53e4451ec2f121c965e2110999941fc3c7b1529de0d751bd6e8a48ba0fcc200efbb0b10e32019859e  m053-dt-bindings-extcon-usbc-fusb301-add-bindings-for-fusb301.patch
++06463661a19c14608cbf47ce7ffce787e9aa8f9ef53af90997bab0cad33d6d6456cfbe96c402d6d073b264a5589ad031739ccbf4ee00ebe66be0fc5e61f73afe  m054-extcon-add-onsemi-fusb301-driver.patch
++8406929d9239280cf0828b1ef3ae875ed17e67bfdb5120eabfa988facdb92975701ad683efe35c6df9c1e21878688eb1fc53a8b56b9ddd1fde892ae196754300  m055-arm64-dts-qcom-msm8996-oneplus3-add-fusb301.patch
++dbb2b74a5dba105e0588bfcf8a29a53254e15e0434d2b51ee6f9212ea85cf5fc40d69f8c56e5b0f3cd0997668e132542c5c7014ebe389f8011f3f2d3566c95c1  m057-remoteproc-qcom-report-last-event-on-ssr-notifier-registrati.patch
++c60e344196efdd6935df0a4bc762815a77f480d78f1201a1ba0fdb288a5b8e28334756ea3a10fa4479cc4639e8defa88e7ec5b3c47f0e3b8eadb94e7f020026f  m058-asoc-dt-bindings-wcd9335-add-aif4-cap.patch
++d798f212c0ff3d924d2a3deeca63d1b4fb59911a41bae08cc83861fedf4a4a3f080af694f45831508c8d764783fb0dd67a4a6564af08b63ef3d4b4aafd096462  m059-asoc-wcd9335-add-aif4-cap.patch
++bcef3b20e815781a6add270da93703a3a98882ad229ddf349e91d1c0f786f23b9dc36b40e2c7900f2bed0eb5614f27ac208d58d714434ce48e9fa72f21b18e7f  m060-arm64-dts-qcom-msm8996-xiaomi-commonize-and-expand-sound-set.patch
++6d7f49ec3db1cf3d1de00c884f1c4bd4ec040c302126551eab1f9f0932c9ef67907bb7145db10155c5f83ac66969f4a4c0ad088fa48c94de72466b38eaf9aed1  m061-arm64-dts-qcom-msm8996pro-xiaomi-scorpio-add-rear-camera-len.patch
++7c33557b09d8525c9d687550059abccdb5617c832759a1feabc7c3a95e4516a357aa4d34ed73aadc06fd5985a539970a45dbf7c0ef7385b896187df5d5beccc0  m062-arm64-dts-qcom-msm8996-oneplus3-disable-usb3-clock-to-suppor.patch
++5d54ce502a613c365446d9c51daa6ceb7cffbe9b17820dc821aac8a09b4ad63aa85d4e31c5df35c5866677a72274ce364c37aacbe4ba9cece3044bf1a2aa95a4  m063-arm64-dts-qcom-msm8996pro-oneplus3t-use-per-panel-dts.patch
++488dc098febd99de313584fef20da69d1ba2fe711c4963dc97ce40648cb5e85aef966497e27a14b332f2f4d9a010ff191966a6d52a752282f5db17a1a6f705a4  m064-dt-bindings-arm-qcom-add-xiaomi-mi-5s.patch
++20a01e6e357533b78f7178031ef57795cb7243b264cbb0252bc46e798b960c018dcf9ec5fba925ecd763aa846f0ad8ea66f0445e52b27c148675300573667568  m065-arm64-dts-qcom-msm8996pro-xiaomi-capricorn-add-support-for-x.patch
++6d0ec60d3d7c842787ef214c4d001cf857218b6ec221e34f159ddd825705ddfdd7fd9948bda76a64a0417c644fd7e6c02cd9c34118ef14da229020a8684b042d  m066-net-qrtr-smd-rename-qdev-to-qsdev.patch
++637e04673af8d6bdc626375623f8cbd4aee2334c20a25391c7167b1daa9cca586444b41eac0fc92d0ba840bba4cc8ca879cf2b227df4c330e59972fb2791c849  m067-net-qrtr-turn-qrtr-into-a-bus.patch
++f352ba7a9fd210eee00133f56785eec5786ad37f28bf8b145b6396da2d2b66f44de6669fbbfc923594301fc2496610b33fa4437544a6b23a830f9ba33c49155e  m068-net-qrtr-define-macro-to-convert-qmi-version-and-instance-to.patch
++55728038f8518d35b8f191f8c61c465931bebfee629dc46a67c7a32cdbb9c030aaf22928ecc7f3e2f51dc8bee3969448f9615e32b690311c9355d0c3205b51dc  m069-iio-add-qualcomm-sensor-manager-driver.patch
++99c812263fdd1459c1f8ade474d0f67d2674c7a4840b271eeeac7624a6994fc0a374ad9ed8e927f6e733cf415a4f9857b8f0db1f724c37968e5892c65b063ca7  m070-soc-qcom-add-in-kernel-sensors-registry-implementation.patch
++cbb3e21bb9d760e1a79563215465be1a1f0608ba42745d412f27b6397e11363ca52067e1b471adc992edacd58befd99443894d75437867f8cbcdb7580f18d481  m071-remoteproc-qcom-enable-in-kernel-sns-reg.patch
++efcce163af06693a472364124ed27e1916595a263a3119d89a2f42d8915c09eb060f0eac518338f72362787ccdafedf12f2bd154892af10b4a1908ebc5d61e89  0001-add-samsung-gts3lwifi-dts.patch
++964a367bc0e25ed4bcc414d7a184e519169796cc91de2b2a8838cf505ee006e7f6d84db89ed298ecbab99be2fcd9060deaed840be574ccfb08f6be0dc001a1d5  0002-drm-panel-add-samsung-ams968hh01.patch
++22818c232f0be8233a0550e4a470295c1c99969ed089610603033d0409e310461b5a719e5ca6f9eb338a877ab8fe691d345de2d93d5daceebcb3689449f64731  0003-drm-msm-mdp5-split-display-bonded-dsi.patch
++4521cbc37842219bedae736850e6199892dfe92fdf7f7e516c17cc12dc951835aba20a973db673d0a20205f416d4fa3d44c18bd87f0807df4a833427d3cc8986  0004-drm-msm-dpu-msm8996-split-display-ctls.patch
++aaf7f8d8d0d58f47e63933cdd5a79a24ed72608e564554b315051e2f891e9a01883cfe0563abbe7c7771499a92ce4766a6ad843ff61782c9f4d6c199a84db3c4  0005-drm-panel-ams968hh01-mdnie-bypass.patch
++c976bfe87b649e638d4329bbb1de44a8a506b29d61d412700ffdc21b31328df9a603315a358bf0c07a5e152a4ebac8b4a4ca510799e9c967bfa2f0926e664476  0006-drm-msm-dsi-rgb-swap-param.patch
++1be0e23f30faad6bffa0aa24ff6b12f3065f97104925eeb2be43beaf056d5d78a6190bcda296178c3054b0a8af84a4d63462621a33e8a0d7961c0c9b42854455  0007-drm-msm-debugfs-dsi-tpg.patch
++dbe38b26a617bc2aca27eefaa6766542124689dd6b5667fa07fd35b0615e88aa1bd594b41d2f5b7b8db056caaf50039c59478dd518f836a2f5b27fd433eba265  0008-media-venus-hfi_cmds-h264-8x8-transform-on-hfi-v3.patch
++2caa63ad5cfcf6a6b89b25b63d524d935e63a63c1a5906ebba33767af7f874f1eeb893e19710851a8fd661c10b4fadeb7a913a25fc470cfc26dd66bba33b5c02  0009-media-venus-eos-on-real-buffer-hfi-v3.patch
++6ee98dbc97bca6edceacfb4d7d831c6b120bc7fd5888478269a67c3299e111424d4faa3c68f0418d2422336db4ac462b168c6fa98b7b4284efed8dc8103220d0  0010-asoc-qcom-apq8096-be-format-s16le.patch
++a01011ee4372fd4917917ffb5c7c93962a7e32769f6a01ddb85576e8d1bd90736e401bc3c8d1b35bdbc5c47e318250d3305fd1d623a1d18bf6f0255e98ae0dfd  0011-asoc-qcom-q6asm-dai-reset-queue-ptr-on-prepare.patch
++2f39fe758b37c24bde0574b89ea1a92c68efb5625262ddfeb87a8aa537fa7eb5d5812f501b9d6e52f2f3320a13961b92d429db9bfc90037488f361c09bd398e5  0012-dt-bindings-power-supply-sm5705-fuel-gauge.patch
++d89c1871f4e470887ed0de23f447b70021e6a48ed63e19cfab7be89082e4cfa54e2821c2bb33f07efded186aa31ab85cd0bbf2c83c5bee723480bab765a4e2bb  0013-power-supply-sm5705-fuel-gauge-driver.patch
++c303bb9561385a68b12140be75b879a20434efcd6f40a2c35d425fdf691e082ada6bd3d774efe837e2aeea47a76054bd34692ec03f72b97c698582bd2367d07c  0014-dt-bindings-power-supply-sm5705-charger.patch
++6c32c6d54572e3ddf75db46f913532c8e72623e8e5a8475acec3fb06d586f4adf0ab35908da5abc146ec4e40a7645d666b857369db20fcba7811c4eccee247b0  0015-power-supply-sm5705-charger-driver.patch
++f6f4bb882cb96b70a910d9eab4e678cbff0783e037a78b31d95b5942ef9db8333171ae2638b9ebee08f47876c11ad7f3c0e47cc49f3da30b07462eaa85d48b89  0016-dt-bindings-extcon-sm5705-muic.patch
++80d9e20d52cdcf73600af73fdfa7e92aa92f93a6c6908584227ca9da73156c2e1ae221f4b789b704850d3c6a6ac8c2846c98b195d492bfa42ba177b22499c206  0017-extcon-sm5705-muic-driver.patch
++3bed9cdf8fa13bd71ebfcd8233e30449fb0602971bccbcd15949bab947205db16232d8cdf153813a74b8445dba5e8cda005833512aedb44e065264fda4bd9b4c  0018-cpuidle-psci-domain-accept-osi-only-firmware-msm8996.patch
++14edefd8a258d1c222e3f111ff1858a5cd6338c061ed7d40429384f7ec5f28e8223223656d21e41d8d6befde73f14fb206640601b69687301dd7f4c07c622c74  0019-extcon-sm5705-afc-qc20.patch
++62f615cf4fb70ed694ee40ec3b1d50c69c96330fb93689e2cd8a868e4d8ef53672c834a46d4ed3b3659f3297dc57e2a7b99aa449b22023e91abfd3ae02d1667d  0020-power-supply-sm5705-charger-fast-charger-limit.patch
++30c52619f234fb6d74590b0c27a3e6013e3d4e6b3511557515e1beb652a48608858abc3b834360e11af438df5a83fe83d78e91b3ed3c04a9a115da57f7853992  0021-power-supply-sm5705-charger-temperature-guard.patch
++0ad6fafc016dea1f93bb2bcafd2e5d0f85e4ec5f94bcd7ad7a1fe2f96190ba1738fcadd79b819aa88daeef104403dfc9f815ababc7fc115ae179ce94cc75d890  0022-asoc-qcom-q6afe-tdm-frame-control.patch
++ead65c341489185ec9963f0f07c6dadb108e0425e4967ca399325e8ce3af9dca4440e1ba654209839c578992e4caf076ee7f392261ad735d4172f199c3e59cf2  0023-asoc-qcom-q6afe-tdm-slot-mapping-only-with-channel-map.patch
++f3103e3a82b01a89181373726c241d890333af97916d9ae076d4337270983dd7c6a17a1144713afe49e6f00f7c95ac99f347ad1f4e6c63486d8233f14401eb39  0024-asoc-dt-bindings-richtek-rt5508.patch
++708121d1dd36c5c31ae099c9000ff85e98a35a0ee43e461189f832ca24ef017b30c9a7e19331ccd2d0f00d74492282f03c765404dbd46ff30532d356d4ab7b81  0025-asoc-codecs-rt5508-driver.patch
++829396be5952bb99463099b3a709789b5c9a67b17b2c962be5078696d769d364545c6ff72de501dc9ddc036cf794a1549f81fd563c5323443d40a657806f4d38  0026-asoc-qcom-q6routing-stream-to-several-ports.patch
++bda04bed35473d6bafd6508f26940d48497f2289cf16c617370dbee58bde8f4fe5ad34d5c513dd99a145a91bd47b97f6d05940296e1bebde8a7c52cbeb383b61  0027-asoc-qcom-apq8096-tdm-back-ends.patch
++2981cb3b123d6ccec29a3001fda3d4714b74ee5a10ef1c42982a215e942ec2cd6fb1b3395a1437a9796b20762b464dc3c0dfc022996ec5b5caf98a9becb1f86b  0028-power-supply-sm5705-charger-fast-charge-current.patch
++1e9392f702f3f29348dbd5a8e5de65751cfeed8751dbf15520b37b9090fad002175614dd83e7464f8c743f2cd79317a0047e87a7021eb98e498b67c4a86c254c  0029-dt-bindings-usb-samsung-s2mm005.patch
++9d24b45e16eab6ee6a82b1008324a82f2dfcb461e30cd2e6abc772bdb30da09e4c1f90b0afa41f2f2a4b02e7ffb759fc075563392440ae62b39c91079f5dde9e  0030-usb-typec-s2mm005-driver.patch
++c18dd31ad9c708d63c8da4f52be8a150c078ab67560b08b251c0fd5f06f9da5567dbc03b575ea1b066d5db5b5aab0d41d2c5d11c32d71ceeaa1f11cf3b2a7417  0031-dt-bindings-power-supply-sm5705-charger-typec-supply.patch
++86c3994760a0773db6b4a8fca5291d26f19e0b988b07992f2301ae9ac8a8fb29a2d6e29fef60e64291c3107f1bb5a4735d9a94bd1a869a4560b88def8868cbd3  0032-power-supply-sm5705-charger-usb-c-input-limit.patch
++1ad6c0a84e3d8a6007e0de32113697c22cfc07afc0e38bec75433fa79c2a8b09464db69a335d84d45ddcfc364861613e7d1effddbd7ba68a23ca54f0fe03fc41  0033-dt-bindings-power-supply-sm5705-charger-torch-led.patch
++e99f46236d3a80f3846ec8b8fa9dcd589dd53440511198a2f22896f5c36c31ec83eea98d73c24b5907375db5fb8ed121ce33b6972a88466313a5850f667c283d  0034-power-supply-sm5705-charger-torch.patch
++43a694f17087c2ed95ec26cf42a962c443ad2231d23ca926518ca16cd75b51e42f277b26eacb2f9868d0efcc9f14da36f5443bd948c00d0991701fc104b5dd03  0035-extcon-sm5705-hold-vbus-5v.patch
++2c8a6b1c87c2ff38e329cd9c6f50689d6a4e0819553ea3909d2d5a21340edc1a32ac11696bd71cad14d07ba65919801dcb3e8c5c4c48127008b94f280b897067  0036-power-supply-sm5705-charger-5v-usb-c-and-torch.patch
++4e76a5746d5216d48b0ef9e14346e852b9449bcb358b6484ef8a82318afb5490517d04ef86c7285503a9588027ba2b20d86959d75d27f5cd3e063631d07cb3a9  0037-clk-qcom-gcc-msm8996-pcie-gdsc-retention.patch
++b4c4f1c143053fb2e4ed596b4d225fc4cf1e0f3ec8ead5b4e2c8e81e6b652389d2c0f052bf2fbdb3258dfb0bcafa89b5571e0ceda9cabc2732ef539fa809a37e  0038-drm-panel-ams968hh01-gamma-register-order.patch
++10fff9288ae27b1cc9b45d81d06d159d5687854b3a56d0da8074ff02e568ce3d693e8d303e0c14e1548fd83f26ebe2430d2a71ddb8a90556258fe174afcadd79  0039-drm-panel-ams968hh01-gamma-mtp-offsets.patch
++0542acabe00d9fc59332d430adc3d63aaea97f78a67d749b248759338f74b0a79841ec486f77a62408b818cbdf6ed2de056488c8d862d6160a98ccf0c75c196e  0040-drm-panel-ams968hh01-elvss-360.patch
++46b57e1d5a78963ebce340c6d46fa7e1b95fe2a5abe92d16af198db66cb47a4641994e6d04989608d76728dc8ef74cb3419a2ad8ab3a0d3a319adc5a85170a8c  0041-drm-msm-dsi-defer-hs-clk-clear-stale-request.patch
++a376024d664714d36e1bd6b7f65acc5707ac744ed419d519f79655efe3c3b5832b470910be6f2c1206ac772c2a5820374c510dc318a9453a748a54883dd2f56c  0042-drm-panel-ams968hh01-brightness.patch
++bc0721ab1f9acfd27d55e124754d54b7a823aaec29cf7fe2cfb5882119cea6ee01c0d4980fb4478699a2abb802656afc2bdbc8633f31a6bf09ec56163ae0d55a  0043-drm-panel-ams968hh01-acl.patch
++d49183a9847c58f0450e1b69d39f1583e9724cc9a2d7bd9dd2bcd0a70c71d71eb46250146d2434fe81c59102e4d7f73b2c00b45d20d35b0597048ab0115e3cc1  0050-drm-mipi-dsi-clock-deferred-hs.patch
++1f0d887f7621b346d39e7ffb94be136b42b6681969695d1178e632c2e422754ea1ae36a900391d942b9b9fdce86a7609bf8cda6e2e27b5fba1209197dc7c9541  0051-drm-msm-dsi-clock-deferred-hs.patch
++09d547097b7fded5e1b5322bbf1841f905f46a58db30850f4e66d9c3eaaf65fd1d77dd0efae79ebd03b4eda4bada46ea5228b2039830b58ca9879d93b12e8fc3  0052-drm-panel-ams968hh01-clock-deferred-hs.patch
++2e38a597ad64002afe99ed4f45d5170108c0046947431932d3672c8ea133c7a2410528845fdb76a39adccd44fdfc6a6b1a71ab58910f976a33d3a4b77baa8ccf  0053-drm-msm-mdp5-no-pp-done-wait-when-disabled.patch
++e9e93ce765aa0780717d8bd0302563180d2d0a744690395686d6ce83bef0327666605d22ee4afedfe1ef48b7989046ff85b6706b38c865a699ebac8203857afc  0054-drm-panel-ams968hh01-hbm.patch
++54928930f790b03952f5b3772ed188e0170d4e9bde81f67e003110cae72e276442b7a5ffdd57cfd00f31d6c93949d30c1c9d3ba0cd6cfbb63263ff8b04fb9662  0055-drm-panel-ams968hh01-orientation.patch
++70f1cd76db93ca029e866a882f74c5f0b5b93c4ed3234cf3dd412439b2733d745157d3f74104d4370215a4d81304f2d536ca4dc092539af5efb9d9c5501f3877  0058-dt-bindings-input-wacom-w9019.patch
++6689ce8776a495381f35306060172ab9a8f7832e709e90efab838054a6aa20539a78df8b44a01dea0326d6f1a47be3616c6bdc20fd94c9b4c73eee2ac5b50125  0059-input-wacom-w9000-w9019.patch
++8f5870cdeb0aa34738286ab2eef178c467b1266870b33d1fb2ebdf1083dc679989003fe99e2069bee16e8942d2dae787dd42e0fe85a9cbdba03ec7e9b96f0866  0060-input-wacom-w9000-kunit.patch
++3c405493aac24f086c6cb045f93940a57c191a4adedf6a70954ebef434cbda988b66c972630013a511a6aaec8ee7ed59f90866ca38f49a6ce3100f2ff60357df  0061-input-wacom-w9000-w9019-state.patch
++20f19886c78b01ed8bf9d9eb81c175f4cbced4bd95b208f470d70b987760da17b22e11f390e92ce58c1f177b24d11d6a720f523108e1e7c1a9f1368c1111edbd  0062-dt-bindings-input-wacom-flash-mode-polarity.patch
++36b4462c7ee6d70a1e679de4308333492349a26a0182e7944eab5b727ed1b6a6bfa1214e5dbc91d3f25171b72f95e30664ccbc5c470deb135a33816153b8c528  0063-input-wacom-w9000-direct.patch
++e6fbf24926ab67bf547cb3b8be7fc2b0a6c08654f5e573ddfda01fc79bf2dbdda146bc48aaf52a91373b4890032c50d5cd8a300cbe4bf98aff779e94d5f70371  0065-dt-bindings-display-panel-samsung-ams968hh01.patch
++ae2ed7396e5424b11a86b97c8ebf7d770c24522966cfd114040b631108dfcfd0be771edfc9720bf90faaeb1817c35124f0b51d2ddfc47a7ef5f20df9c7db3cc2  0066-dt-bindings-display-panel-ams968hh01-temperature.patch
++f4b56c49987d1f3c63e549cee586694e5b7eb41cf791ed962a075bd1172d1e5af21d81b5c363881fd3ee9cfc724cb4a20bc33ea67e46f81b399bddb43befb4a0  0067-drm-panel-ams968hh01-temperature-elvss.patch
++c099d1b15e9676b03826c969b1067a1d8bf04e717ff032f311cfbab17b3b3aebb96bc64b969fd5c3a29dfd9dba8b79692f1870832ed791ed393b8b9b7a622504  0068-drm-msm-mdp5-no-async-cmd-mode.patch
++34849082dd307612bbd39b5a2e0bd6fe96a93d8e77a7d1011dc597e2dc73d1932cd8d28061e270f1723c10914fd9fbcedee68c0e3f1e8828f45988d147004e13  0069-dt-bindings-mfd-stmpe-stmpe1801.patch
++addb1808e3b2baafb3485f2ef4211fd6362668c136b4074a2b7fbc17984ea7241f56a268890972f57e55e68c435773e4fb214aed3f8ad5b2f6100dcf7b10f0e4  0070-mfd-stmpe-stmpe1801-read-to-clear-irq.patch
++6448138a0986f822a1ecc590038fb3fadf57513b34aac99fe7934fd3b53894af9c04c1d3da1b1ea895e1f5feaeb173103c8f5ef7e1b10eb88012a93ec371686a  0071-mfd-stmpe-block-read-results.patch
++0b8843afc4851a960abd119fb2bd91de615051d9cb99c197aca13161cc30ea6b309630bdc45a9d21540d3329ded69942cca5e895614a55d6b264ac816cc0f717  0072-input-stmpe-keypad-stmpe1801.patch
++f7715927fc7cba2466e4572d23be99be0229d329fd160437d573a8badf9be9241618ee71321453643d310421e8bcec2a38ab9fac9f927b96e7494c572ce77336  0073-input-stmpe-keypad-kunit.patch
++60e92170d2f0f2f12261823178fb41da9eb74c8a20d64fc8eeca5c5e89df518ef59521fed0672bd1c869a007a9897288257151df88d77328b8098bda3594d010  0074-input-stmpe-keypad-of-match.patch
++fcd233d87671103903991bff1d8839e08cbce67fbc296b5dc3a96980d68ee87479ba49a1e9f9d07835dacefb6eabd4611224e1f379418a5dd07fe6b7dcc4081a  0075-mfd-stmpe-supplies-on-probe-failure.patch
++274d3d42e88ac38374101e5f5eef2d47a7324d4320639c910b64513b85c3804253afdd8e0a05e7f0a47eb917d0002b4b6fdcbc9ddf0995aac6193bff818b4d1d  0076-iio-qcom-smgr-qmi-release-wrapper.patch
++2f9e866118839dfa4fb5cc4adc9b021466bef962c727b5e27912a023d60d51edf572eec83c761da2b2abe216366f3f05dc1a4f02abfe062d674516c2bd3efba3  0077-iio-qcom-smgr-ambient-light.patch
++f40f1e89214847ed011b3ab217d5b725fe4ad6e1a773800945dec972cd81f3cc9471220bb5a6d8143ba4bd790bf634b5654655032eade00101611faf69b1180b  0078-dt-bindings-sm5705-charger-usb-otg-vbus.patch
++6289a67b4b69e72efdb501816816e25a80958f4be41c49ce8f739289afc8763a826cfe22d6d097fd3c013c242de9a8cb0d23b6efae89eafe7692481a4c88de05  0079-power-sm5705-charger-usb-otg-vbus.patch
++e733fdc3d034d467b5df94c447b1d6a026f039b08a3334395c795366a6f28441e30e5ad6248e8ec586a8dfba46796b7f3d5c6932384f5bb762368f50594acaa6  0080-dt-bindings-usb-s2mm005-source-host.patch
++fbcbcb1bfa7c125af4db96d3046aaa3c00eb103a5e6d47a873f716b6d33d9087987ebc20181648558ec558f96c791aebabbca4785c99f657b7cf49759adc89e0  0081-usb-typec-s2mm005-source-host.patch
++82a9e51b4e2f653e4f53add84846e2371209efd6241c1ded3e918a5bc08914cd7dc47fb7b55ffc26a30c2655fab33867459fed47e2dcc91e99c8db5213badf25  0082-dt-bindings-usb-s2mm005-sink-pdos.patch
++f8579b82372ddee4d4b55013aedd842794ee87c2568d2fec8467a6f29d9fb03de909cee855ec34efee0ac93a8b8f62e2c0520834d813a891ba4f946866bacec8  0083-usb-typec-s2mm005-sink-pdos.patch
++532a043574f04b07cab4d11901d46a04fa14044de6e562325ca699e8519f26bb25a18e8014ea0d3405eb80c3215d5dedb8dd0eb460ca6e783f65bec78a166ab7  0084-power-sm5705-charger-pd-above-5v.patch
++852c2a5b433b5ccc05160c3f7b32683cfb099ccd78c11e847db0dfa29466d2924903666d45f013dd5569e874149af85e4117f19649901e832b0336382bc6043e  0085-arm64-dts-qcom-msm8996-usb3-reset.patch
++a2e96ca11bcd5d06b410aa1ce66af0d5288fedd949122a97aaa7f6270a54c3d725859a8a0d3374ecb476722dda77effbc6e6764d752f2c46a17607d83371ebc0  0088-drm-panel-ams968hh01-hbm-attribute.patch
++7def0985b7589d690398a30ef4b2336d863bf12198478cd887c28325d1661a7d7e00fe456e1a1f7fb700e365ca3004f3bcac1dcc9b8009813298c91e72e351e0  0089-media-imx258-wait-after-enabling.patch
++6125086132c98257cff6665bf1e6b7747bfd5ee4ca97dab64ede2c2ef9c348e2ef86e3c39bf50050f8244ec07d236ff9371f9bdac78e56763ed617bb6e3f45d0  0090-media-imx258-reset-gpio.patch
++d85dc0dab4821a3ffb7708b73351e9f5cc88cfe03aa048cd63dd23e7acf6b0603ebb004272828fa8dffe512cb65686180bf39b57256814bebf07db984bb0f3cd  0091-media-imx258-16-9-modes.patch
++4e16ec041894f89744950b37b123969cf5317a9e56399b1ccc72d3c0b4529909dfbf79f79872167b4c7e369cc2fe7d4e060c9595bdd6dba3f3eef25c6202874c  0092-dt-bindings-media-dw9807-vcm-supplies.patch
++f1530e5833dc541f42d788993424421bfcec3c07e2778de4a0de6506cd1dfaad7a0e2b8944caad571ebae4701f88b6c50e8bb39bded7dff9bc8e01a964ade5b8  0093-media-dw9807-vcm-supplies.patch
++d2db8cde15e6423107d7430340c5e23fed27085499999a3be351309b1b1956bb12c0fb95a02c129852ae9b139e7edf22f68c69831a677670b6b9ca5bfd16d80e  0094-dt-bindings-media-samsung-s5k5e3.patch
++0089ab0ef3a86921dee338565b60856ea02e8f8b31a79b2b59e874996f77e7db2b8eb15ba53f9a5f553074ebe161ceb6790cf6f6334939ec60f6f71879922d36  0095-media-s5k5e3-driver.patch
++163d14ed87bfb332b2b6a0cf12ce66c3b9ee0bd1a7de4b8a39e3581e6c60a1e3c8e7cf11842471f18dcff592c020f9a8a16e482d9ee2ef448b923873a3b1f164  0096-media-camss-ispif-reset-all-vfes.patch
++a3ee23ded6db368cd1e833e44966a14de1ae0dca306ef7e64b64cb7c1fed31e7711008fc476a0eb87fc1b2ef04f7d034112b64df38008e072fbc5d97370b5463  0097-media-camss-stream-start-unwind.patch
++4093b5a49d83ec62bf8e02a258e77e4f651361f3b0c789143a03ac74136de34b0ad928eb5ccd4f891769943831b737040cbec66adee5a304fcdcb2d8603271e3  0098-i2c-qcom-cci-retry-timeout.patch
++a14684329c4466951dd2d14ec8685412b1e3f9193a539ac0d89e437b3acac6219b671410db7a4c8cf1f8bd4f3cef164a9fcfac5255e727690fecb4990ef8a50d  0099-media-venus-venc-no-new-buffers-while-running.patch
++5f20398db90b657bd1e53d1ba22540b841b63e42a9b8458687ed3b5ed09f48eba0268a168728ad7754f0aeac8db9882d0ee07d935fad3ecd35181ba947861d86  0100-media-venus-venc-timestamps-at-frame-rate.patch
++f68e1709b39ca97256f8cf833e88cbd7b236f27cbf7c70d74aab39604d2196d0da3c67d369da237ea9b7f724bbf3dcaabcb388377d4e3816ccb9bb89ad2510fd  0101-media-venus-venc-rgba-input-hfi-v3.patch
++598b90255321f7f7c7236510cdf00f7e821027ea0be87be9adfbf95a94cf930fbd96d4ae40c57b194d5ae38653fb7aab8530bc4d4d4176a5cd7a05b298771afb  0102-media-venus-venc-cavlc-baseline.patch
++38f2604d32a955e6ccdbd4cf33713263b38634cc01ebd20384e3dd141868aef17c83f3bb5e2052e2a9a6a837e666de591695ca9d3a4aef7c8c84c3d13eee4090  0103-media-camss-vfe-frame-drop-period.patch
++38083cb5f50ffa11430b1c08490f83bd9bd6eb0a7d0e566adf3792e3e305e871f1881b4661658d2038368de5e790c49504ab2f3c8487630c6d496fd9d5118c0c  0104-extcon-sm5705-keyboard-dock.patch
++7ab1e60667e9e2252a4219e3d47d129e425e48ce2b4d4b964948b6be9916c2542a51bf5168f22a6bc29eaa7ff433a71defd97afaf16dcf6119176b85a1008a56  0114-dt-bindings-i2c-hotplug-gpio.patch
++3b26cbf2ee743cb2678bb8e1105e2ab606b36c276172e83744b5f86d5ad12c0ad4299d03dfe4948a8d2c76d9987806825872ed74cd36062002f60e8205e3b796  0115-i2c-muxes-add-i2c-hotplug-gpio.patch
++0d346e552c91ae018d6d21441403066d9d32024bae1e15756bf1d94b7ed23fab46a6a67faabe176ce7b7f4b30669fedfcfa5329a3d92184288d77c46b8496b34  0116-i2c-hotplug-gpio-parent-adapter-lookup.patch
++ae993489a67025b48a89ba01fa69dbae56a191021c881d808b5cfe3307ce4089ae8733b884b193e4cc9bbad578285c610059dd0561706b9813d18745a281fb18  0117-dt-bindings-i2c-hotplug-extcon.patch
++20ee3964cfc86fb3ae949189b80c876e87feb6ff6cec8a8a0b20b971b78acb46ea755f1012c1038166414552f53efe8a365e1da6b8668bddc9474851a3cf0053  0118-i2c-hotplug-gpio-extcon-presence.patch
++d23543b97c8af780b917b2f38fec22a1fed4453c52d15488dc8c4064392294fe994211ec0675b3724ce536518b09b69eb07889ab7a12298aec89be3ee0520b20  0119-extcon-sm5705-cover-with-vbus.patch
++90f75b8d4cbad27378b5a381a87076ae219e3b06ac7976d52bd2ed28562971c06b804943297206dd2cdb6090e0df65f1c45062240cac137b9911572c69b4bc8c  0120-mfd-stmpe-irq-domain-after-children.patch
++be7e3755846429e40be162edf65a751789351476ea94eff87f7c2b1ad0e6721c00f1fd87ac4041261b423acbf16c66a378d893bccc61872d7ee4a97a91df3648  0121-input-stmpe-keypad-recover-from-accessory-power-cycle.patch
++5ae6170ae10227340f500151a6abc05fd41aff45bb65713c5f54e4600899aa3499d4f20610c80d147564d6ceb486558ce9ea6afb05201d3be27adc3a152319a8  0122-drm-msm-locking-put-iova-spaces.patch
++60798187327e1072d2928ed40b90bf686a8fd0b584526c04838b177b5ea195b7b5933b194ba7607db9047e96f6c11319b50801fccf2776141ff82f4409c48dc5  0123-drm-msm-shared-vm-keep-mappings-on-close.patch
++7c0a36648d0a4e4aedd008a12bc6486a17ba6abef119642897f08b95535804c97eb274b9b37f9e5ef3d1bc4ac44db6331c17b9a146b81f0667db791dadb1a025  0140-iio-qcom-smgr-sample-timestamp.patch
++168e0ce3d3bc2e01d0a3d48af936c57056fed36884f0dac8595b0c43811959239720b045f641c972bd896d2444c49a56911cef0e09ef430738190a265b635b45  0141-iio-qcom-smgr-push-enabled-axes.patch
++6a122055a1347fe00feea363dd42eb52c2ae846d6de9b9dbfdfc69089c5e9d612a8bb5724d0ffdf4468b30f7bdb2fd8bcb8d49aafd1f8d4afcdc8c15a83143c8  0142-iio-qcom-smgr-push-every-sample.patch
++bb0abd7b92c2a0886067de748ced85695c1af721f5765905556eb3a3d4e37f10b5b6f3dc6abf51808d9c87c433efae4017d6a4253482944887ed0062065c9691  0143-iio-qcom-smgr-sampling-frequency.patch
++107b09c18916d581caade3195cb9822251027e29f9b32670f1448eb66da2e6611dc4a8aca7c55b58e84a34c18da7c0329da3cb796f380da6ef2066ddaf2d46b4  0144-iio-qcom-smgr-soft-timestamp-channel.patch
++0bab4727cb5cbcf9498aca5b1f22d42c68ffabbae951f36b8881047dc73e6bd76cca30f4ec07fea3693857fd79307ceae5a864c739a2b723bafb067ff9e880b6  0145-iio-qcom-smgr-gyro-magn-mount-matrix.patch
++218b7f1427a252c56544ca238e4a5eb32138f8074f149f10dd05c729700cdacb2b791b72873ca09140c627f493764d6f5c9b204b4e6e979fe61802a7910b77fe  0146-net-qrtr-send-pending-hello-first.patch
++d3f63e62acf02212316637b61c4387562a7d34cc7b00e7622c46798cb768399d47e5635d39ec6d160b65cd966c7a23ca15d6353d0dc478e936cd254b4fd06d9c  0147-pci-qcom-keep-link-up-across-suspend-msm8996.patch
++cb711e5336e88d23c37a440c233a148f48eda00fb88f6076c3514d2b15bd577ecf266df050d5a4cacb958324fc6dff1ca638447b4c2e7967b4812e51a13d9fbd  0148-drm-msm-mdp5-assign-pipes-on-resume.patch
++98067d97a403cdb8894f7b0eb16f8f711c52af6b35e2d9296790f0ae0dd577df33397299e2b42dc892c563f90f11182de30128a6c6d23d3ca740bf20392767c2  0159-dt-bindings-input-tm2-touchkey-add-coreriver-tc305k.patch
++40c988bd434f362c7c538efefdc07f42cbcfc5d571fb567abd8cd43dac455947be8689d1975d5c3af987cfab67e5a846f2645352316cd6009de268fc21f05a82  0160-input-tm2-touchkey-add-coreriver-tc305k.patch
++8f79aee6cf376ba4488183964c8ae54968b6aaa03f9aa7bb18fd4e2bd1f75051fd2a810041c96085f8989fa956c9434776ad333aba8f25658c170f8c1168b200  0162-asoc-wcd-mbhc-v2-plug-type-without-adc.patch
++87efb0d1c346891295ed7b5976801b2906b18cd4492c17508b93ee86cf6e42983d2c37e4e58432f5126e0d93580a0d58a0e5d2cb7510a70392d17029a1c7d01d  0163-asoc-wcd9335-serialise-micbias-and-mclk.patch
++5bbb8f31438c9461788049db60e0ddeaab63630aafbd630ab1ffeea9f64688348c9e61b6509a16846456ce54437b1c370a2e3a2b61824c4aaf9a1bd84a690911  0164-asoc-wcd9335-irq-off-across-sleep.patch
++b2c5b5ddc8779172b05b20bdc2509ac4896e8d74f6e3eaf6c4919e8bb6e947cff383df7054331ffc80fa042492027cfecbee0797836ff8e28ef3807fe1394cfd  0165-asoc-wcd9335-jack-interrupts.patch
++945172008e9acc3a99df9b7d149a4e37a8febe10a0fe5f48910a53160ae52a554c45a65c87b26fd6e1558e435aaf08696d7844f81b8646280f31f6e72c1e5436  0166-asoc-dt-bindings-wcd9335-jack-properties.patch
++5a74cf18b84d246c24177ceaefc197250f9fad0d748f3b6c4d9a59253daf93d888e309aeaf2e00aa74a2ec2cf9723c87294fe4b6b26e127067cea51d2664796b  0167-asoc-wcd9335-headset-detection.patch
++4ae4f6f5e5eeb9f40100d0e7696f0abf9272067a6ac1a085c3493256f9f14fae88049d064d934024ed93a3a09eb676f78d17009d35d86eee14405df63debc992  0168-asoc-wcd9335-micbias2-voltage.patch
++82f3acd6e228245c12c4abcfbd8e3727e89e1c4a8d79e252b695be8a83a961e7be132cf6ce64303c07a12eda05ef62e2f9d2cb7dc390c7bf69480dba7fec182a  0169-asoc-apq8096-headset-jack.patch
++50dc1d7a57d223322fa8771f9b6a01a26c357e6d9a8b15a33e304b2f6a6dca823192db2f76082fb5ee9a028f63916756c88e0e8f22cc685633ed02a5430aafb8  0170-arm64-dts-msm8996-gpu-opp-ddr.patch
++92fcd7cd2729b29f3116ee84ec39d9ad95330ed1eb17127acdbf4b673052145b37e238349d143ae62ca48babcb7467ec466d1e6b9f5a48e10df237509bcca489  0182-media-venus-vdec-crop-to-stream-size.patch
 +e38dd6a448f0a372724f24583862d34c8f4e238e3ac359909e93b0e99da8a18b3e246f5a5dea48d9b6644056719173d15d2745eb72056a03766d754f4ca5a21e  0201-drm-msm-shared-vm-hang-accounting.patch
++c306fa5ffb96d31c701d5f400963636f1ac5340c63992760506f1cd992c64bc5e36623af7d79d32c8ceda7a1d226b6ff3aed3daab52235b8e442c4dff8950002  0202-arm64-dts-qcom-gts3llte-top-speakers.patch
  "
 diff --git a/device/testing/linux-postmarketos-qcom-msm8996/config-postmarketos-qcom-msm8996.aarch64 b/device/testing/linux-postmarketos-qcom-msm8996/config-postmarketos-qcom-msm8996.aarch64
-index 777bde3..5dfddec 100644
+index 777bde3c8..55afd6cbb 100644
 --- a/device/testing/linux-postmarketos-qcom-msm8996/config-postmarketos-qcom-msm8996.aarch64
 +++ b/device/testing/linux-postmarketos-qcom-msm8996/config-postmarketos-qcom-msm8996.aarch64
-@@ -33,7 +33,7 @@ CONFIG_THREAD_INFO_IN_TASK=y
+@@ -1,18 +1,19 @@
+ #
+ # Automatically generated file; DO NOT EDIT.
+-# Linux/arm64 6.19.5 Kernel Configuration
++# Linux/arm64 7.3.1 Kernel Configuration
+ #
+-CONFIG_CC_VERSION_TEXT="Alpine clang version 21.1.8"
++CONFIG_CC_VERSION_TEXT="Alpine clang version 23.1.5"
+ CONFIG_GCC_VERSION=0
+ CONFIG_CC_IS_CLANG=y
+-CONFIG_CLANG_VERSION=210108
++CONFIG_CLANG_VERSION=230105
+ CONFIG_AS_IS_LLVM=y
+-CONFIG_AS_VERSION=210108
++CONFIG_AS_VERSION=230105
+ CONFIG_LD_VERSION=0
+ CONFIG_LD_IS_LLD=y
+-CONFIG_LLD_VERSION=210108
++CONFIG_LLD_VERSION=230105
+ CONFIG_RUSTC_VERSION=0
+ CONFIG_RUSTC_LLVM_VERSION=0
++CONFIG_RUSTC_LLVM_MAJOR_VERSION=0
+ CONFIG_CC_HAS_ASM_GOTO_OUTPUT=y
+ CONFIG_CC_HAS_ASM_GOTO_TIED_OUTPUT=y
+ CONFIG_TOOLS_SUPPORT_RELR=y
+@@ -20,7 +21,10 @@ CONFIG_CC_HAS_ASM_INLINE=y
+ CONFIG_CC_HAS_ASSUME=y
+ CONFIG_CC_HAS_NO_PROFILE_FN_ATTR=y
+ CONFIG_CC_HAS_COUNTED_BY=y
++CONFIG_CC_HAS_COUNTED_BY_PTR=y
++CONFIG_CC_HAS_ALLOC_TOKEN=y
+ CONFIG_CC_HAS_MULTIDIMENSIONAL_NONSTRING=y
++CONFIG_CC_OPT_INLINE_MEMSET="-mllvm -max-store-memset=4294967294"
+ CONFIG_LD_CAN_USE_KEEP_IN_OVERLAY=y
+ CONFIG_PAHOLE_VERSION=0
+ CONFIG_IRQ_WORK=y
+@@ -33,7 +37,7 @@ CONFIG_THREAD_INFO_IN_TASK=y
  CONFIG_INIT_ENV_ARG_LIMIT=32
  # CONFIG_COMPILE_TEST is not set
  # CONFIG_WERROR is not set
@@ -260,7 +482,172 @@ index 777bde3..5dfddec 100644
  # CONFIG_LOCALVERSION_AUTO is not set
  CONFIG_BUILD_SALT=""
  CONFIG_DEFAULT_INIT=""
-@@ -624,14 +624,18 @@ CONFIG_ARCH_SUSPEND_POSSIBLE=y
+@@ -70,7 +74,6 @@ CONFIG_SPARSE_IRQ=y
+ CONFIG_GENERIC_IRQ_KEXEC_CLEAR_VM_FORWARD=y
+ # end of IRQ subsystem
+ 
+-CONFIG_GENERIC_TIME_VSYSCALL=y
+ CONFIG_GENERIC_CLOCKEVENTS=y
+ CONFIG_ARCH_HAS_TICK_BROADCAST=y
+ CONFIG_GENERIC_CLOCKEVENTS_BROADCAST=y
+@@ -110,11 +113,10 @@ CONFIG_BPF_UNPRIV_DEFAULT_OFF=y
+ 
+ CONFIG_PREEMPT_BUILD=y
+ CONFIG_ARCH_HAS_PREEMPT_LAZY=y
+-# CONFIG_PREEMPT_NONE is not set
+-# CONFIG_PREEMPT_VOLUNTARY is not set
+ CONFIG_PREEMPT=y
+ # CONFIG_PREEMPT_LAZY is not set
+ CONFIG_PREEMPT_COUNT=y
++CONFIG_HAS_SEPARATE_PREEMPT_RESCHED_BITS=y
+ CONFIG_PREEMPTION=y
+ # CONFIG_PREEMPT_DYNAMIC is not set
+ CONFIG_SCHED_CORE=y
+@@ -170,14 +172,17 @@ CONFIG_UCLAMP_TASK=y
+ CONFIG_UCLAMP_BUCKETS_COUNT=5
+ # end of Scheduler features
+ 
++CONFIG_ARCH_HAS_PTE_PROTNONE=y
+ CONFIG_ARCH_SUPPORTS_NUMA_BALANCING=y
+ CONFIG_ARCH_WANT_BATCHED_UNMAP_TLB_FLUSH=y
+ CONFIG_CC_HAS_INT128=y
+ CONFIG_CC_IMPLICIT_FALLTHROUGH="-Wimplicit-fallthrough"
++CONFIG_CC_MS_EXTENSIONS="-fms-anonymous-structs"
+ CONFIG_GCC10_NO_ARRAY_BOUNDS=y
+ CONFIG_GCC_NO_STRINGOP_OVERFLOW=y
+ CONFIG_ARCH_SUPPORTS_INT128=y
+ CONFIG_NUMA_BALANCING=y
++CONFIG_SCHED_CACHE=y
+ CONFIG_NUMA_BALANCING_DEFAULT_ENABLED=y
+ CONFIG_SLAB_OBJ_EXT=y
+ CONFIG_CGROUPS=y
+@@ -212,6 +217,7 @@ CONFIG_SOCK_CGROUP_DATA=y
+ CONFIG_NAMESPACES=y
+ CONFIG_UTS_NS=y
+ CONFIG_TIME_NS=y
++CONFIG_TIME_NS_VDSO=y
+ CONFIG_IPC_NS=y
+ CONFIG_USER_NS=y
+ CONFIG_PID_NS=y
+@@ -235,7 +241,6 @@ CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE=y
+ # CONFIG_CC_OPTIMIZE_FOR_SIZE is not set
+ CONFIG_LD_ORPHAN_WARN=y
+ CONFIG_LD_ORPHAN_WARN_LEVEL="warn"
+-CONFIG_SYSCTL=y
+ CONFIG_HAVE_UID16=y
+ CONFIG_SYSCTL_EXCEPTION_TRACE=y
+ CONFIG_SYSFS_SYSCALL=y
+@@ -300,6 +305,7 @@ CONFIG_CRASH_DUMP=y
+ # end of General setup
+ 
+ CONFIG_ARM64=y
++CONFIG_RUSTC_SUPPORTS_ARM64=y
+ CONFIG_CLANG_SUPPORTS_DYNAMIC_FTRACE_WITH_ARGS=y
+ CONFIG_64BIT=y
+ CONFIG_MMU=y
+@@ -333,6 +339,7 @@ CONFIG_BUILTIN_RETURN_ADDRESS_STRIPS_PAC=y
+ # CONFIG_ARCH_SUNXI is not set
+ # CONFIG_ARCH_ALPINE is not set
+ # CONFIG_ARCH_APPLE is not set
++# CONFIG_ARCH_ASPEED is not set
+ # CONFIG_ARCH_AXIADO is not set
+ # CONFIG_ARCH_BCM is not set
+ # CONFIG_ARCH_BERLIN is not set
+@@ -347,14 +354,7 @@ CONFIG_BUILTIN_RETURN_ADDRESS_STRIPS_PAC=y
+ # CONFIG_ARCH_KEEMBAY is not set
+ # CONFIG_ARCH_MEDIATEK is not set
+ # CONFIG_ARCH_MESON is not set
+-
+-#
+-# Microchip SoC support
+-#
+-# CONFIG_ARCH_LAN969X is not set
+-# CONFIG_ARCH_SPARX5 is not set
+-# end of Microchip SoC support
+-
++# CONFIG_ARCH_MICROCHIP is not set
+ # CONFIG_ARCH_MMP is not set
+ # CONFIG_ARCH_MVEBU is not set
+ # CONFIG_ARCH_NXP is not set
+@@ -405,7 +405,7 @@ CONFIG_ARM64_WORKAROUND_SPECULATIVE_AT=y
+ CONFIG_ARM64_ERRATUM_1165522=y
+ CONFIG_ARM64_ERRATUM_1319367=y
+ CONFIG_ARM64_ERRATUM_1530923=y
+-CONFIG_ARM64_WORKAROUND_REPEAT_TLBI=y
++CONFIG_ARM64_WORKAROUND_REPEAT_TLBI_SYNC=y
+ # CONFIG_ARM64_ERRATUM_2441007 is not set
+ # CONFIG_ARM64_ERRATUM_1286807 is not set
+ CONFIG_ARM64_ERRATUM_1463225=y
+@@ -418,12 +418,17 @@ CONFIG_ARM64_WORKAROUND_TSB_FLUSH_FAILURE=y
+ CONFIG_ARM64_ERRATUM_2054223=y
+ CONFIG_ARM64_ERRATUM_2067961=y
+ # CONFIG_ARM64_ERRATUM_2441009 is not set
++CONFIG_ARM64_WORKAROUND_BROKEN_AMU_CONSTCNT=y
+ CONFIG_ARM64_ERRATUM_2457168=y
+ CONFIG_ARM64_ERRATUM_2645198=y
++CONFIG_ARM64_ERRATUM_3821522=y
+ CONFIG_ARM64_WORKAROUND_SPECULATIVE_UNPRIV_LOAD=y
+ CONFIG_ARM64_ERRATUM_2966298=y
+ CONFIG_ARM64_ERRATUM_3117295=y
+ CONFIG_ARM64_ERRATUM_3194386=y
++CONFIG_ARM64_ERRATUM_4311569=y
++CONFIG_ARM64_ERRATUM_4193714=y
++CONFIG_ARM64_ERRATUM_4118414=y
+ CONFIG_CAVIUM_ERRATUM_22375=y
+ CONFIG_CAVIUM_ERRATUM_23144=y
+ CONFIG_CAVIUM_ERRATUM_23154=y
+@@ -433,11 +438,15 @@ CONFIG_CAVIUM_TX2_ERRATUM_219=y
+ CONFIG_FUJITSU_ERRATUM_010001=y
+ CONFIG_HISILICON_ERRATUM_161600802=y
+ CONFIG_HISILICON_ERRATUM_162100801=y
++CONFIG_HISILICON_ERRATUM_162100125=y
+ CONFIG_QCOM_FALKOR_ERRATUM_1003=y
+ CONFIG_QCOM_FALKOR_ERRATUM_1009=y
+ CONFIG_QCOM_QDF2400_ERRATUM_0065=y
+ CONFIG_QCOM_FALKOR_ERRATUM_E1041=y
++CONFIG_ARM64_WORKAROUND_DISABLE_CNP=y
+ CONFIG_NVIDIA_CARMEL_CNP_ERRATUM=y
++CONFIG_NVIDIA_OLYMPUS_1027_ERRATUM=y
++CONFIG_RENESAS_ERRATUM_GEN4GICITS1=y
+ CONFIG_ROCKCHIP_ERRATUM_3568002=y
+ # CONFIG_ROCKCHIP_ERRATUM_3588001 is not set
+ CONFIG_SOCIONEXT_SYNQUACER_PREITS=y
+@@ -496,9 +505,6 @@ CONFIG_THUMB2_COMPAT_VDSO=y
+ # ARMv8.1 architectural features
+ #
+ CONFIG_ARM64_HW_AFDBM=y
+-CONFIG_ARM64_PAN=y
+-CONFIG_ARM64_LSE_ATOMICS=y
+-CONFIG_ARM64_USE_LSE_ATOMICS=y
+ # end of ARMv8.1 architectural features
+ 
+ #
+@@ -531,7 +537,6 @@ CONFIG_ARM64_TLB_RANGE=y
+ #
+ CONFIG_AS_HAS_ARMV8_5=y
+ CONFIG_ARM64_BTI=y
+-CONFIG_ARM64_BTI_KERNEL=y
+ CONFIG_CC_HAS_BRANCH_PROT_PAC_RET_BTI=y
+ CONFIG_ARM64_E0PD=y
+ CONFIG_ARM64_AS_HAS_MTE=y
+@@ -560,7 +565,16 @@ CONFIG_ARM64_HAFT=y
+ CONFIG_ARM64_GCS=y
+ # end of ARMv9.4 architectural features
+ 
++CONFIG_AS_HAS_LSUI=y
++
++#
++# ARMv9.6 architectural features
++#
++CONFIG_ARM64_LSUI=y
++# end of ARMv9.6 architectural features
++
+ CONFIG_ARM64_SVE=y
++CONFIG_AS_HAS_SME=y
+ CONFIG_ARM64_SME=y
+ # CONFIG_ARM64_PSEUDO_NMI is not set
+ CONFIG_RELOCATABLE=y
+@@ -624,14 +638,18 @@ CONFIG_ARCH_SUSPEND_POSSIBLE=y
  # CPU Idle
  #
  CONFIG_CPU_IDLE=y
@@ -280,7 +667,110 @@ index 777bde3..5dfddec 100644
  # end of ARM CPU Idle Drivers
  # end of CPU Idle
  
-@@ -986,8 +990,8 @@ CONFIG_ARCH_WANTS_THP_SWAP=y
+@@ -692,6 +710,7 @@ CONFIG_GENERIC_IRQ_ENTRY=y
+ CONFIG_KPROBES=y
+ CONFIG_JUMP_LABEL=y
+ # CONFIG_STATIC_KEYS_SELFTEST is not set
++# CONFIG_STATIC_CALL_SELFTEST is not set
+ CONFIG_UPROBES=y
+ CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS=y
+ CONFIG_KRETPROBES=y
+@@ -715,6 +734,7 @@ CONFIG_ARCH_WANTS_NO_INSTR=y
+ CONFIG_HAVE_ASM_MODVERSIONS=y
+ CONFIG_HAVE_REGS_AND_STACK_ACCESS_API=y
+ CONFIG_HAVE_RSEQ=y
++CONFIG_HAVE_RUST=y
+ CONFIG_HAVE_FUNCTION_ARG_ACCESS_API=y
+ CONFIG_HAVE_HW_BREAKPOINT=y
+ CONFIG_HAVE_PERF_REGS=y
+@@ -747,14 +767,19 @@ CONFIG_HAS_LTO_CLANG=y
+ CONFIG_LTO_NONE=y
+ # CONFIG_LTO_CLANG_FULL is not set
+ # CONFIG_LTO_CLANG_THIN is not set
++# CONFIG_LTO_CLANG_THIN_DIST is not set
++# CONFIG_AUTOFDO_CLANG is not set
++# CONFIG_PROPELLER_CLANG is not set
+ CONFIG_ARCH_SUPPORTS_CFI=y
+ CONFIG_CFI=y
+ CONFIG_CFI_ICALL_NORMALIZE_INTEGERS=y
+ CONFIG_HAVE_CFI_ICALL_NORMALIZE_INTEGERS=y
++CONFIG_HAVE_CFI_ICALL_NORMALIZE_INTEGERS_RUSTC=y
+ # CONFIG_CFI_PERMISSIVE is not set
+ CONFIG_HAVE_CONTEXT_TRACKING_USER=y
+ CONFIG_HAVE_VIRT_CPU_ACCOUNTING_GEN=y
+ CONFIG_HAVE_IRQ_TIME_ACCOUNTING=y
++CONFIG_HAVE_PV_STEAL_CLOCK_GEN=y
+ CONFIG_HAVE_MOVE_PUD=y
+ CONFIG_HAVE_MOVE_PMD=y
+ CONFIG_HAVE_ARCH_TRANSPARENT_HUGEPAGE=y
+@@ -801,6 +826,7 @@ CONFIG_ARCH_HAS_RELR=y
+ CONFIG_RELR=y
+ CONFIG_ARCH_HAS_MEM_ENCRYPT=y
+ CONFIG_ARCH_HAS_CC_PLATFORM=y
++CONFIG_HAVE_STATIC_CALL=y
+ CONFIG_HAVE_PREEMPT_DYNAMIC=y
+ CONFIG_HAVE_PREEMPT_DYNAMIC_KEY=y
+ CONFIG_ARCH_WANT_LD_ORPHAN_WARN=y
+@@ -822,6 +848,7 @@ CONFIG_HAVE_GCC_PLUGINS=y
+ CONFIG_FUNCTION_ALIGNMENT_4B=y
+ CONFIG_FUNCTION_ALIGNMENT=4
+ CONFIG_CC_HAS_SANE_FUNCTION_ALIGNMENT=y
++CONFIG_HAVE_ARCH_GET_SECUREBOOT=y
+ # end of General architecture-dependent options
+ 
+ CONFIG_RT_MUTEXES=y
+@@ -874,6 +901,7 @@ CONFIG_EFI_PARTITION=y
+ CONFIG_BLK_PM=y
+ CONFIG_BLOCK_HOLDER_DEPRECATED=y
+ CONFIG_BLK_MQ_STACKING=y
++# CONFIG_BLK_ERROR_INJECTION is not set
+ 
+ #
+ # IO Schedulers
+@@ -894,6 +922,7 @@ CONFIG_RWSEM_SPIN_ON_OWNER=y
+ CONFIG_LOCK_SPIN_ON_OWNER=y
+ CONFIG_ARCH_USE_QUEUED_SPINLOCKS=y
+ CONFIG_QUEUED_SPINLOCKS=y
++# CONFIG_QUEUED_SPINLOCKS_TRACE_CONTENDED_RELEASE is not set
+ CONFIG_ARCH_USE_QUEUED_RWLOCKS=y
+ CONFIG_QUEUED_RWLOCKS=y
+ CONFIG_ARCH_HAS_NON_OVERLAPPING_ADDRESS_SPACE=y
+@@ -944,8 +973,7 @@ CONFIG_SLAB_MERGE_DEFAULT=y
+ # CONFIG_SLAB_FREELIST_HARDENED is not set
+ # CONFIG_SLAB_BUCKETS is not set
+ # CONFIG_SLUB_STATS is not set
+-CONFIG_SLUB_CPU_PARTIAL=y
+-# CONFIG_RANDOM_KMALLOC_CACHES is not set
++# CONFIG_KMALLOC_PARTITION_CACHES is not set
+ # end of Slab allocator options
+ 
+ # CONFIG_SHUFFLE_PAGE_ALLOCATOR is not set
+@@ -959,20 +987,20 @@ CONFIG_ARCH_KEEP_MEMBLOCK=y
+ CONFIG_MEMORY_ISOLATION=y
+ CONFIG_EXCLUSIVE_SYSTEM_RAM=y
+ CONFIG_ARCH_ENABLE_MEMORY_HOTPLUG=y
+-CONFIG_ARCH_ENABLE_MEMORY_HOTREMOVE=y
+ # CONFIG_MEMORY_HOTPLUG is not set
+ CONFIG_ARCH_MHP_MEMMAP_ON_MEMORY_ENABLE=y
+ CONFIG_SPLIT_PTE_PTLOCKS=y
+ CONFIG_ARCH_ENABLE_SPLIT_PMD_PTLOCK=y
+ CONFIG_SPLIT_PMD_PTLOCKS=y
+-CONFIG_MEMORY_BALLOON=y
+-CONFIG_BALLOON_COMPACTION=y
++CONFIG_BALLOON=y
++CONFIG_BALLOON_MIGRATION=y
+ CONFIG_COMPACTION=y
+ CONFIG_COMPACT_UNEVICTABLE_DEFAULT=1
+ CONFIG_PAGE_REPORTING=y
++CONFIG_NUMA_MIGRATION=y
+ CONFIG_MIGRATION=y
+ CONFIG_ARCH_ENABLE_HUGEPAGE_MIGRATION=y
+-CONFIG_ARCH_ENABLE_THP_MIGRATION=y
++CONFIG_ARCH_HAS_PMD_SOFTLEAVES=y
+ CONFIG_CONTIG_ALLOC=y
+ CONFIG_PCP_BATCH_SCALE_MAX=5
+ CONFIG_PHYS_ADDR_T_64BIT=y
+@@ -986,8 +1014,8 @@ CONFIG_ARCH_WANTS_THP_SWAP=y
  # CONFIG_PERSISTENT_HUGE_ZERO_FOLIO is not set
  CONFIG_MM_ID=y
  CONFIG_TRANSPARENT_HUGEPAGE=y
@@ -291,7 +781,15 @@ index 777bde3..5dfddec 100644
  # CONFIG_TRANSPARENT_HUGEPAGE_NEVER is not set
  CONFIG_TRANSPARENT_HUGEPAGE_SHMEM_HUGE_NEVER=y
  # CONFIG_TRANSPARENT_HUGEPAGE_SHMEM_HUGE_ALWAYS is not set
-@@ -1034,7 +1038,10 @@ CONFIG_MEMFD_CREATE=y
+@@ -998,7 +1026,6 @@ CONFIG_TRANSPARENT_HUGEPAGE_TMPFS_HUGE_NEVER=y
+ # CONFIG_TRANSPARENT_HUGEPAGE_TMPFS_HUGE_WITHIN_SIZE is not set
+ # CONFIG_TRANSPARENT_HUGEPAGE_TMPFS_HUGE_ADVISE is not set
+ CONFIG_THP_SWAP=y
+-# CONFIG_READ_ONLY_THP_FOR_FS is not set
+ # CONFIG_NO_PAGE_MAPCOUNT is not set
+ CONFIG_PAGE_MAPCOUNT=y
+ CONFIG_PGTABLE_HAS_HUGE_LEAVES=y
+@@ -1034,15 +1061,21 @@ CONFIG_MEMFD_CREATE=y
  CONFIG_SECRETMEM=y
  # CONFIG_ANON_VMA_NAME is not set
  # CONFIG_USERFAULTFD is not set
@@ -303,7 +801,35 @@ index 777bde3..5dfddec 100644
  CONFIG_ARCH_SUPPORTS_PER_VMA_LOCK=y
  CONFIG_PER_VMA_LOCK=y
  CONFIG_LOCK_MM_AND_FIND_VMA=y
-@@ -1205,7 +1212,7 @@ CONFIG_NETFILTER_XTABLES_LEGACY=y
+ CONFIG_EXECMEM=y
+ CONFIG_NUMA_MEMBLKS=y
+ # CONFIG_NUMA_EMU is not set
++CONFIG_GENERIC_ARCH_NUMA=y
+ CONFIG_ARCH_HAS_USER_SHADOW_STACK=y
++CONFIG_PT_RECLAIM=y
+ CONFIG_FIND_NORMAL_PAGE=y
++CONFIG_ARCH_HAS_LAZY_MMU_MODE=y
+ 
+ #
+ # Data Access Monitoring
+@@ -1139,7 +1172,7 @@ CONFIG_BRIDGE_NETFILTER=m
+ #
+ CONFIG_NETFILTER_INGRESS=y
+ CONFIG_NETFILTER_EGRESS=y
+-CONFIG_NETFILTER_NETLINK=m
++CONFIG_NETFILTER_NETLINK=y
+ CONFIG_NETFILTER_FAMILY_BRIDGE=y
+ CONFIG_NETFILTER_BPF_LINK=y
+ # CONFIG_NETFILTER_NETLINK_HOOK is not set
+@@ -1157,7 +1190,6 @@ CONFIG_NF_CONNTRACK_PROCFS=y
+ # CONFIG_NF_CONNTRACK_TIMESTAMP is not set
+ # CONFIG_NF_CONNTRACK_LABELS is not set
+ CONFIG_NF_CT_PROTO_SCTP=y
+-CONFIG_NF_CT_PROTO_UDPLITE=y
+ # CONFIG_NF_CONNTRACK_AMANDA is not set
+ # CONFIG_NF_CONNTRACK_FTP is not set
+ # CONFIG_NF_CONNTRACK_H323 is not set
+@@ -1205,7 +1237,7 @@ CONFIG_NETFILTER_XTABLES_LEGACY=y
  # Xtables combined modules
  #
  CONFIG_NETFILTER_XT_MARK=m
@@ -312,7 +838,7 @@ index 777bde3..5dfddec 100644
  
  #
  # Xtables targets
-@@ -1213,7 +1220,7 @@ CONFIG_NETFILTER_XT_MARK=m
+@@ -1213,7 +1245,7 @@ CONFIG_NETFILTER_XT_MARK=m
  # CONFIG_NETFILTER_XT_TARGET_AUDIT is not set
  CONFIG_NETFILTER_XT_TARGET_CHECKSUM=m
  # CONFIG_NETFILTER_XT_TARGET_CLASSIFY is not set
@@ -321,7 +847,7 @@ index 777bde3..5dfddec 100644
  # CONFIG_NETFILTER_XT_TARGET_CT is not set
  # CONFIG_NETFILTER_XT_TARGET_DSCP is not set
  # CONFIG_NETFILTER_XT_TARGET_HL is not set
-@@ -1245,7 +1252,7 @@ CONFIG_NETFILTER_XT_MATCH_COMMENT=m
+@@ -1245,7 +1277,7 @@ CONFIG_NETFILTER_XT_MATCH_COMMENT=m
  # CONFIG_NETFILTER_XT_MATCH_CONNBYTES is not set
  # CONFIG_NETFILTER_XT_MATCH_CONNLABEL is not set
  # CONFIG_NETFILTER_XT_MATCH_CONNLIMIT is not set
@@ -330,7 +856,19 @@ index 777bde3..5dfddec 100644
  CONFIG_NETFILTER_XT_MATCH_CONNTRACK=m
  # CONFIG_NETFILTER_XT_MATCH_CPU is not set
  # CONFIG_NETFILTER_XT_MATCH_DCCP is not set
-@@ -1524,8 +1531,11 @@ CONFIG_NET_FLOW_LIMIT=y
+@@ -1427,7 +1459,6 @@ CONFIG_VLAN_8021Q=m
+ # CONFIG_VLAN_8021Q_MVRP is not set
+ CONFIG_LLC=m
+ # CONFIG_LLC2 is not set
+-# CONFIG_ATALK is not set
+ # CONFIG_X25 is not set
+ # CONFIG_LAPB is not set
+ # CONFIG_PHONET is not set
+@@ -1520,12 +1551,14 @@ CONFIG_NET_FLOW_LIMIT=y
+ # end of Network testing
+ # end of Networking options
+ 
+-# CONFIG_HAMRADIO is not set
  # CONFIG_CAN is not set
  CONFIG_BT=m
  CONFIG_BT_BREDR=y
@@ -344,15 +882,232 @@ index 777bde3..5dfddec 100644
  CONFIG_BT_HIDP=m
  # CONFIG_BT_LE is not set
  CONFIG_BT_LEDS=y
-@@ -2672,6 +2682,7 @@ CONFIG_KEYBOARD_GPIO=y
+@@ -1565,7 +1598,6 @@ CONFIG_BT_HCIUART_QCA=y
+ # CONFIG_BT_MTKUART is not set
+ # CONFIG_BT_VIRTIO is not set
+ # CONFIG_BT_NXPUART is not set
+-# CONFIG_BT_INTEL_PCIE is not set
+ # end of Bluetooth device drivers
+ 
+ # CONFIG_AF_RXRPC is not set
+@@ -1602,7 +1634,6 @@ CONFIG_NET_9P_VIRTIO=y
+ # CONFIG_NET_9P_XEN is not set
+ # CONFIG_NET_9P_USBG is not set
+ # CONFIG_NET_9P_DEBUG is not set
+-# CONFIG_CAIF is not set
+ # CONFIG_CEPH_LIB is not set
+ CONFIG_NFC=m
+ # CONFIG_NFC_DIGITAL is not set
+@@ -1752,7 +1783,7 @@ CONFIG_PCIE_QCOM=y
+ 
+ CONFIG_HAVE_PWRCTRL=y
+ CONFIG_PCI_PWRCTRL=y
+-CONFIG_PCI_PWRCTRL_SLOT=y
++CONFIG_PCI_PWRCTRL_GENERIC=y
+ # CONFIG_PCI_PWRCTRL_TC9563 is not set
+ # CONFIG_CXL_BUS is not set
+ # CONFIG_PCCARD is not set
+@@ -1767,6 +1798,7 @@ CONFIG_UEVENT_HELPER_PATH=""
+ CONFIG_DEVTMPFS=y
+ # CONFIG_DEVTMPFS_MOUNT is not set
+ # CONFIG_DEVTMPFS_SAFE is not set
++CONFIG_DRIVER_DEFERRED_PROBE_TIMEOUT=10
+ CONFIG_STANDALONE=y
+ CONFIG_PREVENT_FIRMWARE_BUILD=y
+ 
+@@ -1807,9 +1839,7 @@ CONFIG_REGMAP_SPMI=y
+ CONFIG_REGMAP_MMIO=y
+ CONFIG_REGMAP_IRQ=y
+ CONFIG_DMA_SHARED_BUFFER=y
+-# CONFIG_DMA_FENCE_TRACE is not set
+ CONFIG_GENERIC_ARCH_TOPOLOGY=y
+-CONFIG_GENERIC_ARCH_NUMA=y
+ # CONFIG_FW_DEVLINK_SYNC_STATE_TIMEOUT is not set
+ # end of Generic Driver Options
+ 
+@@ -1875,6 +1905,8 @@ CONFIG_ARM_PSCI_FW=y
+ #
+ # Qualcomm firmware drivers
+ #
++CONFIG_QCOM_PAS=y
++CONFIG_QCOM_PAS_TEE=m
+ CONFIG_QCOM_SCM=y
+ CONFIG_QCOM_TZMEM=y
+ CONFIG_QCOM_TZMEM_MODE_GENERIC=y
+@@ -2118,7 +2150,6 @@ CONFIG_QCOM_FASTRPC=m
+ # CONFIG_ISL29020 is not set
+ # CONFIG_SENSORS_TSL2550 is not set
+ # CONFIG_SENSORS_BH1770 is not set
+-# CONFIG_SENSORS_APDS990X is not set
+ # CONFIG_HMC6352 is not set
+ # CONFIG_DS1682 is not set
+ # CONFIG_LATTICE_ECP3_CONFIG is not set
+@@ -2126,7 +2157,6 @@ CONFIG_SRAM=y
+ # CONFIG_DW_XDATA_PCIE is not set
+ # CONFIG_PCI_ENDPOINT_TEST is not set
+ # CONFIG_XILINX_SDFEC is not set
+-# CONFIG_HISI_HIKEY_USB is not set
+ # CONFIG_OPEN_DICE is not set
+ CONFIG_NTSYNC=m
+ # CONFIG_VCPU_STALL_DETECTOR is not set
+@@ -2137,14 +2167,9 @@ CONFIG_NTSYNC=m
+ #
+ # EEPROM support
+ #
+-CONFIG_EEPROM_AT24=y
+-CONFIG_EEPROM_AT25=y
+ # CONFIG_EEPROM_MAX6875 is not set
+ CONFIG_EEPROM_93CX6=y
+-# CONFIG_EEPROM_93XX46 is not set
+ # CONFIG_EEPROM_IDT_89HPESX is not set
+-# CONFIG_EEPROM_EE1004 is not set
+-# CONFIG_EEPROM_M24LR is not set
+ # end of EEPROM support
+ 
+ # CONFIG_CB710_CORE is not set
+@@ -2162,7 +2187,9 @@ CONFIG_EEPROM_93CX6=y
+ # CONFIG_GP_PCI1XXXX is not set
+ # CONFIG_KEBA_CP500 is not set
+ # CONFIG_AMD_SBRMI_I2C is not set
++# CONFIG_AMD_SBTSI is not set
+ # CONFIG_MISC_RP1 is not set
++# CONFIG_INTEL_SSEI is not set
+ # end of Misc devices
+ 
+ #
+@@ -2227,6 +2254,7 @@ CONFIG_SCSI_LOWLEVEL=y
+ # CONFIG_SCSI_MPT3SAS is not set
+ # CONFIG_SCSI_MPT2SAS is not set
+ # CONFIG_SCSI_MPI3MR is not set
++# CONFIG_SCSI_LEAPRAID is not set
+ # CONFIG_SCSI_SMARTPQI is not set
+ # CONFIG_SCSI_HPTIOP is not set
+ # CONFIG_SCSI_BUSLOGIC is not set
+@@ -2338,7 +2366,8 @@ CONFIG_ETHERNET=y
+ # CONFIG_NET_VENDOR_ADAPTEC is not set
+ # CONFIG_NET_VENDOR_AGERE is not set
+ # CONFIG_NET_VENDOR_ALACRITECH is not set
+-# CONFIG_NET_VENDOR_ALTEON is not set
++CONFIG_NET_VENDOR_ALIBABA=y
++# CONFIG_ALIBABA_EEA is not set
+ # CONFIG_ALTERA_TSE is not set
+ # CONFIG_NET_VENDOR_AMAZON is not set
+ # CONFIG_NET_VENDOR_AMD is not set
+@@ -2353,7 +2382,6 @@ CONFIG_ETHERNET=y
+ # CONFIG_NET_VENDOR_CISCO is not set
+ # CONFIG_NET_VENDOR_CORTINA is not set
+ # CONFIG_NET_VENDOR_DAVICOM is not set
+-# CONFIG_DNET is not set
+ # CONFIG_NET_VENDOR_DEC is not set
+ # CONFIG_NET_VENDOR_DLINK is not set
+ # CONFIG_NET_VENDOR_EMULEX is not set
+@@ -2380,12 +2408,10 @@ CONFIG_NET_VENDOR_META=y
+ # CONFIG_FEALNX is not set
+ # CONFIG_NET_VENDOR_NI is not set
+ # CONFIG_NET_VENDOR_NATSEMI is not set
+-# CONFIG_NET_VENDOR_NETERION is not set
+ # CONFIG_NET_VENDOR_NETRONOME is not set
+ # CONFIG_NET_VENDOR_NVIDIA is not set
+ # CONFIG_NET_VENDOR_OKI is not set
+ # CONFIG_ETHOC is not set
+-# CONFIG_NET_VENDOR_PACKET_ENGINES is not set
+ # CONFIG_NET_VENDOR_PENSANDO is not set
+ # CONFIG_NET_VENDOR_QLOGIC is not set
+ # CONFIG_NET_VENDOR_BROCADE is not set
+@@ -2416,10 +2442,10 @@ CONFIG_RMNET=m
+ # CONFIG_NET_VENDOR_WANGXUN is not set
+ # CONFIG_NET_VENDOR_WIZNET is not set
+ # CONFIG_NET_VENDOR_XILINX is not set
++CONFIG_NET_VENDOR_ZTE=y
++# CONFIG_DINGHAI is not set
+ # CONFIG_FDDI is not set
+-# CONFIG_HIPPI is not set
+ CONFIG_QCOM_IPA=m
+-CONFIG_MDIO_BUS=m
+ CONFIG_PHYLINK=m
+ CONFIG_PHYLIB=m
+ CONFIG_SWPHY=y
+@@ -2432,10 +2458,12 @@ CONFIG_FIXED_PHY=m
+ # MII PHY device drivers
+ #
+ # CONFIG_AS21XXX_PHY is not set
++# CONFIG_AIR_AN8801_PHY is not set
+ # CONFIG_AIR_EN8811H_PHY is not set
+ # CONFIG_AMD_PHY is not set
+ # CONFIG_ADIN_PHY is not set
+ # CONFIG_ADIN1100_PHY is not set
++# CONFIG_ADIN1140_PHY is not set
+ # CONFIG_AQUANTIA_PHY is not set
+ CONFIG_AX88796B_PHY=m
+ # CONFIG_BROADCOM_PHY is not set
+@@ -2445,6 +2473,7 @@ CONFIG_AX88796B_PHY=m
+ # CONFIG_BCM87XX_PHY is not set
+ # CONFIG_CICADA_PHY is not set
+ # CONFIG_CORTINA_PHY is not set
++# CONFIG_DAP8211R_PHY is not set
+ # CONFIG_DAVICOM_PHY is not set
+ # CONFIG_ICPLUS_PHY is not set
+ # CONFIG_LXT_PHY is not set
+@@ -2489,6 +2518,10 @@ CONFIG_AX88796B_PHY=m
+ CONFIG_VITESSE_PHY=m
+ # CONFIG_XILINX_GMII2RGMII is not set
+ # CONFIG_PSE_CONTROLLER is not set
++
++#
++# MDIO controller drivers
++#
+ CONFIG_FWNODE_MDIO=m
+ CONFIG_OF_MDIO=m
+ CONFIG_MDIO_BITBANG=m
+@@ -2510,6 +2543,8 @@ CONFIG_MDIO_BUS_MUX=m
+ # CONFIG_MDIO_BUS_MUX_GPIO is not set
+ CONFIG_MDIO_BUS_MUX_MULTIPLEXER=m
+ CONFIG_MDIO_BUS_MUX_MMIOREG=m
++# end of MDIO Multiplexers
++# end of MDIO controller drivers
+ 
+ #
+ # PCS device drivers
+@@ -2601,6 +2636,11 @@ CONFIG_ATH10K_SPECTRAL=y
+ CONFIG_WLAN_VENDOR_MICROCHIP=y
+ # CONFIG_WILC1000_SDIO is not set
+ # CONFIG_WILC1000_SPI is not set
++CONFIG_WLAN_VENDOR_MORSEMICRO=y
++# CONFIG_MM81X_USB is not set
++# CONFIG_MM81X_SDIO is not set
++CONFIG_WLAN_VENDOR_NXP=y
++# CONFIG_NXPWIFI_SDIO is not set
+ CONFIG_WLAN_VENDOR_PURELIFI=y
+ # CONFIG_PLFXLC is not set
+ # CONFIG_WLAN_VENDOR_RALINK is not set
+@@ -2627,7 +2667,6 @@ CONFIG_WLAN_VENDOR_SILABS=y
+ # CONFIG_VMXNET3 is not set
+ # CONFIG_NETDEVSIM is not set
+ CONFIG_NET_FAILOVER=y
+-# CONFIG_ISDN is not set
+ 
+ #
+ # Input device support
+@@ -2662,6 +2701,7 @@ CONFIG_KEYBOARD_GPIO=y
+ # CONFIG_KEYBOARD_GPIO_POLLED is not set
+ # CONFIG_KEYBOARD_TCA8418 is not set
+ # CONFIG_KEYBOARD_MATRIX is not set
++# CONFIG_KEYBOARD_CHARLIEPLEX is not set
+ # CONFIG_KEYBOARD_LM8323 is not set
+ # CONFIG_KEYBOARD_LM8333 is not set
+ # CONFIG_KEYBOARD_MAX7359 is not set
+@@ -2672,8 +2712,9 @@ CONFIG_KEYBOARD_GPIO=y
  # CONFIG_KEYBOARD_SAMSUNG is not set
  # CONFIG_KEYBOARD_STOWAWAY is not set
  # CONFIG_KEYBOARD_SUNKBD is not set
 +CONFIG_KEYBOARD_STMPE=m
  # CONFIG_KEYBOARD_OMAP4 is not set
- # CONFIG_KEYBOARD_TM2_TOUCHKEY is not set
+-# CONFIG_KEYBOARD_TM2_TOUCHKEY is not set
++CONFIG_KEYBOARD_TM2_TOUCHKEY=m
  # CONFIG_KEYBOARD_XTKBD is not set
-@@ -2774,6 +2785,7 @@ CONFIG_TOUCHSCREEN_ATMEL_MXT=m
+ # CONFIG_KEYBOARD_CAP11XX is not set
+ # CONFIG_KEYBOARD_BCM is not set
+@@ -2774,6 +2815,7 @@ CONFIG_TOUCHSCREEN_ATMEL_MXT=m
  # CONFIG_TOUCHSCREEN_ELO is not set
  # CONFIG_TOUCHSCREEN_WACOM_W8001 is not set
  # CONFIG_TOUCHSCREEN_WACOM_I2C is not set
@@ -360,7 +1115,7 @@ index 777bde3..5dfddec 100644
  # CONFIG_TOUCHSCREEN_MAX11801 is not set
  # CONFIG_TOUCHSCREEN_MMS114 is not set
  # CONFIG_TOUCHSCREEN_MELFAS_MIP4 is not set
-@@ -2800,6 +2812,7 @@ CONFIG_TOUCHSCREEN_ATMEL_MXT=m
+@@ -2800,6 +2842,7 @@ CONFIG_TOUCHSCREEN_ATMEL_MXT=m
  # CONFIG_TOUCHSCREEN_SIS_I2C is not set
  # CONFIG_TOUCHSCREEN_ST1232 is not set
  # CONFIG_TOUCHSCREEN_STMFTS is not set
@@ -368,7 +1123,57 @@ index 777bde3..5dfddec 100644
  # CONFIG_TOUCHSCREEN_SUR40 is not set
  # CONFIG_TOUCHSCREEN_SURFACE3_SPI is not set
  # CONFIG_TOUCHSCREEN_SX8654 is not set
-@@ -3014,6 +3027,7 @@ CONFIG_I2C_MUX_PCA954x=y
+@@ -2844,6 +2887,7 @@ CONFIG_INPUT_PWM_VIBRA=y
+ # CONFIG_INPUT_IQS269A is not set
+ # CONFIG_INPUT_IQS626A is not set
+ # CONFIG_INPUT_IQS7222 is not set
++# CONFIG_INPUT_ISA1200_HAPTIC is not set
+ # CONFIG_INPUT_CMA3000 is not set
+ # CONFIG_INPUT_XEN_KBDDEV_FRONTEND is not set
+ CONFIG_INPUT_DRV260X_HAPTICS=m
+@@ -2911,20 +2955,21 @@ CONFIG_SERIAL_8250_DMA=y
+ CONFIG_SERIAL_8250_PCILIB=y
+ CONFIG_SERIAL_8250_PCI=y
+ CONFIG_SERIAL_8250_EXAR=y
++CONFIG_SERIAL_8250_MOXA_PCIE=y
+ CONFIG_SERIAL_8250_NR_UARTS=4
+ CONFIG_SERIAL_8250_RUNTIME_UARTS=4
+ CONFIG_SERIAL_8250_EXTENDED=y
+-# CONFIG_SERIAL_8250_MANY_PORTS is not set
+-# CONFIG_SERIAL_8250_PCI1XXXX is not set
+ CONFIG_SERIAL_8250_SHARE_IRQ=y
+ # CONFIG_SERIAL_8250_DETECT_IRQ is not set
+ # CONFIG_SERIAL_8250_RSA is not set
+-CONFIG_SERIAL_8250_DWLIB=y
++# CONFIG_SERIAL_8250_MANY_PORTS is not set
++# CONFIG_SERIAL_8250_PCI1XXXX is not set
+ CONFIG_SERIAL_8250_FSL=y
+ CONFIG_SERIAL_8250_DW=y
+ # CONFIG_SERIAL_8250_RT288X is not set
+ # CONFIG_SERIAL_8250_PERICOM is not set
+ CONFIG_SERIAL_OF_PLATFORM=y
++CONFIG_SERIAL_8250_DWLIB=y
+ 
+ #
+ # Non-8250 serial port support
+@@ -2982,7 +3027,7 @@ CONFIG_HW_RANDOM=m
+ # CONFIG_HW_RANDOM_XIPHERA is not set
+ CONFIG_HW_RANDOM_ARM_SMCCC_TRNG=m
+ # CONFIG_HW_RANDOM_CN10K is not set
+-# CONFIG_APPLICOM is not set
++# CONFIG_HW_RANDOM_QCOM is not set
+ CONFIG_DEVMEM=y
+ CONFIG_DEVPORT=y
+ # CONFIG_TCG_TPM is not set
+@@ -3002,6 +3047,7 @@ CONFIG_I2C_MUX=y
+ # Multiplexer I2C Chip support
+ #
+ # CONFIG_I2C_ARB_GPIO_CHALLENGE is not set
++CONFIG_I2C_HOTPLUG_GPIO=m
+ # CONFIG_I2C_MUX_GPIO is not set
+ # CONFIG_I2C_MUX_GPMUX is not set
+ # CONFIG_I2C_MUX_LTC4306 is not set
+@@ -3014,6 +3060,7 @@ CONFIG_I2C_MUX_PCA954x=y
  # end of Multiplexer I2C Chip support
  
  CONFIG_I2C_HELPER_AUTO=y
@@ -376,7 +1181,7 @@ index 777bde3..5dfddec 100644
  
  #
  # I2C Hardware Bus support
-@@ -3045,7 +3059,8 @@ CONFIG_I2C_HELPER_AUTO=y
+@@ -3045,7 +3092,8 @@ CONFIG_I2C_HELPER_AUTO=y
  # CONFIG_I2C_CBUS_GPIO is not set
  # CONFIG_I2C_DESIGNWARE_CORE is not set
  # CONFIG_I2C_EMEV2 is not set
@@ -386,15 +1191,106 @@ index 777bde3..5dfddec 100644
  # CONFIG_I2C_HISI is not set
  # CONFIG_I2C_NOMADIK is not set
  # CONFIG_I2C_OCORES is not set
-@@ -3297,6 +3312,7 @@ CONFIG_GPIO_XGENE=y
+@@ -3083,6 +3131,7 @@ CONFIG_I2C_SLAVE=y
+ # end of I2C support
+ 
+ # CONFIG_I3C is not set
++CONFIG_I3C_OR_I2C=y
+ CONFIG_SPI=y
+ # CONFIG_SPI_DEBUG is not set
+ CONFIG_SPI_MASTER=y
+@@ -3158,6 +3207,7 @@ CONFIG_PTP_1588_CLOCK_OPTIONAL=y
+ # Enable PHYLIB and NETWORK_PHY_TIMESTAMPING to see the additional clocks.
+ #
+ CONFIG_PTP_1588_CLOCK_KVM=y
++CONFIG_PTP_1588_CLOCK_VMCLOCK=y
+ # CONFIG_PTP_1588_CLOCK_IDT82P33 is not set
+ # CONFIG_PTP_1588_CLOCK_IDTCM is not set
+ # CONFIG_PTP_1588_CLOCK_FC3W is not set
+@@ -3181,6 +3231,7 @@ CONFIG_GENERIC_PINCONF=y
+ # CONFIG_DEBUG_PINCTRL is not set
+ # CONFIG_PINCTRL_AW9523 is not set
+ # CONFIG_PINCTRL_CY8C95X0 is not set
++# CONFIG_PINCTRL_GENERIC_MUX is not set
+ # CONFIG_PINCTRL_MCP23S08 is not set
+ # CONFIG_PINCTRL_MICROCHIP_SGPIO is not set
+ # CONFIG_PINCTRL_OCELOT is not set
+@@ -3188,14 +3239,19 @@ CONFIG_GENERIC_PINCONF=y
+ # CONFIG_PINCTRL_STMFX is not set
+ # CONFIG_PINCTRL_SX150X is not set
+ CONFIG_PINCTRL_MSM=y
++CONFIG_PINCTRL_ELIZA=y
+ # CONFIG_PINCTRL_GLYMUR is not set
++CONFIG_PINCTRL_HAWI=y
+ # CONFIG_PINCTRL_IPQ5018 is not set
++CONFIG_PINCTRL_IPQ5210=y
+ # CONFIG_PINCTRL_IPQ5332 is not set
+ # CONFIG_PINCTRL_IPQ5424 is not set
+ # CONFIG_PINCTRL_IPQ8074 is not set
+ # CONFIG_PINCTRL_IPQ6018 is not set
+ # CONFIG_PINCTRL_IPQ9574 is not set
++CONFIG_PINCTRL_IPQ9650=y
+ # CONFIG_PINCTRL_KAANAPALI is not set
++CONFIG_PINCTRL_MAILI=y
+ # CONFIG_PINCTRL_MDM9607 is not set
+ # CONFIG_PINCTRL_MSM8916 is not set
+ # CONFIG_PINCTRL_MSM8917 is not set
+@@ -3204,6 +3260,7 @@ CONFIG_PINCTRL_MSM=y
+ # CONFIG_PINCTRL_MSM8994 is not set
+ CONFIG_PINCTRL_MSM8996=y
+ # CONFIG_PINCTRL_MSM8998 is not set
++CONFIG_PINCTRL_NORD=y
+ # CONFIG_PINCTRL_QCM2290 is not set
+ # CONFIG_PINCTRL_QCS404 is not set
+ # CONFIG_PINCTRL_QCS615 is not set
+@@ -3219,6 +3276,7 @@ CONFIG_PINCTRL_MSM8996=y
+ # CONFIG_PINCTRL_SDM670 is not set
+ # CONFIG_PINCTRL_SDM845 is not set
+ # CONFIG_PINCTRL_SDX75 is not set
++CONFIG_PINCTRL_SHIKRA=y
+ # CONFIG_PINCTRL_SM4450 is not set
+ # CONFIG_PINCTRL_SM6115 is not set
+ # CONFIG_PINCTRL_SM6125 is not set
+@@ -3260,6 +3318,7 @@ CONFIG_GPIO_GENERIC=y
+ #
+ # CONFIG_GPIO_74XX_MMIO is not set
+ # CONFIG_GPIO_ALTERA is not set
++# CONFIG_GPIO_BY_PINCTRL is not set
+ # CONFIG_GPIO_CADENCE is not set
+ CONFIG_GPIO_DWAPB=y
+ # CONFIG_GPIO_EXAR is not set
+@@ -3274,6 +3333,7 @@ CONFIG_GPIO_PL061=y
+ # CONFIG_GPIO_POLARFIRE_SOC is not set
+ # CONFIG_GPIO_SIFIVE is not set
+ # CONFIG_GPIO_SYSCON is not set
++# CONFIG_GPIO_WAVESHARE_DSI_TOUCH is not set
+ CONFIG_GPIO_XGENE=y
+ # CONFIG_GPIO_XILINX is not set
+ # CONFIG_GPIO_AMD_FCH is not set
+@@ -3297,8 +3357,14 @@ CONFIG_GPIO_XGENE=y
  #
  # MFD GPIO expanders
  #
 +# CONFIG_GPIO_STMPE is not set
  # end of MFD GPIO expanders
  
++#
++# Auxiliary Bus GPIO drivers
++#
++# end of Auxiliary Bus GPIO drivers
++
  #
-@@ -3354,7 +3370,7 @@ CONFIG_POWER_RESET_QCOM_PON=y
+ # PCI GPIO expanders
+ #
+@@ -3330,6 +3396,7 @@ CONFIG_GPIO_XGENE=y
+ #
+ # CONFIG_GPIO_AGGREGATOR is not set
+ # CONFIG_GPIO_LATCH is not set
++# CONFIG_GPIO_LINE_MUX is not set
+ # CONFIG_GPIO_MOCKUP is not set
+ # CONFIG_GPIO_VIRTIO is not set
+ # CONFIG_GPIO_SIM is not set
+@@ -3354,11 +3421,14 @@ CONFIG_POWER_RESET_QCOM_PON=y
  CONFIG_POWER_RESET_VEXPRESS=y
  # CONFIG_POWER_RESET_XGENE is not set
  CONFIG_POWER_RESET_SYSCON=y
@@ -403,8 +1299,37 @@ index 777bde3..5dfddec 100644
  CONFIG_REBOOT_MODE=y
  CONFIG_SYSCON_REBOOT_MODE=y
  # CONFIG_NVMEM_REBOOT_MODE is not set
-@@ -3418,6 +3434,8 @@ CONFIG_BATTERY_QCOM_FG=y
+-# CONFIG_POWER_SEQUENCING is not set
++# CONFIG_POWER_RESET_QEMU_VIRT_CTRL is not set
++CONFIG_POWER_SEQUENCING=y
++CONFIG_POWER_SEQUENCING_QCOM_WCN=m
++# CONFIG_POWER_SEQUENCING_PCIE_M2 is not set
+ CONFIG_POWER_SUPPLY=y
+ # CONFIG_POWER_SUPPLY_DEBUG is not set
+ CONFIG_POWER_SUPPLY_HWMON=y
+@@ -3372,6 +3442,7 @@ CONFIG_POWER_SUPPLY_HWMON=y
+ # CONFIG_BATTERY_DS2781 is not set
+ # CONFIG_BATTERY_DS2782 is not set
+ # CONFIG_BATTERY_SAMSUNG_SDI is not set
++# CONFIG_BATTERY_S2MU005 is not set
+ # CONFIG_BATTERY_SBS is not set
+ # CONFIG_CHARGER_SBS is not set
+ # CONFIG_MANAGER_SBS is not set
+@@ -3402,7 +3473,9 @@ CONFIG_CHARGER_QCOM_SMBCHG=y
+ # CONFIG_CHARGER_BQ2515X is not set
+ # CONFIG_CHARGER_BQ25890 is not set
+ # CONFIG_CHARGER_BQ25980 is not set
++# CONFIG_CHARGER_BQ25630 is not set
+ # CONFIG_CHARGER_BQ256XX is not set
++# CONFIG_CHARGER_SGM41542 is not set
+ # CONFIG_CHARGER_SMB347 is not set
+ # CONFIG_BATTERY_GAUGE_LTC2941 is not set
+ # CONFIG_BATTERY_GOLDFISH is not set
+@@ -3416,8 +3489,11 @@ CONFIG_CHARGER_QCOM_SMBCHG=y
+ # CONFIG_CHARGER_BD99954 is not set
+ CONFIG_BATTERY_QCOM_FG=y
  # CONFIG_BATTERY_UG3105 is not set
++# CONFIG_BATTERY_CHARGER_SURFACE_RT is not set
  # CONFIG_CHARGER_QCOM_SMB2 is not set
  # CONFIG_FUEL_GAUGE_MM8013 is not set
 +CONFIG_CHARGER_SM5705=m
@@ -412,7 +1337,56 @@ index 777bde3..5dfddec 100644
  CONFIG_HWMON=y
  # CONFIG_HWMON_DEBUG_CHIP is not set
  
-@@ -3621,7 +3639,7 @@ CONFIG_THERMAL_EMULATION=y
+@@ -3445,6 +3521,8 @@ CONFIG_HWMON=y
+ # CONFIG_SENSORS_ASC7621 is not set
+ # CONFIG_SENSORS_ASUS_ROG_RYUJIN is not set
+ # CONFIG_SENSORS_AXI_FAN_CONTROL is not set
++# CONFIG_SENSORS_KB9002 is not set
++# CONFIG_SENSORS_ARCTIC_FAN_CONTROLLER is not set
+ CONFIG_SENSORS_ARM_SCPI=y
+ # CONFIG_SENSORS_ATXP1 is not set
+ # CONFIG_SENSORS_CHIPCAP2 is not set
+@@ -3472,6 +3550,7 @@ CONFIG_SENSORS_ARM_SCPI=y
+ # CONFIG_SENSORS_JC42 is not set
+ # CONFIG_SENSORS_POWERZ is not set
+ # CONFIG_SENSORS_POWR1220 is not set
++# CONFIG_SENSORS_PROM21_XHCI is not set
+ # CONFIG_SENSORS_LINEAGE is not set
+ # CONFIG_SENSORS_LTC2945 is not set
+ # CONFIG_SENSORS_LTC2947_I2C is not set
+@@ -3486,6 +3565,7 @@ CONFIG_SENSORS_ARM_SCPI=y
+ # CONFIG_SENSORS_LTC4260 is not set
+ # CONFIG_SENSORS_LTC4261 is not set
+ # CONFIG_SENSORS_LTC4282 is not set
++# CONFIG_SENSORS_LTC4283 is not set
+ # CONFIG_SENSORS_MAX1111 is not set
+ # CONFIG_SENSORS_MAX127 is not set
+ # CONFIG_SENSORS_MAX16065 is not set
+@@ -3504,6 +3584,7 @@ CONFIG_SENSORS_ARM_SCPI=y
+ # CONFIG_SENSORS_MAX31790 is not set
+ # CONFIG_SENSORS_MC34VR500 is not set
+ # CONFIG_SENSORS_MCP3021 is not set
++# CONFIG_SENSORS_MCP9982 is not set
+ # CONFIG_SENSORS_TC654 is not set
+ # CONFIG_SENSORS_TPS23861 is not set
+ # CONFIG_SENSORS_MR75203 is not set
+@@ -3542,7 +3623,6 @@ CONFIG_SENSORS_ARM_SCPI=y
+ # CONFIG_PMBUS is not set
+ # CONFIG_SENSORS_PT5161L is not set
+ # CONFIG_SENSORS_PWM_FAN is not set
+-# CONFIG_SENSORS_SBTSI is not set
+ # CONFIG_SENSORS_SHT15 is not set
+ # CONFIG_SENSORS_SHT21 is not set
+ # CONFIG_SENSORS_SHT3x is not set
+@@ -3551,6 +3631,7 @@ CONFIG_SENSORS_ARM_SCPI=y
+ # CONFIG_SENSORS_SIS5595 is not set
+ # CONFIG_SENSORS_DME1737 is not set
+ # CONFIG_SENSORS_EMC1403 is not set
++# CONFIG_SENSORS_EMC1812 is not set
+ # CONFIG_SENSORS_EMC2103 is not set
+ # CONFIG_SENSORS_EMC2305 is not set
+ # CONFIG_SENSORS_EMC6W201 is not set
+@@ -3621,7 +3702,7 @@ CONFIG_THERMAL_EMULATION=y
  #
  # Qualcomm thermal drivers
  #
@@ -421,7 +1395,23 @@ index 777bde3..5dfddec 100644
  # CONFIG_QCOM_SPMI_ADC_TM5 is not set
  CONFIG_QCOM_SPMI_TEMP_ALARM=y
  # CONFIG_QCOM_LMH is not set
-@@ -3764,7 +3782,15 @@ CONFIG_MFD_SPMI_PMIC=y
+@@ -3672,6 +3753,7 @@ CONFIG_ARM_SMC_WATCHDOG=y
+ # USB-based Watchdog Cards
+ #
+ # CONFIG_USBPCWATCHDOG is not set
++# CONFIG_GUNYAH_WATCHDOG is not set
+ CONFIG_SSB_POSSIBLE=y
+ # CONFIG_SSB is not set
+ CONFIG_BCMA_POSSIBLE=y
+@@ -3744,7 +3826,6 @@ CONFIG_MFD_CORE=m
+ # CONFIG_MFD_MENF21BMC is not set
+ # CONFIG_MFD_NCT6694 is not set
+ # CONFIG_MFD_OCELOT is not set
+-# CONFIG_EZX_PCAP is not set
+ # CONFIG_MFD_CPCAP is not set
+ # CONFIG_MFD_VIPERBOARD is not set
+ # CONFIG_MFD_NTXEC is not set
+@@ -3764,7 +3845,15 @@ CONFIG_MFD_SPMI_PMIC=y
  # CONFIG_MFD_SI476X_CORE is not set
  # CONFIG_MFD_SM501 is not set
  # CONFIG_MFD_SKY81452 is not set
@@ -438,7 +1428,36 @@ index 777bde3..5dfddec 100644
  CONFIG_MFD_SYSCON=y
  # CONFIG_MFD_LP3943 is not set
  # CONFIG_MFD_LP8788 is not set
-@@ -4156,7 +4182,7 @@ CONFIG_VIDEO_CCS_PLL=m
+@@ -3846,6 +3935,7 @@ CONFIG_REGULATOR_GPIO=y
+ # CONFIG_REGULATOR_LTC3676 is not set
+ # CONFIG_REGULATOR_MAX1586 is not set
+ # CONFIG_REGULATOR_MAX77503 is not set
++# CONFIG_REGULATOR_MAX77675 is not set
+ # CONFIG_REGULATOR_MAX77857 is not set
+ # CONFIG_REGULATOR_MAX8649 is not set
+ # CONFIG_REGULATOR_MAX8660 is not set
+@@ -3892,10 +3982,12 @@ CONFIG_REGULATOR_QCOM_SPMI=y
+ # CONFIG_REGULATOR_RT6160 is not set
+ # CONFIG_REGULATOR_RT6190 is not set
+ # CONFIG_REGULATOR_RT6245 is not set
++# CONFIG_REGULATOR_RT8092 is not set
+ # CONFIG_REGULATOR_RTQ2134 is not set
+ # CONFIG_REGULATOR_RTMV20 is not set
+ # CONFIG_REGULATOR_RTQ6752 is not set
+ # CONFIG_REGULATOR_RTQ2208 is not set
++# CONFIG_REGULATOR_SGM3804 is not set
+ # CONFIG_REGULATOR_SLG51000 is not set
+ # CONFIG_REGULATOR_SY8106A is not set
+ # CONFIG_REGULATOR_SY8824X is not set
+@@ -3907,6 +3999,7 @@ CONFIG_REGULATOR_QCOM_SPMI=y
+ # CONFIG_REGULATOR_TPS65023 is not set
+ # CONFIG_REGULATOR_TPS6507X is not set
+ # CONFIG_REGULATOR_TPS65132 is not set
++# CONFIG_REGULATOR_TPS65185 is not set
+ # CONFIG_REGULATOR_TPS6524X is not set
+ # CONFIG_REGULATOR_VCTRL is not set
+ # CONFIG_REGULATOR_VEXPRESS is not set
+@@ -4156,7 +4249,7 @@ CONFIG_VIDEO_CCS_PLL=m
  # CONFIG_VIDEO_IMX208 is not set
  # CONFIG_VIDEO_IMX214 is not set
  # CONFIG_VIDEO_IMX219 is not set
@@ -447,15 +1466,44 @@ index 777bde3..5dfddec 100644
  # CONFIG_VIDEO_IMX274 is not set
  # CONFIG_VIDEO_IMX283 is not set
  # CONFIG_VIDEO_IMX290 is not set
-@@ -4218,6 +4244,7 @@ CONFIG_VIDEO_IMX318=m
+@@ -4168,6 +4261,8 @@ CONFIG_VIDEO_IMX318=m
+ # CONFIG_VIDEO_IMX355 is not set
+ # CONFIG_VIDEO_IMX412 is not set
+ # CONFIG_VIDEO_IMX415 is not set
++# CONFIG_VIDEO_IMX471 is not set
++# CONFIG_VIDEO_IMX678 is not set
+ # CONFIG_VIDEO_MT9M001 is not set
+ # CONFIG_VIDEO_MT9M111 is not set
+ # CONFIG_VIDEO_MT9M114 is not set
+@@ -4178,6 +4273,7 @@ CONFIG_VIDEO_IMX318=m
+ # CONFIG_VIDEO_MT9V111 is not set
+ # CONFIG_VIDEO_OG01A1B is not set
+ # CONFIG_VIDEO_OG0VE1B is not set
++# CONFIG_VIDEO_OS05B10 is not set
+ # CONFIG_VIDEO_OV01A10 is not set
+ # CONFIG_VIDEO_OV02A10 is not set
+ # CONFIG_VIDEO_OV02E10 is not set
+@@ -4190,6 +4286,7 @@ CONFIG_VIDEO_IMX318=m
+ # CONFIG_VIDEO_OV2659 is not set
+ # CONFIG_VIDEO_OV2680 is not set
+ # CONFIG_VIDEO_OV2685 is not set
++# CONFIG_VIDEO_OV2732 is not set
+ # CONFIG_VIDEO_OV2735 is not set
+ # CONFIG_VIDEO_OV4689 is not set
+ # CONFIG_VIDEO_OV5640 is not set
+@@ -4217,8 +4314,11 @@ CONFIG_VIDEO_IMX318=m
+ # CONFIG_VIDEO_RDACM21 is not set
  # CONFIG_VIDEO_RJ54N1 is not set
  # CONFIG_VIDEO_S5C73M3 is not set
++# CONFIG_VIDEO_S5K3M5 is not set
  # CONFIG_VIDEO_S5K5BAF is not set
 +CONFIG_VIDEO_S5K5E3=m
  # CONFIG_VIDEO_S5K6A3 is not set
++# CONFIG_VIDEO_S5KJN1 is not set
  # CONFIG_VIDEO_VD55G1 is not set
  # CONFIG_VIDEO_VD56G3 is not set
-@@ -4237,7 +4264,7 @@ CONFIG_VIDEO_AK7375=m
+ # CONFIG_VIDEO_VGXY61 is not set
+@@ -4237,7 +4337,7 @@ CONFIG_VIDEO_AK7375=m
  # CONFIG_VIDEO_DW9714 is not set
  # CONFIG_VIDEO_DW9719 is not set
  # CONFIG_VIDEO_DW9768 is not set
@@ -464,7 +1512,184 @@ index 777bde3..5dfddec 100644
  
  #
  # Flash devices
-@@ -4542,6 +4569,7 @@ CONFIG_DRM_PANEL_LGPHILIPS_SW43101=m
+@@ -4385,6 +4485,7 @@ CONFIG_DRM=m
+ CONFIG_DRM_MIPI_DSI=y
+ CONFIG_DRM_KMS_HELPER=m
+ # CONFIG_DRM_PANIC is not set
++# CONFIG_DRM_RAS is not set
+ CONFIG_DRM_CLIENT=y
+ CONFIG_DRM_CLIENT_LIB=m
+ CONFIG_DRM_CLIENT_SELECTION=m
+@@ -4416,13 +4517,7 @@ CONFIG_DRM_EXEC=m
+ CONFIG_DRM_GPUVM=m
+ CONFIG_DRM_GEM_SHMEM_HELPER=m
+ CONFIG_DRM_SCHED=m
+-
+-#
+-# Drivers for system framebuffers
+-#
+-# CONFIG_DRM_EFIDRM is not set
+-# CONFIG_DRM_SIMPLEDRM is not set
+-# end of Drivers for system framebuffers
++# CONFIG_DRM_AMDGPU is not set
+ 
+ #
+ # ARM devices
+@@ -4432,18 +4527,67 @@ CONFIG_DRM_SCHED=m
+ # CONFIG_DRM_KOMEDA is not set
+ # end of ARM devices
+ 
+-# CONFIG_DRM_RADEON is not set
+-# CONFIG_DRM_AMDGPU is not set
+-# CONFIG_DRM_NOUVEAU is not set
+-# CONFIG_DRM_XE is not set
+-# CONFIG_DRM_VGEM is not set
+-# CONFIG_DRM_VKMS is not set
+-# CONFIG_DRM_VMWGFX is not set
+-CONFIG_DRM_UDL=m
+ # CONFIG_DRM_AST is not set
++CONFIG_DRM_BRIDGE=y
++CONFIG_DRM_PANEL_BRIDGE=y
++CONFIG_DRM_AUX_BRIDGE=m
++
++#
++# Display Interface Bridges
++#
++# CONFIG_DRM_CHIPONE_ICN6211 is not set
++# CONFIG_DRM_CHRONTEL_CH7033 is not set
++# CONFIG_DRM_DISPLAY_CONNECTOR is not set
++# CONFIG_DRM_I2C_NXP_TDA998X is not set
++# CONFIG_DRM_ITE_IT6263 is not set
++# CONFIG_DRM_ITE_IT6505 is not set
++# CONFIG_DRM_LONTIUM_LT8912B is not set
++# CONFIG_DRM_LONTIUM_LT9211 is not set
++# CONFIG_DRM_LONTIUM_LT9611 is not set
++# CONFIG_DRM_LONTIUM_LT9611UXC is not set
++# CONFIG_DRM_LONTIUM_LT8713SX is not set
++# CONFIG_DRM_ITE_IT66121 is not set
++# CONFIG_DRM_LVDS_CODEC is not set
++# CONFIG_DRM_MEGACHIPS_STDPXXXX_GE_B850V3_FW is not set
++# CONFIG_DRM_NWL_MIPI_DSI is not set
++# CONFIG_DRM_NXP_PTN3460 is not set
++# CONFIG_DRM_PARADE_PS8622 is not set
++# CONFIG_DRM_PARADE_PS8640 is not set
++# CONFIG_DRM_SAMSUNG_DSIM is not set
++# CONFIG_DRM_SIL_SII8620 is not set
++# CONFIG_DRM_SII902X is not set
++# CONFIG_DRM_SII9234 is not set
++# CONFIG_DRM_SIMPLE_BRIDGE is not set
++# CONFIG_DRM_SOLOMON_SSD2825 is not set
++# CONFIG_DRM_THINE_THC63LVD1024 is not set
++# CONFIG_DRM_TOSHIBA_TC358762 is not set
++# CONFIG_DRM_TOSHIBA_TC358764 is not set
++# CONFIG_DRM_TOSHIBA_TC358767 is not set
++# CONFIG_DRM_TOSHIBA_TC358768 is not set
++# CONFIG_DRM_TOSHIBA_TC358775 is not set
++# CONFIG_DRM_TI_DLPC3433 is not set
++# CONFIG_DRM_TI_TDP158 is not set
++# CONFIG_DRM_TI_TFP410 is not set
++# CONFIG_DRM_TI_SN65DSI83 is not set
++# CONFIG_DRM_TI_SN65DSI86 is not set
++# CONFIG_DRM_TI_TPD12S015 is not set
++# CONFIG_DRM_WAVESHARE_BRIDGE is not set
++# CONFIG_DRM_ANALOGIX_ANX6345 is not set
++# CONFIG_DRM_ANALOGIX_ANX78XX is not set
++# CONFIG_DRM_ANALOGIX_ANX7625 is not set
++# CONFIG_DRM_I2C_ADV7511 is not set
++# CONFIG_DRM_CDNS_DSI is not set
++# CONFIG_DRM_CDNS_MHDP8546 is not set
++# end of Display Interface Bridges
++
++# CONFIG_DRM_ETNAVIV is not set
++# CONFIG_DRM_GUD is not set
++# CONFIG_DRM_HISI_HIBMC is not set
++# CONFIG_DRM_HISI_KIRIN is not set
++# CONFIG_DRM_POWERVR is not set
++# CONFIG_DRM_LIMA is not set
++# CONFIG_DRM_LOGICVC is not set
+ # CONFIG_DRM_MGAG200 is not set
+-# CONFIG_DRM_QXL is not set
+-# CONFIG_DRM_VIRTIO_GPU is not set
+ CONFIG_DRM_MSM=m
+ CONFIG_DRM_MSM_GPU_STATE=y
+ CONFIG_DRM_MSM_KMS=y
+@@ -4462,12 +4606,14 @@ CONFIG_DRM_MSM_DSI_14NM_PHY=y
+ # CONFIG_DRM_MSM_DSI_7NM_PHY is not set
+ CONFIG_DRM_MSM_HDMI=y
+ CONFIG_DRM_MSM_HDMI_HDCP=y
++# CONFIG_DRM_NOUVEAU is not set
+ CONFIG_DRM_PANEL=y
+ 
+ #
+ # Display Panels
+ #
+ # CONFIG_DRM_PANEL_ABT_Y030XX067A is not set
++# CONFIG_DRM_PANEL_ANBERNIC_TD4310 is not set
+ # CONFIG_DRM_PANEL_ARM_VERSATILE is not set
+ # CONFIG_DRM_PANEL_ASUS_Z00T_TM5P5_NT35596 is not set
+ # CONFIG_DRM_PANEL_AUO_A030JTN01 is not set
+@@ -4477,22 +4623,29 @@ CONFIG_DRM_PANEL=y
+ # CONFIG_DRM_PANEL_BOE_TH101MB31UIG002_28A is not set
+ # CONFIG_DRM_PANEL_BOE_TV101WUM_NL6 is not set
+ # CONFIG_DRM_PANEL_BOE_TV101WUM_LL2 is not set
++# CONFIG_DRM_PANEL_CHIPONE_ICNA35XX is not set
++# CONFIG_DRM_PANEL_CHIPWEALTH_CH13726A is not set
+ # CONFIG_DRM_PANEL_EBBG_FT8719 is not set
+ # CONFIG_DRM_PANEL_ELIDA_KD35T133 is not set
+ # CONFIG_DRM_PANEL_FEIXIN_K101_IM2BA02 is not set
+ # CONFIG_DRM_PANEL_FEIYANG_FY07024DI26A30D is not set
++# CONFIG_DRM_PANEL_FOCALTECH_OTA7290B is not set
+ # CONFIG_DRM_PANEL_DSI_CM is not set
+ # CONFIG_DRM_PANEL_LVDS is not set
+ # CONFIG_DRM_PANEL_HIMAX_HX8279 is not set
+ # CONFIG_DRM_PANEL_HIMAX_HX83102 is not set
+ # CONFIG_DRM_PANEL_HIMAX_HX83112A is not set
+ # CONFIG_DRM_PANEL_HIMAX_HX83112B is not set
++# CONFIG_DRM_PANEL_HIMAX_HX83121A is not set
+ # CONFIG_DRM_PANEL_HIMAX_HX8394 is not set
+ # CONFIG_DRM_PANEL_HYDIS_HV101HD1 is not set
++# CONFIG_DRM_PANEL_ILITEK_ILI7807S is not set
+ # CONFIG_DRM_PANEL_ILITEK_IL9322 is not set
+ # CONFIG_DRM_PANEL_ILITEK_ILI9341 is not set
++# CONFIG_DRM_PANEL_ILITEK_ILI9488 is not set
+ # CONFIG_DRM_PANEL_ILITEK_ILI9805 is not set
+-# CONFIG_DRM_PANEL_ILITEK_ILI9806E is not set
++# CONFIG_DRM_PANEL_ILITEK_ILI9806E_DSI is not set
++# CONFIG_DRM_PANEL_ILITEK_ILI9806E_SPI is not set
+ # CONFIG_DRM_PANEL_ILITEK_ILI9881C is not set
+ # CONFIG_DRM_PANEL_ILITEK_ILI9882T is not set
+ # CONFIG_DRM_PANEL_INNOLUX_EJ030NA is not set
+@@ -4511,17 +4664,22 @@ CONFIG_DRM_PANEL_LGPHILIPS_SW43101=m
+ # CONFIG_DRM_PANEL_LG_LD070WX3 is not set
+ # CONFIG_DRM_PANEL_LG_LG4573 is not set
+ # CONFIG_DRM_PANEL_LG_SW43408 is not set
++# CONFIG_DRM_PANEL_LXD_M9189A is not set
+ # CONFIG_DRM_PANEL_MAGNACHIP_D53E6EA8966 is not set
+ # CONFIG_DRM_PANEL_MANTIX_MLAF057WE51 is not set
++# CONFIG_DRM_PANEL_MOTOROLA_MOT is not set
+ # CONFIG_DRM_PANEL_NEC_NL8048HL11 is not set
+ # CONFIG_DRM_PANEL_NEWVISION_NV3051D is not set
+ # CONFIG_DRM_PANEL_NEWVISION_NV3052C is not set
+ # CONFIG_DRM_PANEL_NOVATEK_NT35510 is not set
++# CONFIG_DRM_PANEL_NOVATEK_NT35532 is not set
+ # CONFIG_DRM_PANEL_NOVATEK_NT35560 is not set
+ # CONFIG_DRM_PANEL_NOVATEK_NT35950 is not set
+ # CONFIG_DRM_PANEL_NOVATEK_NT36523 is not set
++# CONFIG_DRM_PANEL_NOVATEK_NT36536 is not set
+ # CONFIG_DRM_PANEL_NOVATEK_NT36672A is not set
+ # CONFIG_DRM_PANEL_NOVATEK_NT36672E is not set
++# CONFIG_DRM_PANEL_NOVATEK_NT37700F is not set
+ # CONFIG_DRM_PANEL_NOVATEK_NT37801 is not set
+ # CONFIG_DRM_PANEL_NOVATEK_NT39016 is not set
+ # CONFIG_DRM_PANEL_OLIMEX_LCD_OLINUXINO is not set
+@@ -4536,15 +4694,18 @@ CONFIG_DRM_PANEL_LGPHILIPS_SW43101=m
+ # CONFIG_DRM_PANEL_RAYDIUM_RM692E5 is not set
+ # CONFIG_DRM_PANEL_RAYDIUM_RM69380 is not set
+ # CONFIG_DRM_PANEL_RENESAS_R61307 is not set
++# CONFIG_DRM_PANEL_RENESAS_R63419 is not set
+ # CONFIG_DRM_PANEL_RENESAS_R69328 is not set
+ # CONFIG_DRM_PANEL_RONBO_RB070D30 is not set
+ # CONFIG_DRM_PANEL_SAMSUNG_AMS581VF01 is not set
  # CONFIG_DRM_PANEL_SAMSUNG_AMS639RQ08 is not set
  # CONFIG_DRM_PANEL_SAMSUNG_S6E88A0_AMS427AP24 is not set
  # CONFIG_DRM_PANEL_SAMSUNG_S6E88A0_AMS452EF01 is not set
@@ -472,7 +1697,139 @@ index 777bde3..5dfddec 100644
  # CONFIG_DRM_PANEL_SAMSUNG_ATNA33XC20 is not set
  # CONFIG_DRM_PANEL_SAMSUNG_DB7430 is not set
  # CONFIG_DRM_PANEL_SAMSUNG_LD9040 is not set
-@@ -4779,7 +4807,7 @@ CONFIG_DUMMY_CONSOLE_ROWS=25
++# CONFIG_DRM_PANEL_SAMSUNG_LTL106HL02 is not set
+ # CONFIG_DRM_PANEL_SAMSUNG_S6E3FA7 is not set
+ # CONFIG_DRM_PANEL_SAMSUNG_S6D16D0 is not set
+ # CONFIG_DRM_PANEL_SAMSUNG_S6D27A1 is not set
+@@ -4558,6 +4719,7 @@ CONFIG_DRM_PANEL_LGPHILIPS_SW43101=m
+ # CONFIG_DRM_PANEL_SAMSUNG_S6E63M0 is not set
+ # CONFIG_DRM_PANEL_SAMSUNG_S6E8AA0 is not set
+ # CONFIG_DRM_PANEL_SAMSUNG_S6E8AA5X01_AMS561RA01 is not set
++# CONFIG_DRM_PANEL_SAMSUNG_S6E8FC0 is not set
+ # CONFIG_DRM_PANEL_SAMSUNG_SOFEF00 is not set
+ # CONFIG_DRM_PANEL_SEIKO_43WVF1G is not set
+ # CONFIG_DRM_PANEL_SHARP_LQ079L1SX01 is not set
+@@ -4592,61 +4754,25 @@ CONFIG_DRM_PANEL_LGPHILIPS_SW43101=m
+ # CONFIG_DRM_PANEL_XINPENG_XPP055C272 is not set
+ # end of Display Panels
+ 
+-CONFIG_DRM_BRIDGE=y
+-CONFIG_DRM_PANEL_BRIDGE=y
+-CONFIG_DRM_AUX_BRIDGE=m
++# CONFIG_DRM_PANFROST is not set
++# CONFIG_DRM_PANTHOR is not set
++# CONFIG_DRM_PL111 is not set
++# CONFIG_DRM_QXL is not set
++# CONFIG_DRM_RADEON is not set
++# CONFIG_DRM_ST7571 is not set
++# CONFIG_DRM_ST7586 is not set
++# CONFIG_DRM_ST7735R is not set
++# CONFIG_DRM_ST7920 is not set
++# CONFIG_DRM_SSD130X is not set
+ 
+ #
+-# Display Interface Bridges
++# Drivers for system framebuffers
+ #
+-# CONFIG_DRM_CHIPONE_ICN6211 is not set
+-# CONFIG_DRM_CHRONTEL_CH7033 is not set
+-# CONFIG_DRM_DISPLAY_CONNECTOR is not set
+-# CONFIG_DRM_I2C_NXP_TDA998X is not set
+-# CONFIG_DRM_ITE_IT6263 is not set
+-# CONFIG_DRM_ITE_IT6505 is not set
+-# CONFIG_DRM_LONTIUM_LT8912B is not set
+-# CONFIG_DRM_LONTIUM_LT9211 is not set
+-# CONFIG_DRM_LONTIUM_LT9611 is not set
+-# CONFIG_DRM_LONTIUM_LT9611UXC is not set
+-# CONFIG_DRM_ITE_IT66121 is not set
+-# CONFIG_DRM_LVDS_CODEC is not set
+-# CONFIG_DRM_MEGACHIPS_STDPXXXX_GE_B850V3_FW is not set
+-# CONFIG_DRM_NWL_MIPI_DSI is not set
+-# CONFIG_DRM_NXP_PTN3460 is not set
+-# CONFIG_DRM_PARADE_PS8622 is not set
+-# CONFIG_DRM_PARADE_PS8640 is not set
+-# CONFIG_DRM_SAMSUNG_DSIM is not set
+-# CONFIG_DRM_SIL_SII8620 is not set
+-# CONFIG_DRM_SII902X is not set
+-# CONFIG_DRM_SII9234 is not set
+-# CONFIG_DRM_SIMPLE_BRIDGE is not set
+-# CONFIG_DRM_SOLOMON_SSD2825 is not set
+-# CONFIG_DRM_THINE_THC63LVD1024 is not set
+-# CONFIG_DRM_TOSHIBA_TC358762 is not set
+-# CONFIG_DRM_TOSHIBA_TC358764 is not set
+-# CONFIG_DRM_TOSHIBA_TC358767 is not set
+-# CONFIG_DRM_TOSHIBA_TC358768 is not set
+-# CONFIG_DRM_TOSHIBA_TC358775 is not set
+-# CONFIG_DRM_TI_DLPC3433 is not set
+-# CONFIG_DRM_TI_TDP158 is not set
+-# CONFIG_DRM_TI_TFP410 is not set
+-# CONFIG_DRM_TI_SN65DSI83 is not set
+-# CONFIG_DRM_TI_SN65DSI86 is not set
+-# CONFIG_DRM_TI_TPD12S015 is not set
+-# CONFIG_DRM_WAVESHARE_BRIDGE is not set
+-# CONFIG_DRM_ANALOGIX_ANX6345 is not set
+-# CONFIG_DRM_ANALOGIX_ANX78XX is not set
+-# CONFIG_DRM_ANALOGIX_ANX7625 is not set
+-# CONFIG_DRM_I2C_ADV7511 is not set
+-# CONFIG_DRM_CDNS_DSI is not set
+-# CONFIG_DRM_CDNS_MHDP8546 is not set
+-# end of Display Interface Bridges
++# CONFIG_DRM_EFIDRM is not set
++# CONFIG_DRM_SIMPLEDRM is not set
++# end of Drivers for system framebuffers
+ 
+-# CONFIG_DRM_ETNAVIV is not set
+-# CONFIG_DRM_HISI_HIBMC is not set
+-# CONFIG_DRM_HISI_KIRIN is not set
+-# CONFIG_DRM_LOGICVC is not set
++# CONFIG_DRM_TIDSS is not set
+ # CONFIG_DRM_ARCPGU is not set
+ # CONFIG_DRM_BOCHS is not set
+ # CONFIG_DRM_CIRRUS_QEMU is not set
+@@ -4661,18 +4787,13 @@ CONFIG_DRM_AUX_BRIDGE=m
+ # CONFIG_TINYDRM_MI0283QT is not set
+ # CONFIG_TINYDRM_REPAPER is not set
+ # CONFIG_TINYDRM_SHARP_MEMORY is not set
+-# CONFIG_DRM_PL111 is not set
++CONFIG_DRM_UDL=m
++# CONFIG_DRM_VGEM is not set
++# CONFIG_DRM_VIRTIO_GPU is not set
++# CONFIG_DRM_VKMS is not set
++# CONFIG_DRM_VMWGFX is not set
++# CONFIG_DRM_XE is not set
+ # CONFIG_DRM_XEN_FRONTEND is not set
+-# CONFIG_DRM_LIMA is not set
+-# CONFIG_DRM_PANFROST is not set
+-# CONFIG_DRM_PANTHOR is not set
+-# CONFIG_DRM_TIDSS is not set
+-# CONFIG_DRM_GUD is not set
+-# CONFIG_DRM_ST7571_I2C is not set
+-# CONFIG_DRM_ST7586 is not set
+-# CONFIG_DRM_ST7735R is not set
+-# CONFIG_DRM_SSD130X is not set
+-# CONFIG_DRM_POWERVR is not set
+ CONFIG_DRM_PANEL_ORIENTATION_QUIRKS=m
+ 
+ #
+@@ -4752,7 +4873,9 @@ CONFIG_BACKLIGHT_CLASS_DEVICE=y
+ # CONFIG_BACKLIGHT_KTD253 is not set
+ # CONFIG_BACKLIGHT_KTD2801 is not set
+ # CONFIG_BACKLIGHT_KTZ8866 is not set
++# CONFIG_BACKLIGHT_SY7758 is not set
+ # CONFIG_BACKLIGHT_PWM is not set
++# CONFIG_BACKLIGHT_MAX25014 is not set
+ CONFIG_BACKLIGHT_QCOM_WLED=y
+ # CONFIG_BACKLIGHT_ADP8860 is not set
+ # CONFIG_BACKLIGHT_ADP8870 is not set
+@@ -4769,6 +4892,7 @@ CONFIG_BACKLIGHT_QCOM_WLED=y
+ # end of Backlight & LCD device support
+ 
+ CONFIG_HDMI=y
++# CONFIG_FIRMWARE_EDID is not set
+ 
+ #
+ # Console display driver support
+@@ -4779,7 +4903,7 @@ CONFIG_DUMMY_CONSOLE_ROWS=25
  CONFIG_FRAMEBUFFER_CONSOLE=y
  # CONFIG_FRAMEBUFFER_CONSOLE_LEGACY_ACCELERATION is not set
  CONFIG_FRAMEBUFFER_CONSOLE_DETECT_PRIMARY=y
@@ -481,7 +1838,54 @@ index 777bde3..5dfddec 100644
  # CONFIG_FRAMEBUFFER_CONSOLE_DEFERRED_TAKEOVER is not set
  # end of Console display driver support
  
-@@ -5175,6 +5203,7 @@ CONFIG_SND_SOC_HDMI_CODEC=m
+@@ -4787,6 +4911,7 @@ CONFIG_LOGO=y
+ # CONFIG_LOGO_LINUX_MONO is not set
+ # CONFIG_LOGO_LINUX_VGA16 is not set
+ CONFIG_LOGO_LINUX_CLUT224=y
++CONFIG_LOGO_LINUX_CLUT224_FILE="drivers/video/logo/logo_linux_clut224.ppm"
+ CONFIG_TRACE_GPU_MEM=y
+ # end of Graphics support
+ 
+@@ -4836,6 +4961,7 @@ CONFIG_SND_DRIVERS=y
+ #
+ # HD-Audio
+ #
++# CONFIG_SND_HDA_INTEL is not set
+ # end of HD-Audio
+ 
+ # CONFIG_SND_SPI is not set
+@@ -5046,6 +5172,8 @@ CONFIG_SND_SOC_I2C_AND_SPI=m
+ # CONFIG_SND_SOC_ADAU1701 is not set
+ # CONFIG_SND_SOC_ADAU1761_I2C is not set
+ # CONFIG_SND_SOC_ADAU1761_SPI is not set
++# CONFIG_SND_SOC_ADAU1977_SPI is not set
++# CONFIG_SND_SOC_ADAU1977_I2C is not set
+ # CONFIG_SND_SOC_ADAU7002 is not set
+ # CONFIG_SND_SOC_ADAU7118_HW is not set
+ # CONFIG_SND_SOC_ADAU7118_I2C is not set
+@@ -5096,6 +5224,7 @@ CONFIG_SND_SOC_I2C_AND_SPI=m
+ # CONFIG_SND_SOC_CS4270 is not set
+ # CONFIG_SND_SOC_CS4271_I2C is not set
+ # CONFIG_SND_SOC_CS4271_SPI is not set
++# CONFIG_SND_SOC_CS42XX8_SPI is not set
+ # CONFIG_SND_SOC_CS42XX8_I2C is not set
+ # CONFIG_SND_SOC_CS43130 is not set
+ # CONFIG_SND_SOC_CS4341 is not set
+@@ -5161,10 +5290,13 @@ CONFIG_SND_SOC_HDMI_CODEC=m
+ # CONFIG_SND_SOC_RT1316_SDW is not set
+ # CONFIG_SND_SOC_RT1318_SDW is not set
+ # CONFIG_SND_SOC_RT1320_SDW is not set
++# CONFIG_SND_SOC_RT5575 is not set
+ # CONFIG_SND_SOC_RT5616 is not set
+ # CONFIG_SND_SOC_RT5631 is not set
+ # CONFIG_SND_SOC_RT5640 is not set
++# CONFIG_SND_SOC_RT5645 is not set
+ # CONFIG_SND_SOC_RT5659 is not set
++# CONFIG_SND_SOC_RT5677 is not set
+ # CONFIG_SND_SOC_RT5682_SDW is not set
+ # CONFIG_SND_SOC_RT700_SDW is not set
+ # CONFIG_SND_SOC_RT711_SDW is not set
+@@ -5175,6 +5307,7 @@ CONFIG_SND_SOC_HDMI_CODEC=m
  # CONFIG_SND_SOC_RT722_SDCA_SDW is not set
  # CONFIG_SND_SOC_RT715_SDW is not set
  # CONFIG_SND_SOC_RT715_SDCA_SDW is not set
@@ -489,7 +1893,109 @@ index 777bde3..5dfddec 100644
  # CONFIG_SND_SOC_RT9120 is not set
  # CONFIG_SND_SOC_RT9123 is not set
  # CONFIG_SND_SOC_RT9123P is not set
-@@ -5765,6 +5794,7 @@ CONFIG_TYPEC=y
+@@ -5202,12 +5335,12 @@ CONFIG_SND_SOC_HDMI_CODEC=m
+ # CONFIG_SND_SOC_TAS2770 is not set
+ # CONFIG_SND_SOC_TAS2780 is not set
+ # CONFIG_SND_SOC_TAS2781_I2C is not set
+-# CONFIG_SND_SOC_TAS2783_SDW is not set
+ # CONFIG_SND_SOC_TAS5086 is not set
+ # CONFIG_SND_SOC_TAS571X is not set
+ # CONFIG_SND_SOC_TAS5720 is not set
+ # CONFIG_SND_SOC_TAS5805M is not set
+ # CONFIG_SND_SOC_TAS6424 is not set
++# CONFIG_SND_SOC_TAS675X is not set
+ # CONFIG_SND_SOC_TDA7419 is not set
+ # CONFIG_SND_SOC_TFA9879 is not set
+ CONFIG_SND_SOC_TFA989X=m
+@@ -5225,8 +5358,10 @@ CONFIG_SND_SOC_TFA989X=m
+ # CONFIG_SND_SOC_TSCS454 is not set
+ # CONFIG_SND_SOC_UDA1334 is not set
+ # CONFIG_SND_SOC_UDA1342 is not set
++# CONFIG_SND_SOC_UDA1380 is not set
+ CONFIG_SND_SOC_WCD_CLASSH=m
+ CONFIG_SND_SOC_WCD9335=m
++CONFIG_SND_SOC_WCD_MBHC=m
+ # CONFIG_SND_SOC_WCD937X_SDW is not set
+ # CONFIG_SND_SOC_WCD938X_SDW is not set
+ # CONFIG_SND_SOC_WCD939X_SDW is not set
+@@ -5259,6 +5394,7 @@ CONFIG_SND_SOC_WCD9335=m
+ # CONFIG_SND_SOC_WSA881X is not set
+ # CONFIG_SND_SOC_WSA883X is not set
+ # CONFIG_SND_SOC_WSA884X is not set
++# CONFIG_SND_SOC_WSA885X is not set
+ # CONFIG_SND_SOC_ZL38060 is not set
+ # CONFIG_SND_SOC_MAX9759 is not set
+ # CONFIG_SND_SOC_MT6351 is not set
+@@ -5339,11 +5475,13 @@ CONFIG_HID_GFRM=m
+ CONFIG_HID_GLORIOUS=m
+ CONFIG_HID_HOLTEK=m
+ CONFIG_HOLTEK_FF=y
++# CONFIG_HID_HYPERX is not set
+ CONFIG_HID_VIVALDI_COMMON=m
+ CONFIG_HID_GOODIX_SPI=m
+ CONFIG_HID_GOOGLE_STADIA_FF=m
+ CONFIG_HID_VIVALDI=m
+ CONFIG_HID_GT683R=m
++# CONFIG_HID_MSI is not set
+ CONFIG_HID_KEYTOUCH=m
+ CONFIG_HID_KYE=m
+ CONFIG_HID_KYSONA=m
+@@ -5361,6 +5499,8 @@ CONFIG_HID_KENSINGTON=m
+ CONFIG_HID_LCPOWER=m
+ CONFIG_HID_LED=m
+ # CONFIG_HID_LENOVO is not set
++# CONFIG_HID_LENOVO_GO is not set
++# CONFIG_HID_LENOVO_GO_S is not set
+ CONFIG_HID_LETSKETCH=m
+ CONFIG_HID_LOGITECH=m
+ CONFIG_HID_LOGITECH_DJ=m
+@@ -5373,6 +5513,7 @@ CONFIG_HID_MAGICMOUSE=m
+ CONFIG_HID_MALTRON=m
+ CONFIG_HID_MAYFLASH=m
+ CONFIG_HID_MEGAWORLD_FF=m
++# CONFIG_HID_RAKK is not set
+ CONFIG_HID_REDRAGON=m
+ CONFIG_HID_MICROSOFT=m
+ CONFIG_HID_MONTEREY=m
+@@ -5384,6 +5525,7 @@ CONFIG_HID_NTRIG=m
+ CONFIG_HID_NVIDIA_SHIELD=m
+ CONFIG_NVIDIA_SHIELD_FF=y
+ CONFIG_HID_ORTEK=m
++# CONFIG_HID_OXP is not set
+ CONFIG_HID_PANTHERLORD=m
+ CONFIG_PANTHERLORD_FF=y
+ CONFIG_HID_PENMOUNT=m
+@@ -5398,6 +5540,7 @@ CONFIG_HID_PLANTRONICS=m
+ CONFIG_HID_PLAYSTATION=m
+ CONFIG_PLAYSTATION_FF=y
+ CONFIG_HID_PXRC=m
++# CONFIG_HID_RAPOO is not set
+ CONFIG_HID_RAZER=m
+ CONFIG_HID_PRIMAX=m
+ CONFIG_HID_RETRODE=m
+@@ -5439,11 +5582,13 @@ CONFIG_HID_SENSOR_CUSTOM_SENSOR=m
+ CONFIG_HID_ALPS=m
+ CONFIG_HID_MCP2200=m
+ CONFIG_HID_MCP2221=m
++# CONFIG_HID_HUAWEI is not set
+ # end of Special HID drivers
+ 
+ #
+ # HID-BPF support
+ #
++# CONFIG_HID_BPF is not set
+ # end of HID-BPF support
+ 
+ CONFIG_I2C_HID=y
+@@ -5567,6 +5712,7 @@ CONFIG_USB_DWC3_HAPS=y
+ CONFIG_USB_DWC3_OF_SIMPLE=y
+ CONFIG_USB_DWC3_QCOM=y
+ CONFIG_USB_DWC3_GENERIC_PLAT=y
++# CONFIG_USB_DWC3_GOOGLE is not set
+ # CONFIG_USB_DWC2 is not set
+ # CONFIG_USB_CHIPIDEA is not set
+ # CONFIG_USB_ISP1760 is not set
+@@ -5765,6 +5911,7 @@ CONFIG_TYPEC=y
  # CONFIG_TYPEC_TPS6598X is not set
  # CONFIG_TYPEC_ANX7411 is not set
  # CONFIG_TYPEC_RT1719 is not set
@@ -497,7 +2003,255 @@ index 777bde3..5dfddec 100644
  # CONFIG_TYPEC_HD3SS3220 is not set
  # CONFIG_TYPEC_STUSB160X is not set
  # CONFIG_TYPEC_WUSB3801 is not set
-@@ -6683,6 +6713,7 @@ CONFIG_EXTCON=y
+@@ -5856,6 +6003,7 @@ CONFIG_LEDS_CLASS_MULTICOLOR=m
+ # LED drivers
+ #
+ # CONFIG_LEDS_AN30259A is not set
++# CONFIG_LEDS_OSRAM_AMS_AS3668 is not set
+ # CONFIG_LEDS_AW200XX is not set
+ # CONFIG_LEDS_AW2013 is not set
+ # CONFIG_LEDS_BCM6328 is not set
+@@ -5904,6 +6052,7 @@ CONFIG_LEDS_SYSCON=y
+ # CONFIG_LEDS_SPI_BYTE is not set
+ # CONFIG_LEDS_LM3697 is not set
+ # CONFIG_LEDS_ST1202 is not set
++# CONFIG_LEDS_LTC3220 is not set
+ 
+ #
+ # Flash and Torch LED drivers
+@@ -5914,6 +6063,9 @@ CONFIG_LEDS_SYSCON=y
+ #
+ # CONFIG_LEDS_GROUP_MULTICOLOR is not set
+ # CONFIG_LEDS_KTD202X is not set
++# CONFIG_LEDS_LP5812 is not set
++# CONFIG_LEDS_LP5860_CORE is not set
++# CONFIG_LEDS_LP5860_SPI is not set
+ # CONFIG_LEDS_NCP5623 is not set
+ # CONFIG_LEDS_PWM_MULTICOLOR is not set
+ CONFIG_LEDS_QCOM_LPG=m
+@@ -5941,7 +6093,7 @@ CONFIG_LEDS_TRIGGER_PANIC=y
+ # CONFIG_LEDS_TRIGGER_NETDEV is not set
+ CONFIG_LEDS_TRIGGER_PATTERN=m
+ # CONFIG_LEDS_TRIGGER_TTY is not set
+-# CONFIG_LEDS_TRIGGER_INPUT_EVENTS is not set
++CONFIG_LEDS_TRIGGER_INPUT_EVENTS=y
+ 
+ #
+ # Simatic LED drivers
+@@ -5988,7 +6140,6 @@ CONFIG_RTC_INTF_DEV=y
+ # CONFIG_RTC_DRV_HYM8563 is not set
+ # CONFIG_RTC_DRV_MAX6900 is not set
+ # CONFIG_RTC_DRV_MAX31335 is not set
+-# CONFIG_RTC_DRV_NVIDIA_VRS10 is not set
+ # CONFIG_RTC_DRV_NCT3018Y is not set
+ # CONFIG_RTC_DRV_RS5C372 is not set
+ # CONFIG_RTC_DRV_ISL1208 is not set
+@@ -6097,6 +6248,7 @@ CONFIG_DMA_OF=y
+ CONFIG_MV_XOR_V2=y
+ # CONFIG_PL330_DMA is not set
+ # CONFIG_PLX_DMA is not set
++# CONFIG_SWITCHTEC_DMA is not set
+ # CONFIG_XILINX_DMA is not set
+ # CONFIG_XILINX_XDMA is not set
+ # CONFIG_XILINX_ZYNQMP_DMA is not set
+@@ -6124,11 +6276,8 @@ CONFIG_DMA_ENGINE_RAID=y
+ CONFIG_SYNC_FILE=y
+ # CONFIG_SW_SYNC is not set
+ CONFIG_UDMABUF=y
+-# CONFIG_DMABUF_MOVE_NOTIFY is not set
+ # CONFIG_DMABUF_DEBUG is not set
+-# CONFIG_DMABUF_SELFTESTS is not set
+ # CONFIG_DMABUF_HEAPS is not set
+-# CONFIG_DMABUF_SYSFS_STATS is not set
+ # end of DMABUF options
+ 
+ # CONFIG_UIO is not set
+@@ -6205,7 +6354,6 @@ CONFIG_XEN_PCIDEV_STUB=m
+ # CONFIG_XEN_PVCALLS_BACKEND is not set
+ CONFIG_XEN_PRIVCMD=y
+ CONFIG_XEN_EFI=y
+-CONFIG_XEN_AUTO_XLATE=y
+ # CONFIG_XEN_VIRTIO is not set
+ # end of Xen driver support
+ 
+@@ -6265,6 +6413,7 @@ CONFIG_ARM64_PLATFORM_DEVICES=y
+ # CONFIG_EC_HUAWEI_GAOKUN is not set
+ # CONFIG_EC_LENOVO_YOGA_C630 is not set
+ # CONFIG_EC_LENOVO_THINKPAD_T14S is not set
++# CONFIG_EC_QCOM_HAMOA is not set
+ CONFIG_HAVE_CLK=y
+ CONFIG_HAVE_CLK_PREPARE=y
+ CONFIG_COMMON_CLK=y
+@@ -6297,35 +6446,65 @@ CONFIG_COMMON_CLK_SCPI=y
+ # CONFIG_COMMON_CLK_VC5 is not set
+ # CONFIG_COMMON_CLK_VC7 is not set
+ # CONFIG_COMMON_CLK_FIXED_MMIO is not set
++
++#
++# Cixtech Audio Subsystem Clock Driver
++#
++# end of Cixtech Audio Subsystem Clock Driver
++
+ CONFIG_QCOM_GDSC=y
+ CONFIG_COMMON_CLK_QCOM=y
++CONFIG_CLK_ELIZA_DISPCC=m
++CONFIG_CLK_ELIZA_GCC=y
++CONFIG_CLK_ELIZA_TCSRCC=m
++CONFIG_CLK_GLYMUR_CAMCC=m
+ # CONFIG_CLK_GLYMUR_DISPCC is not set
+-# CONFIG_CLK_GLYMUR_GCC is not set
++CONFIG_CLK_GLYMUR_EVACC=m
++CONFIG_CLK_GLYMUR_GCC=m
++# CONFIG_CLK_GLYMUR_GPUCC is not set
+ # CONFIG_CLK_GLYMUR_TCSRCC is not set
++CONFIG_CLK_GLYMUR_VIDEOCC=m
++CONFIG_CLK_KAANAPALI_CAMCC=m
++CONFIG_CLK_KAANAPALI_DISPCC=m
++CONFIG_CLK_KAANAPALI_GCC=y
++CONFIG_CLK_KAANAPALI_GPUCC=m
++CONFIG_CLK_KAANAPALI_TCSRCC=m
++CONFIG_CLK_KAANAPALI_VIDEOCC=m
++CONFIG_CLK_NORD_DISPCC=m
++CONFIG_CLK_MAILI_VIDEOCC=m
++CONFIG_CLK_NORD_GCC=y
++CONFIG_CLK_SHIKRA_AUDIOCORECC=m
++CONFIG_CLK_SHIKRA_GCC=y
++CONFIG_CLK_NORD_GPUCC=m
+ # CONFIG_CLK_X1E80100_CAMCC is not set
+ # CONFIG_CLK_X1E80100_DISPCC is not set
+-# CONFIG_CLK_X1E80100_GCC is not set
++CONFIG_CLK_X1E80100_GCC=m
+ # CONFIG_CLK_X1E80100_GPUCC is not set
+ # CONFIG_CLK_X1E80100_TCSRCC is not set
++CONFIG_CLK_X1P42100_CAMCC=m
+ # CONFIG_CLK_X1P42100_GPUCC is not set
++CONFIG_CLK_X1P42100_VIDEOCC=m
+ # CONFIG_CLK_QCM2290_GPUCC is not set
+ # CONFIG_QCOM_A53PLL is not set
+-# CONFIG_QCOM_A7PLL is not set
+ # CONFIG_QCOM_CLK_APCS_MSM8916 is not set
+ CONFIG_QCOM_CLK_APCC_MSM8996=y
+ CONFIG_QCOM_CLK_RPM=y
+ CONFIG_QCOM_CLK_SMD_RPM=y
++CONFIG_CLK_HAWI_GCC=y
++CONFIG_CLK_HAWI_TCSRCC=m
++CONFIG_CLK_HAWI_VIDEOCC=m
+ # CONFIG_IPQ_APSS_PLL is not set
+ # CONFIG_IPQ_APSS_5424 is not set
+ # CONFIG_IPQ_APSS_6018 is not set
+ # CONFIG_IPQ_CMN_PLL is not set
+-# CONFIG_IPQ_GCC_4019 is not set
+ # CONFIG_IPQ_GCC_5018 is not set
++CONFIG_IPQ_GCC_5210=y
+ # CONFIG_IPQ_GCC_5332 is not set
+ # CONFIG_IPQ_GCC_5424 is not set
+ # CONFIG_IPQ_GCC_6018 is not set
+ # CONFIG_IPQ_GCC_8074 is not set
+ # CONFIG_IPQ_GCC_9574 is not set
++CONFIG_IPQ_GCC_9650=y
+ # CONFIG_IPQ_NSSCC_QCA8K is not set
+ # CONFIG_MSM_GCC_8916 is not set
+ # CONFIG_MSM_GCC_8917 is not set
+@@ -6344,6 +6523,7 @@ CONFIG_MSM_MMCC_8996=y
+ # CONFIG_QCS_DISPCC_615 is not set
+ # CONFIG_QCS_CAMCC_615 is not set
+ # CONFIG_QCS_GCC_404 is not set
++CONFIG_CLK_NORD_TCSRCC=m
+ # CONFIG_SA_CAMCC_8775P is not set
+ # CONFIG_QCS_GCC_8300 is not set
+ # CONFIG_QCS_GCC_615 is not set
+@@ -6397,6 +6577,8 @@ CONFIG_MSM_MMCC_8996=y
+ # CONFIG_SM_CAMCC_8450 is not set
+ # CONFIG_SM_CAMCC_8550 is not set
+ # CONFIG_SM_CAMCC_8650 is not set
++CONFIG_SM_CAMCC_8750=m
++CONFIG_SM_DISPCC_8750=m
+ # CONFIG_SM_GCC_4450 is not set
+ # CONFIG_SM_GCC_6115 is not set
+ # CONFIG_SM_GCC_6125 is not set
+@@ -6410,7 +6592,7 @@ CONFIG_MSM_MMCC_8996=y
+ # CONFIG_SM_GCC_8450 is not set
+ # CONFIG_SM_GCC_8550 is not set
+ # CONFIG_SM_GCC_8650 is not set
+-# CONFIG_SM_GCC_8750 is not set
++CONFIG_SM_GCC_8750=m
+ # CONFIG_SM_GPUCC_4450 is not set
+ # CONFIG_SM_GPUCC_6115 is not set
+ # CONFIG_SM_GPUCC_6125 is not set
+@@ -6423,6 +6605,7 @@ CONFIG_MSM_MMCC_8996=y
+ # CONFIG_SM_GPUCC_8450 is not set
+ # CONFIG_SM_GPUCC_8550 is not set
+ # CONFIG_SM_GPUCC_8650 is not set
++CONFIG_SM_GPUCC_8750=m
+ # CONFIG_SM_LPASSCC_6115 is not set
+ # CONFIG_SM_TCSRCC_8550 is not set
+ # CONFIG_SM_TCSRCC_8650 is not set
+@@ -6433,7 +6616,6 @@ CONFIG_MSM_MMCC_8996=y
+ # CONFIG_SM_VIDEOCC_MILOS is not set
+ # CONFIG_SM_VIDEOCC_8150 is not set
+ # CONFIG_SM_VIDEOCC_8250 is not set
+-# CONFIG_SM_VIDEOCC_8350 is not set
+ # CONFIG_SM_VIDEOCC_8550 is not set
+ # CONFIG_SM_VIDEOCC_8750 is not set
+ # CONFIG_SPMI_PMIC_CLKDIV is not set
+@@ -6498,6 +6680,7 @@ CONFIG_ARM_SMMU_QCOM=y
+ # CONFIG_ARM_SMMU_QCOM_DEBUG is not set
+ CONFIG_ARM_SMMU_V3=y
+ # CONFIG_ARM_SMMU_V3_SVA is not set
++# CONFIG_TEGRA241_CMDQV is not set
+ CONFIG_QCOM_IOMMU=y
+ # CONFIG_IOMMUFD is not set
+ # CONFIG_VIRTIO_IOMMU is not set
+@@ -6507,6 +6690,7 @@ CONFIG_QCOM_IOMMU=y
+ #
+ CONFIG_REMOTEPROC=y
+ CONFIG_REMOTEPROC_CDEV=y
++# CONFIG_AMD_MBV_BRAM_REMOTEPROC is not set
+ CONFIG_QCOM_PIL_INFO=m
+ CONFIG_QCOM_RPROC_COMMON=m
+ CONFIG_QCOM_Q6V5_COMMON=m
+@@ -6577,25 +6761,16 @@ CONFIG_SOUNDWIRE_QCOM=m
+ # end of Enable LiteX SoC Builder specific drivers
+ 
+ # CONFIG_WPCM450_SOC is not set
+-
+-#
+-# Qualcomm SoC drivers
+-#
++CONFIG_QCOM_SOC=y
+ # CONFIG_QCOM_AOSS_QMP is not set
+ CONFIG_QCOM_COMMAND_DB=y
+ # CONFIG_QCOM_GENI_SE is not set
+-# CONFIG_QCOM_GSBI is not set
+ # CONFIG_QCOM_LLCC is not set
+-CONFIG_QCOM_KRYO_L2_ACCESSORS=y
+-CONFIG_QCOM_MDT_LOADER=m
+ # CONFIG_QCOM_OCMEM is not set
+ CONFIG_QCOM_PD_MAPPER=m
+-CONFIG_QCOM_PDR_HELPERS=m
+-CONFIG_QCOM_PDR_MSG=m
+ # CONFIG_QCOM_PMIC_PDCHARGER_ULOG is not set
+ # CONFIG_QCOM_PMIC_GLINK is not set
+ CONFIG_QCOM_PMIC_SEC_WRITE=y
+-CONFIG_QCOM_QMI_HELPERS=m
+ # CONFIG_QCOM_RAMP_CTRL is not set
+ CONFIG_QCOM_RMTFS_MEM=y
+ # CONFIG_QCOM_RPM_MASTER_STATS is not set
+@@ -6613,8 +6788,11 @@ CONFIG_QCOM_STATS=y
+ CONFIG_QCOM_APR=m
+ # CONFIG_QCOM_ICC_BWMON is not set
+ # CONFIG_QCOM_PBS is not set
+-# end of Qualcomm SoC drivers
+-
++CONFIG_QCOM_KRYO_L2_ACCESSORS=y
++CONFIG_QCOM_MDT_LOADER=m
++CONFIG_QCOM_PDR_HELPERS=m
++CONFIG_QCOM_PDR_MSG=m
++CONFIG_QCOM_QMI_HELPERS=m
+ CONFIG_QCOM_UBWC_CONFIG=m
+ # CONFIG_SOC_TI is not set
+ 
+@@ -6683,6 +6861,7 @@ CONFIG_EXTCON=y
  CONFIG_EXTCON_QCOM_SPMI_MISC=y
  # CONFIG_EXTCON_RT8973A is not set
  # CONFIG_EXTCON_SM5502 is not set
@@ -505,13 +2259,32 @@ index 777bde3..5dfddec 100644
  CONFIG_EXTCON_USB_GPIO=y
  CONFIG_EXTCON_USBC_TUSB320=y
  # CONFIG_EXTCON_USBC_FUSB301 is not set
-@@ -6825,12 +6856,13 @@ CONFIG_HID_SENSOR_ACCEL_3D=m
+@@ -6761,7 +6940,9 @@ CONFIG_HID_SENSOR_ACCEL_3D=m
+ # CONFIG_AD4030 is not set
+ # CONFIG_AD4080 is not set
+ # CONFIG_AD4130 is not set
++# CONFIG_AD4134 is not set
+ # CONFIG_AD4170_4 is not set
++# CONFIG_AD4691 is not set
+ # CONFIG_AD4695 is not set
+ # CONFIG_AD4851 is not set
+ # CONFIG_AD7091R5 is not set
+@@ -6800,6 +6981,7 @@ CONFIG_HID_SENSOR_ACCEL_3D=m
+ # CONFIG_HX711 is not set
+ # CONFIG_INA2XX_ADC is not set
+ # CONFIG_LTC2309 is not set
++# CONFIG_LTC2378 is not set
+ # CONFIG_LTC2471 is not set
+ # CONFIG_LTC2485 is not set
+ # CONFIG_LTC2496 is not set
+@@ -6825,12 +7007,14 @@ CONFIG_HID_SENSOR_ACCEL_3D=m
  CONFIG_QCOM_VADC_COMMON=m
  # CONFIG_QCOM_SPMI_RRADC is not set
  # CONFIG_QCOM_SPMI_IADC is not set
 -# CONFIG_QCOM_SPMI_VADC is not set
 +CONFIG_QCOM_SPMI_VADC=m
  CONFIG_QCOM_SPMI_ADC5=m
++# CONFIG_QCOM_SPMI_ADC5_GEN3 is not set
  # CONFIG_ROHM_BD79112 is not set
  # CONFIG_ROHM_BD79124 is not set
  # CONFIG_RICHTEK_RTQ6056 is not set
@@ -520,29 +2293,323 @@ index 777bde3..5dfddec 100644
  # CONFIG_TI_ADC081C is not set
  # CONFIG_TI_ADC0832 is not set
  # CONFIG_TI_ADC084S021 is not set
-@@ -7328,6 +7360,7 @@ CONFIG_PWM=y
+@@ -6839,11 +7023,14 @@ CONFIG_QCOM_SPMI_ADC5=m
+ # CONFIG_TI_ADC128S052 is not set
+ # CONFIG_TI_ADC161S626 is not set
+ # CONFIG_TI_ADS1015 is not set
++# CONFIG_TI_ADS1018 is not set
+ # CONFIG_TI_ADS1100 is not set
+ # CONFIG_TI_ADS1119 is not set
++# CONFIG_TI_ADS112C14 is not set
+ # CONFIG_TI_ADS124S08 is not set
+ # CONFIG_TI_ADS1298 is not set
+ # CONFIG_TI_ADS131E08 is not set
++# CONFIG_TI_ADS131M02 is not set
+ # CONFIG_TI_ADS7138 is not set
+ # CONFIG_TI_ADS7924 is not set
+ # CONFIG_TI_ADS7950 is not set
+@@ -6852,6 +7039,7 @@ CONFIG_QCOM_SPMI_ADC5=m
+ # CONFIG_TI_LMP92064 is not set
+ # CONFIG_TI_TLC4541 is not set
+ # CONFIG_TI_TSC2046 is not set
++# CONFIG_VERSAL_SYSMON_I2C is not set
+ # CONFIG_VF610_ADC is not set
+ # CONFIG_XILINX_XADC is not set
+ # end of Analog to digital converters
+@@ -6874,6 +7062,7 @@ CONFIG_QCOM_SPMI_ADC5=m
+ #
+ # CONFIG_AD8366 is not set
+ # CONFIG_ADA4250 is not set
++# CONFIG_ADL8113 is not set
+ # CONFIG_HMC425 is not set
+ # end of Amplifiers
+ 
+@@ -6944,6 +7133,7 @@ CONFIG_IIO_QCOM_SMGR=m
+ # CONFIG_AD5593R is not set
+ # CONFIG_AD5504 is not set
+ # CONFIG_AD5624R_SPI is not set
++# CONFIG_AD5706R is not set
+ # CONFIG_AD9739A is not set
+ # CONFIG_LTC2688 is not set
+ # CONFIG_AD5686_SPI is not set
+@@ -6967,10 +7157,13 @@ CONFIG_IIO_QCOM_SMGR=m
+ # CONFIG_LTC2664 is not set
+ # CONFIG_M62332 is not set
+ # CONFIG_MAX517 is not set
++# CONFIG_MAX22007 is not set
+ # CONFIG_MAX5522 is not set
+ # CONFIG_MAX5821 is not set
+ # CONFIG_MCP4725 is not set
+ # CONFIG_MCP4728 is not set
++# CONFIG_MCP47A1 is not set
++# CONFIG_MCP47FEB02 is not set
+ # CONFIG_MCP4821 is not set
+ # CONFIG_MCP4922 is not set
+ # CONFIG_TI_DAC082S085 is not set
+@@ -6991,6 +7184,12 @@ CONFIG_IIO_QCOM_SMGR=m
+ # CONFIG_ADMV8818 is not set
+ # end of Filters
+ 
++#
++# Flow sensors
++#
++# CONFIG_SENSIRION_SLF3S is not set
++# end of Flow sensors
++
+ #
+ # Frequency Synthesizers DDS/PLL
+ #
+@@ -7004,6 +7203,7 @@ CONFIG_IIO_QCOM_SMGR=m
+ #
+ # Phase-Locked Loop (PLL) frequency synthesizers
+ #
++# CONFIG_ADF41513 is not set
+ # CONFIG_ADF4350 is not set
+ # CONFIG_ADF4371 is not set
+ # CONFIG_ADF4377 is not set
+@@ -7083,6 +7283,8 @@ CONFIG_HID_SENSOR_HUMIDITY=m
+ # CONFIG_KMX61 is not set
+ # CONFIG_INV_ICM42600_I2C is not set
+ # CONFIG_INV_ICM42600_SPI is not set
++# CONFIG_INV_ICM42607_I2C is not set
++# CONFIG_INV_ICM42607_SPI is not set
+ # CONFIG_INV_ICM45600_I2C is not set
+ # CONFIG_INV_ICM45600_SPI is not set
+ # CONFIG_INV_MPU6050_I2C is not set
+@@ -7106,6 +7308,7 @@ CONFIG_HID_SENSOR_HUMIDITY=m
+ # CONFIG_APDS9300 is not set
+ # CONFIG_APDS9306 is not set
+ # CONFIG_APDS9960 is not set
++# CONFIG_APDS9999 is not set
+ # CONFIG_AS73211 is not set
+ # CONFIG_BH1745 is not set
+ # CONFIG_BH1750 is not set
+@@ -7152,6 +7355,7 @@ CONFIG_HID_SENSOR_PROX=m
+ # CONFIG_VCNL4000 is not set
+ # CONFIG_VCNL4035 is not set
+ # CONFIG_VEML3235 is not set
++# CONFIG_VEML3328 is not set
+ # CONFIG_VEML6030 is not set
+ # CONFIG_VEML6040 is not set
+ # CONFIG_VEML6046X00 is not set
+@@ -7174,8 +7378,12 @@ CONFIG_HID_SENSOR_PROX=m
+ # CONFIG_MAG3110 is not set
+ CONFIG_HID_SENSOR_MAGNETOMETER_3D=m
+ # CONFIG_MMC35240 is not set
++# CONFIG_MMC5633 is not set
++# CONFIG_MMC5983 is not set
+ # CONFIG_IIO_ST_MAGN_3AXIS is not set
+ # CONFIG_INFINEON_TLV493D is not set
++# CONFIG_QMC5883L is not set
++# CONFIG_QMC6308 is not set
+ # CONFIG_SENSORS_HMC5843_I2C is not set
+ # CONFIG_SENSORS_HMC5843_SPI is not set
+ # CONFIG_SENSORS_RM3100_I2C is not set
+@@ -7201,7 +7409,6 @@ CONFIG_HID_SENSOR_DEVICE_ROTATION=m
+ #
+ # Triggers - standalone
+ #
+-CONFIG_IIO_INTERRUPT_TRIGGER=y
+ CONFIG_IIO_SYSFS_TRIGGER=y
+ # end of Triggers - standalone
+ 
+@@ -7238,6 +7445,8 @@ CONFIG_HID_SENSOR_CUSTOM_INTEL_HINGE=m
+ # Pressure sensors
+ #
+ # CONFIG_ABP060MG is not set
++# CONFIG_ABP2030PA_I2C is not set
++# CONFIG_ABP2030PA_SPI is not set
+ # CONFIG_ROHM_BM1390 is not set
+ # CONFIG_BMP280 is not set
+ # CONFIG_DLHL60D is not set
+@@ -7249,7 +7458,8 @@ CONFIG_HID_SENSOR_PRESS=m
+ # CONFIG_MPL115_I2C is not set
+ # CONFIG_MPL115_SPI is not set
+ # CONFIG_MPL3115 is not set
+-# CONFIG_MPRLS0025PA is not set
++# CONFIG_MPRLS0025PA_I2C is not set
++# CONFIG_MPRLS0025PA_SPI is not set
+ # CONFIG_MS5611 is not set
+ # CONFIG_MS5637 is not set
+ # CONFIG_SDP500 is not set
+@@ -7285,6 +7495,7 @@ CONFIG_HID_SENSOR_PRESS=m
+ # CONFIG_SRF08 is not set
+ # CONFIG_VCNL3020 is not set
+ # CONFIG_VL53L0X_I2C is not set
++# CONFIG_VL53L1X_I2C is not set
+ # CONFIG_AW96103 is not set
+ # end of Proximity and distance sensors
+ 
+@@ -7326,8 +7537,10 @@ CONFIG_PWM=y
+ # CONFIG_PWM_DWC is not set
+ # CONFIG_PWM_FSL_FTM is not set
  # CONFIG_PWM_GPIO is not set
++# CONFIG_PWM_IPQ is not set
  # CONFIG_PWM_MC33XS2410 is not set
  # CONFIG_PWM_PCA9685 is not set
 +# CONFIG_PWM_STMPE is not set
  # CONFIG_PWM_XILINX is not set
  
  #
-@@ -7850,11 +7883,12 @@ CONFIG_SECURITYFS=y
+@@ -7360,9 +7573,11 @@ CONFIG_RESET_QCOM_PDC=y
+ # PHY Subsystem
+ #
+ CONFIG_GENERIC_PHY=y
+-# CONFIG_PHY_SNPS_EUSB2 is not set
+ # CONFIG_PHY_CAN_TRANSCEIVER is not set
++# CONFIG_PHY_GOOGLE_USB is not set
+ # CONFIG_PHY_NXP_PTN3222 is not set
++# CONFIG_PHY_NXP_TJA1145 is not set
++# CONFIG_PHY_SNPS_EUSB2 is not set
+ 
+ #
+ # PHY drivers for Broadcom platforms
+@@ -7388,6 +7603,7 @@ CONFIG_GENERIC_PHY=y
+ CONFIG_PHY_QCOM_QMP=y
+ CONFIG_PHY_QCOM_QMP_COMBO=m
+ CONFIG_PHY_QCOM_QMP_PCIE=y
++# CONFIG_PHY_QCOM_QMP_PCIE_MULTIPHY is not set
+ CONFIG_PHY_QCOM_QMP_PCIE_8996=y
+ CONFIG_PHY_QCOM_QMP_UFS=y
+ CONFIG_PHY_QCOM_QMP_USB=y
+@@ -7404,6 +7620,7 @@ CONFIG_PHY_QCOM_USB_SNPS_FEMTO_V2=y
+ CONFIG_PHY_QCOM_USB_SS=y
+ # CONFIG_PHY_QCOM_IPQ806X_USB is not set
+ # CONFIG_PHY_QCOM_SGMII_ETH is not set
++# CONFIG_PHY_TI_DS125DF111 is not set
+ # CONFIG_PHY_TUSB1210 is not set
+ # end of PHY Subsystem
+ 
+@@ -7454,6 +7671,11 @@ CONFIG_NVMEM_LAYOUTS=y
+ # CONFIG_NVMEM_LAYOUT_U_BOOT_ENV is not set
+ # end of Layout Types
+ 
++CONFIG_EEPROM_AT24=y
++CONFIG_EEPROM_AT25=y
++# CONFIG_EEPROM_93XX46 is not set
++# CONFIG_EEPROM_EE1004 is not set
++# CONFIG_EEPROM_M24LR is not set
+ CONFIG_NVMEM_QCOM_QFPROM=y
+ # CONFIG_NVMEM_QCOM_SEC_QFPROM is not set
+ # CONFIG_NVMEM_RMEM is not set
+@@ -7480,12 +7702,14 @@ CONFIG_FPGA=y
+ # CONFIG_FPGA_DFL is not set
+ # CONFIG_FPGA_MGR_MICROCHIP_SPI is not set
+ # CONFIG_FPGA_MGR_LATTICE_SYSCONFIG_SPI is not set
++# CONFIG_FPGA_MGR_EFINIX_SPI is not set
+ # CONFIG_FSI is not set
+ CONFIG_TEE=y
+ CONFIG_OPTEE=y
+ # CONFIG_OPTEE_INSECURE_LOAD_IMAGE is not set
+ # CONFIG_QCOMTEE is not set
+-CONFIG_MULTIPLEXER=m
++CONFIG_MULTIPLEXER=y
++# CONFIG_MUX_CORE is not set
+ 
+ #
+ # Multiplexer drivers
+@@ -7502,18 +7726,17 @@ CONFIG_SLIMBUS=m
+ CONFIG_SLIM_QCOM_NGD_CTRL=m
+ CONFIG_INTERCONNECT=y
+ CONFIG_INTERCONNECT_QCOM=y
+-# CONFIG_INTERCONNECT_QCOM_MSM8909 is not set
+ # CONFIG_INTERCONNECT_QCOM_MSM8916 is not set
+ # CONFIG_INTERCONNECT_QCOM_MSM8937 is not set
+ # CONFIG_INTERCONNECT_QCOM_MSM8939 is not set
+ # CONFIG_INTERCONNECT_QCOM_MSM8953 is not set
+-# CONFIG_INTERCONNECT_QCOM_MSM8974 is not set
+ # CONFIG_INTERCONNECT_QCOM_MSM8976 is not set
+ CONFIG_INTERCONNECT_QCOM_MSM8996=y
+ # CONFIG_INTERCONNECT_QCOM_OSM_L3 is not set
+ # CONFIG_INTERCONNECT_QCOM_QCM2290 is not set
+ # CONFIG_INTERCONNECT_QCOM_QCS404 is not set
+ # CONFIG_INTERCONNECT_QCOM_SDM660 is not set
++# CONFIG_INTERCONNECT_QCOM_SHIKRA is not set
+ # CONFIG_INTERCONNECT_QCOM_SM6115 is not set
+ CONFIG_INTERCONNECT_QCOM_SMD_RPM=y
+ CONFIG_INTERCONNECT_CLK=y
+@@ -7630,8 +7853,8 @@ CONFIG_FAT_DEFAULT_IOCHARSET="iso8859-1"
+ # CONFIG_FAT_DEFAULT_UTF8 is not set
+ CONFIG_EXFAT_FS=m
+ CONFIG_EXFAT_DEFAULT_IOCHARSET="utf8"
+-# CONFIG_NTFS3_FS is not set
+ # CONFIG_NTFS_FS is not set
++# CONFIG_NTFS3_FS is not set
+ # end of DOS/FAT/EXFAT/NT Filesystems
+ 
+ #
+@@ -7641,7 +7864,7 @@ CONFIG_PROC_FS=y
+ # CONFIG_PROC_KCORE is not set
+ CONFIG_PROC_VMCORE=y
+ # CONFIG_PROC_VMCORE_DEVICE_DUMP is not set
+-CONFIG_PROC_SYSCTL=y
++CONFIG_SYSCTL=y
+ CONFIG_PROC_PAGE_MONITOR=y
+ CONFIG_PROC_CHILDREN=y
+ CONFIG_KERNFS=y
+@@ -7669,7 +7892,6 @@ CONFIG_MISC_FILESYSTEMS=y
+ # CONFIG_HFSPLUS_FS is not set
+ # CONFIG_BEFS_FS is not set
+ # CONFIG_BFS_FS is not set
+-# CONFIG_EFS_FS is not set
+ # CONFIG_JFFS2_FS is not set
+ # CONFIG_CRAMFS is not set
+ CONFIG_SQUASHFS=m
+@@ -7690,7 +7912,6 @@ CONFIG_SQUASHFS_XZ=y
+ # CONFIG_SQUASHFS_4K_DEVBLK_SIZE is not set
+ # CONFIG_SQUASHFS_EMBEDDED is not set
+ CONFIG_SQUASHFS_FRAGMENT_CACHE_SIZE=3
+-# CONFIG_VXFS_FS is not set
+ # CONFIG_MINIX_FS is not set
+ # CONFIG_OMFS_FS is not set
+ # CONFIG_HPFS_FS is not set
+@@ -7714,11 +7935,12 @@ CONFIG_EROFS_FS_SECURITY=y
+ CONFIG_EROFS_FS_BACKED_BY_FILE=y
+ CONFIG_EROFS_FS_ZIP=y
+ CONFIG_EROFS_FS_ZIP_LZMA=y
++CONFIG_EROFS_FS_ZIP_LZMA_DEFAULT_MAX_STREAMS=16
+ CONFIG_EROFS_FS_ZIP_DEFLATE=y
+ CONFIG_EROFS_FS_ZIP_ZSTD=y
+ # CONFIG_EROFS_FS_ZIP_ACCEL is not set
+-# CONFIG_EROFS_FS_ONDEMAND is not set
+ # CONFIG_EROFS_FS_PCPU_KTHREAD is not set
++# CONFIG_EROFS_FS_PAGE_CACHE_SHARE is not set
+ CONFIG_NETWORK_FILESYSTEMS=y
+ CONFIG_NFS_FS=y
+ # CONFIG_NFS_V2 is not set
+@@ -7726,7 +7948,7 @@ CONFIG_NFS_V3=y
+ # CONFIG_NFS_V3_ACL is not set
+ CONFIG_NFS_V4=y
+ # CONFIG_NFS_SWAP is not set
+-CONFIG_NFS_V4_1=y
++CONFIG_NFS_V4_0=y
+ CONFIG_NFS_V4_2=y
+ CONFIG_PNFS_FILE_LAYOUT=y
+ CONFIG_PNFS_BLOCK=y
+@@ -7844,9 +8066,10 @@ CONFIG_PROC_MEM_ALWAYS_FORCE=y
+ CONFIG_SECURITY=y
+ CONFIG_HAS_SECURITY_AUDIT=y
+ CONFIG_SECURITYFS=y
+-# CONFIG_SECURITY_NETWORK is not set
+-# CONFIG_SECURITY_PATH is not set
++CONFIG_SECURITY_NETWORK=y
++CONFIG_SECURITY_PATH=y
+ # CONFIG_STATIC_USERMODEHELPER is not set
++# CONFIG_SECURITY_SELINUX is not set
  # CONFIG_SECURITY_SMACK is not set
  # CONFIG_SECURITY_TOMOYO is not set
  # CONFIG_SECURITY_APPARMOR is not set
-+# CONFIG_SECURITY_SELINUX is not set
- # CONFIG_SECURITY_LOADPIN is not set
+@@ -7854,7 +8077,8 @@ CONFIG_SECURITYFS=y
  # CONFIG_SECURITY_YAMA is not set
  # CONFIG_SECURITY_SAFESETID is not set
  # CONFIG_SECURITY_LOCKDOWN_LSM is not set
 -# CONFIG_SECURITY_LANDLOCK is not set
 +CONFIG_SECURITY_LANDLOCK=y
++CONFIG_SECURITY_LANDLOCK_LOG=y
  # CONFIG_SECURITY_IPE is not set
  CONFIG_INTEGRITY=y
  # CONFIG_INTEGRITY_SIGNATURE is not set
-@@ -7863,7 +7897,7 @@ CONFIG_INTEGRITY_AUDIT=y
+@@ -7863,7 +8087,7 @@ CONFIG_INTEGRITY_AUDIT=y
  # CONFIG_IMA_SECURE_AND_OR_TRUSTED_BOOT is not set
  # CONFIG_EVM is not set
  CONFIG_DEFAULT_SECURITY_DAC=y
@@ -551,3 +2618,363 @@ index 777bde3..5dfddec 100644
  
  #
  # Kernel hardening options
+@@ -7906,7 +8130,6 @@ CONFIG_RANDSTRUCT_NONE=y
+ # end of Kernel hardening options
+ # end of Security options
+ 
+-CONFIG_XOR_BLOCKS=y
+ CONFIG_ASYNC_CORE=m
+ CONFIG_ASYNC_XOR=m
+ CONFIG_CRYPTO=y
+@@ -7926,7 +8149,6 @@ CONFIG_CRYPTO_HASH=y
+ CONFIG_CRYPTO_HASH2=y
+ CONFIG_CRYPTO_RNG=y
+ CONFIG_CRYPTO_RNG2=y
+-CONFIG_CRYPTO_RNG_DEFAULT=y
+ CONFIG_CRYPTO_AKCIPHER2=y
+ CONFIG_CRYPTO_AKCIPHER=y
+ CONFIG_CRYPTO_KPP2=y
+@@ -7939,7 +8161,7 @@ CONFIG_CRYPTO_NULL=y
+ # CONFIG_CRYPTO_PCRYPT is not set
+ CONFIG_CRYPTO_CRYPTD=y
+ CONFIG_CRYPTO_AUTHENC=y
+-# CONFIG_CRYPTO_KRB5ENC is not set
++CONFIG_CRYPTO_KRB5ENC=y
+ # CONFIG_CRYPTO_BENCHMARK is not set
+ # end of Crypto core or helper
+ 
+@@ -7953,21 +8175,20 @@ CONFIG_CRYPTO_ECC=y
+ CONFIG_CRYPTO_ECDH=y
+ # CONFIG_CRYPTO_ECDSA is not set
+ # CONFIG_CRYPTO_ECRDSA is not set
++# CONFIG_CRYPTO_MLDSA is not set
+ # end of Public-key cryptography
+ 
+ #
+ # Block ciphers
+ #
+ CONFIG_CRYPTO_AES=y
+-# CONFIG_CRYPTO_AES_TI is not set
+ # CONFIG_CRYPTO_ANUBIS is not set
+ # CONFIG_CRYPTO_ARIA is not set
+ # CONFIG_CRYPTO_BLOWFISH is not set
+-# CONFIG_CRYPTO_CAMELLIA is not set
++CONFIG_CRYPTO_CAMELLIA=y
+ # CONFIG_CRYPTO_CAST5 is not set
+ # CONFIG_CRYPTO_CAST6 is not set
+ CONFIG_CRYPTO_DES=m
+-# CONFIG_CRYPTO_FCRYPT is not set
+ # CONFIG_CRYPTO_KHAZAD is not set
+ # CONFIG_CRYPTO_SEED is not set
+ # CONFIG_CRYPTO_SERPENT is not set
+@@ -7984,11 +8205,10 @@ CONFIG_CRYPTO_DES=m
+ # CONFIG_CRYPTO_CHACHA20 is not set
+ CONFIG_CRYPTO_CBC=y
+ CONFIG_CRYPTO_CTR=y
+-# CONFIG_CRYPTO_CTS is not set
++CONFIG_CRYPTO_CTS=y
+ CONFIG_CRYPTO_ECB=y
+ # CONFIG_CRYPTO_HCTR2 is not set
+ # CONFIG_CRYPTO_LRW is not set
+-# CONFIG_CRYPTO_PCBC is not set
+ CONFIG_CRYPTO_XTS=y
+ # end of Length-preserving ciphers and modes
+ 
+@@ -8009,18 +8229,16 @@ CONFIG_CRYPTO_ESSIV=y
+ # Hashes, digests, and MACs
+ #
+ CONFIG_CRYPTO_BLAKE2B=y
+-CONFIG_CRYPTO_CMAC=m
+-CONFIG_CRYPTO_GHASH=y
++CONFIG_CRYPTO_CMAC=y
+ CONFIG_CRYPTO_HMAC=y
+ CONFIG_CRYPTO_MD4=m
+ CONFIG_CRYPTO_MD5=y
+-# CONFIG_CRYPTO_MICHAEL_MIC is not set
+ # CONFIG_CRYPTO_RMD160 is not set
+ CONFIG_CRYPTO_SHA1=y
+ CONFIG_CRYPTO_SHA256=y
+ CONFIG_CRYPTO_SHA512=y
+ CONFIG_CRYPTO_SHA3=y
+-# CONFIG_CRYPTO_SM3_GENERIC is not set
++# CONFIG_CRYPTO_SM3 is not set
+ # CONFIG_CRYPTO_STREEBOG is not set
+ # CONFIG_CRYPTO_WP512 is not set
+ # CONFIG_CRYPTO_XCBC is not set
+@@ -8040,7 +8258,7 @@ CONFIG_CRYPTO_CRC32=y
+ CONFIG_CRYPTO_DEFLATE=y
+ CONFIG_CRYPTO_LZO=y
+ CONFIG_CRYPTO_842=m
+-CONFIG_CRYPTO_LZ4=m
++CONFIG_CRYPTO_LZ4=y
+ CONFIG_CRYPTO_LZ4HC=m
+ CONFIG_CRYPTO_ZSTD=m
+ # end of Compression
+@@ -8048,10 +8266,6 @@ CONFIG_CRYPTO_ZSTD=m
+ #
+ # Random number generation
+ #
+-CONFIG_CRYPTO_DRBG_MENU=y
+-CONFIG_CRYPTO_DRBG_HMAC=y
+-# CONFIG_CRYPTO_DRBG_HASH is not set
+-# CONFIG_CRYPTO_DRBG_CTR is not set
+ CONFIG_CRYPTO_DRBG=y
+ CONFIG_CRYPTO_JITTERENTROPY=y
+ CONFIG_CRYPTO_JITTERENTROPY_MEMORY_BLOCKS=64
+@@ -8061,7 +8275,7 @@ CONFIG_CRYPTO_KDF800108_CTR=y
+ # end of Random number generation
+ 
+ #
+-# Userspace interface
++# Userspace interface (deprecated)
+ #
+ CONFIG_CRYPTO_USER_API=y
+ CONFIG_CRYPTO_USER_API_HASH=m
+@@ -8070,18 +8284,12 @@ CONFIG_CRYPTO_USER_API_RNG=y
+ # CONFIG_CRYPTO_USER_API_RNG_CAVP is not set
+ # CONFIG_CRYPTO_USER_API_AEAD is not set
+ CONFIG_CRYPTO_USER_API_ENABLE_OBSOLETE=y
+-# end of Userspace interface
+-
+-# CONFIG_CRYPTO_NHPOLY1305_NEON is not set
++# end of Userspace interface (deprecated)
+ 
+ #
+ # Accelerated Cryptographic Algorithms for CPU (arm64)
+ #
+ CONFIG_CRYPTO_GHASH_ARM64_CE=y
+-# CONFIG_CRYPTO_SM3_NEON is not set
+-CONFIG_CRYPTO_SM3_ARM64_CE=y
+-CONFIG_CRYPTO_AES_ARM64=y
+-CONFIG_CRYPTO_AES_ARM64_CE=y
+ CONFIG_CRYPTO_AES_ARM64_CE_BLK=y
+ CONFIG_CRYPTO_AES_ARM64_NEON_BLK=y
+ CONFIG_CRYPTO_AES_ARM64_BS=y
+@@ -8106,16 +8314,6 @@ CONFIG_CRYPTO_HW=y
+ # CONFIG_CRYPTO_DEV_QAT_DH895xCCVF is not set
+ # CONFIG_CRYPTO_DEV_QAT_C3XXXVF is not set
+ # CONFIG_CRYPTO_DEV_QAT_C62XVF is not set
+-CONFIG_CRYPTO_DEV_QCE=y
+-CONFIG_CRYPTO_DEV_QCE_SKCIPHER=y
+-CONFIG_CRYPTO_DEV_QCE_SHA=y
+-CONFIG_CRYPTO_DEV_QCE_AEAD=y
+-CONFIG_CRYPTO_DEV_QCE_ENABLE_ALL=y
+-# CONFIG_CRYPTO_DEV_QCE_ENABLE_SKCIPHER is not set
+-# CONFIG_CRYPTO_DEV_QCE_ENABLE_SHA is not set
+-# CONFIG_CRYPTO_DEV_QCE_ENABLE_AEAD is not set
+-CONFIG_CRYPTO_DEV_QCE_SW_MAX_LEN=512
+-# CONFIG_CRYPTO_DEV_QCOM_RNG is not set
+ # CONFIG_CRYPTO_DEV_VIRTIO is not set
+ # CONFIG_CRYPTO_DEV_SAFEXCEL is not set
+ # CONFIG_CRYPTO_DEV_CCREE is not set
+@@ -8138,16 +8336,16 @@ CONFIG_SYSTEM_TRUSTED_KEYS=""
+ # CONFIG_SYSTEM_EXTRA_CERTIFICATE is not set
+ # CONFIG_SECONDARY_TRUSTED_KEYRING is not set
+ # CONFIG_SYSTEM_BLACKLIST_KEYRING is not set
++CONFIG_OPENSSL_SUPPORTS_ML_DSA=y
+ # end of Certificates for signature checking
+ 
+-# CONFIG_CRYPTO_KRB5 is not set
++CONFIG_CRYPTO_KRB5=y
++# CONFIG_CRYPTO_KRB5_SELFTESTS is not set
+ CONFIG_BINARY_PRINTF=y
+ 
+ #
+ # Library routines
+ #
+-CONFIG_RAID6_PQ=y
+-CONFIG_RAID6_PQ_BENCHMARK=y
+ CONFIG_LINEAR_RANGES=y
+ CONFIG_PACKING=y
+ CONFIG_BITREVERSE=y
+@@ -8173,14 +8371,19 @@ CONFIG_CRC_T10DIF_ARCH=y
+ CONFIG_CRC32=y
+ CONFIG_CRC32_ARCH=y
+ CONFIG_CRC64=y
++CONFIG_CRC64_ARCH=y
+ CONFIG_CRC_OPTIMIZATIONS=y
+-
+-#
+-# Crypto library routines
+-#
+ CONFIG_CRYPTO_HASH_INFO=y
+ CONFIG_CRYPTO_LIB_UTILS=y
+ CONFIG_CRYPTO_LIB_AES=y
++CONFIG_CRYPTO_LIB_AES_ARCH=y
++CONFIG_CRYPTO_LIB_AES_CBC=y
++CONFIG_CRYPTO_LIB_AES_CBC_MACS=y
++CONFIG_CRYPTO_LIB_AES_CCM=y
++CONFIG_CRYPTO_LIB_AES_CTR=y
++CONFIG_CRYPTO_LIB_AES_ECB=y
++CONFIG_CRYPTO_LIB_AES_GCM=y
++CONFIG_CRYPTO_LIB_AES_XTS=y
+ CONFIG_CRYPTO_LIB_ARC4=m
+ CONFIG_CRYPTO_LIB_GF128MUL=y
+ CONFIG_CRYPTO_LIB_BLAKE2B=y
+@@ -8188,7 +8391,9 @@ CONFIG_CRYPTO_LIB_CHACHA=m
+ CONFIG_CRYPTO_LIB_CHACHA_ARCH=y
+ CONFIG_CRYPTO_LIB_CURVE25519=m
+ CONFIG_CRYPTO_LIB_CURVE25519_GENERIC=y
+-CONFIG_CRYPTO_LIB_DES=y
++CONFIG_CRYPTO_LIB_DES=m
++CONFIG_CRYPTO_LIB_GF128HASH=y
++CONFIG_CRYPTO_LIB_GF128HASH_ARCH=y
+ CONFIG_CRYPTO_LIB_MD5=y
+ CONFIG_CRYPTO_LIB_POLY1305=m
+ CONFIG_CRYPTO_LIB_POLY1305_ARCH=y
+@@ -8202,14 +8407,15 @@ CONFIG_CRYPTO_LIB_SHA512=y
+ CONFIG_CRYPTO_LIB_SHA512_ARCH=y
+ CONFIG_CRYPTO_LIB_SHA3=y
+ CONFIG_CRYPTO_LIB_SHA3_ARCH=y
+-CONFIG_CRYPTO_LIB_SM3=y
+-# end of Crypto library routines
+-
++CONFIG_XOR_BLOCKS=y
++CONFIG_XOR_BLOCKS_ARCH=y
++CONFIG_RAID6_PQ=y
++CONFIG_RAID6_PQ_ARCH=y
++CONFIG_RAID6_PQ_BENCHMARK=y
+ CONFIG_XXHASH=y
+ CONFIG_AUDIT_GENERIC=y
+ CONFIG_AUDIT_ARCH_COMPAT_GENERIC=y
+ CONFIG_AUDIT_COMPAT_GENERIC=y
+-# CONFIG_RANDOM32_SELFTEST is not set
+ CONFIG_842_COMPRESS=y
+ CONFIG_842_DECOMPRESS=y
+ CONFIG_ZLIB_INFLATE=y
+@@ -8262,7 +8468,9 @@ CONFIG_ARCH_HAS_SYNC_DMA_FOR_DEVICE=y
+ CONFIG_ARCH_HAS_SYNC_DMA_FOR_CPU=y
+ CONFIG_ARCH_HAS_DMA_PREP_COHERENT=y
+ CONFIG_ARCH_HAS_FORCE_DMA_UNENCRYPTED=y
++CONFIG_ARCH_HAS_BATCHED_DMA_SYNC=y
+ CONFIG_SWIOTLB=y
++CONFIG_SWIOTLB_DEFAULT_SIZE_MB=64
+ # CONFIG_SWIOTLB_DYNAMIC is not set
+ CONFIG_DMA_BOUNCE_UNALIGNED_KMALLOC=y
+ CONFIG_DMA_NEED_SYNC=y
+@@ -8289,7 +8497,6 @@ CONFIG_CPUMASK_OFFSTACK=y
+ CONFIG_CPU_RMAP=y
+ CONFIG_DQL=y
+ CONFIG_GLOB=y
+-# CONFIG_GLOB_SELFTEST is not set
+ CONFIG_NLATTR=y
+ CONFIG_CLZ_TAB=y
+ CONFIG_IRQ_POLL=y
+@@ -8298,7 +8505,7 @@ CONFIG_DIMLIB=y
+ CONFIG_LIBFDT=y
+ CONFIG_OID_REGISTRY=y
+ CONFIG_UCS2_STRING=y
+-CONFIG_HAVE_GENERIC_VDSO=y
++CONFIG_VDSO_DATASTORE=y
+ CONFIG_GENERIC_GETTIMEOFDAY=y
+ CONFIG_VDSO_GETRANDOM=y
+ CONFIG_FONT_SUPPORT=y
+@@ -8364,7 +8571,7 @@ CONFIG_FRAME_WARN=2048
+ CONFIG_SECTION_MISMATCH_WARN_ONLY=y
+ CONFIG_ARCH_WANT_FRAME_POINTERS=y
+ CONFIG_FRAME_POINTER=y
+-# CONFIG_DEBUG_FORCE_WEAK_PER_CPU is not set
++CONFIG_WARN_CONTEXT_ANALYSIS=y
+ # end of Compile-time checks and compiler options
+ 
+ #
+@@ -8416,6 +8623,7 @@ CONFIG_ARCH_HAS_PTDUMP=y
+ CONFIG_HAVE_DEBUG_KMEMLEAK=y
+ # CONFIG_DEBUG_KMEMLEAK is not set
+ CONFIG_PER_VMA_LOCK_STATS=y
++# CONFIG_MEM_ALLOC_PROFILING is not set
+ # CONFIG_DEBUG_OBJECTS is not set
+ # CONFIG_SHRINKER_DEBUG is not set
+ # CONFIG_DEBUG_STACK_USAGE is not set
+@@ -8428,7 +8636,6 @@ CONFIG_ARCH_HAS_DEBUG_VIRTUAL=y
+ # CONFIG_DEBUG_VIRTUAL is not set
+ CONFIG_DEBUG_MEMORY_INIT=y
+ # CONFIG_DEBUG_PER_CPU_MAPS is not set
+-# CONFIG_MEM_ALLOC_PROFILING is not set
+ CONFIG_HAVE_ARCH_KASAN=y
+ CONFIG_HAVE_ARCH_KASAN_SW_TAGS=y
+ CONFIG_HAVE_ARCH_KASAN_HW_TAGS=y
+@@ -8465,6 +8672,7 @@ CONFIG_SCHED_INFO=y
+ # end of Scheduler Debugging
+ 
+ # CONFIG_DEBUG_PREEMPT is not set
++# CONFIG_DEBUG_ATOMIC is not set
+ 
+ #
+ # Lock Debugging (spinlocks, mutexes, etc...)
+@@ -8488,7 +8696,6 @@ CONFIG_LOCK_DEBUGGING_SUPPORT=y
+ 
+ # CONFIG_DEBUG_IRQFLAGS is not set
+ CONFIG_STACKTRACE=y
+-# CONFIG_WARN_ALL_UNSEEDED_RANDOM is not set
+ # CONFIG_DEBUG_KOBJECT is not set
+ 
+ #
+@@ -8525,6 +8732,7 @@ CONFIG_HAVE_FUNCTION_GRAPH_TRACER=y
+ CONFIG_HAVE_FUNCTION_GRAPH_FREGS=y
+ CONFIG_HAVE_FTRACE_GRAPH_FUNC=y
+ CONFIG_HAVE_DYNAMIC_FTRACE=y
++CONFIG_HAVE_DYNAMIC_FTRACE_WITH_DIRECT_CALLS=y
+ CONFIG_HAVE_EXTRA_IPI_TRACEPOINTS=y
+ CONFIG_HAVE_DYNAMIC_FTRACE_WITH_ARGS=y
+ CONFIG_HAVE_SYSCALL_TRACEPOINTS=y
+@@ -8546,6 +8754,7 @@ CONFIG_FUNCTION_GRAPH_TRACER=y
+ # CONFIG_FUNCTION_GRAPH_RETVAL is not set
+ # CONFIG_FUNCTION_GRAPH_RETADDR is not set
+ CONFIG_DYNAMIC_FTRACE=y
++CONFIG_DYNAMIC_FTRACE_WITH_DIRECT_CALLS=y
+ CONFIG_DYNAMIC_FTRACE_WITH_ARGS=y
+ # CONFIG_FUNCTION_SELF_TRACING is not set
+ # CONFIG_FPROBE is not set
+@@ -8563,6 +8772,7 @@ CONFIG_BRANCH_PROFILE_NONE=y
+ # CONFIG_PROFILE_ANNOTATED_BRANCHES is not set
+ # CONFIG_PROFILE_ALL_BRANCHES is not set
+ # CONFIG_BLK_DEV_IO_TRACE is not set
++# CONFIG_PROBE_EVENTS_DUMP_FETCHARG is not set
+ CONFIG_KPROBE_EVENTS=y
+ # CONFIG_KPROBE_EVENTS_ON_NOTRACE is not set
+ CONFIG_UPROBE_EVENTS=y
+@@ -8584,9 +8794,11 @@ CONFIG_FTRACE_MCOUNT_USE_PATCHABLE_FUNCTION_ENTRY=y
+ # CONFIG_FTRACE_SORT_STARTUP_TEST is not set
+ # CONFIG_RING_BUFFER_STARTUP_TEST is not set
+ # CONFIG_RING_BUFFER_VALIDATE_TIME_DELTAS is not set
++# CONFIG_RING_BUFFER_PERSISTENT_INJECT is not set
+ # CONFIG_PREEMPTIRQ_DELAY_TEST is not set
+ # CONFIG_KPROBE_EVENT_GEN_TEST is not set
+ # CONFIG_RV is not set
++# CONFIG_TRACE_REMOTE_TEST is not set
+ # CONFIG_SAMPLES is not set
+ CONFIG_HAVE_SAMPLE_FTRACE_DIRECT=y
+ CONFIG_HAVE_SAMPLE_FTRACE_DIRECT_MULTI=y
+@@ -8614,7 +8826,6 @@ CONFIG_ARCH_HAS_KCOV=y
+ CONFIG_RUNTIME_TESTING_MENU=y
+ # CONFIG_TEST_DHRY is not set
+ # CONFIG_LKDTM is not set
+-# CONFIG_TEST_MIN_HEAP is not set
+ # CONFIG_TEST_DIV64 is not set
+ # CONFIG_TEST_MULDIV64 is not set
+ # CONFIG_BACKTRACE_SELF_TEST is not set
+@@ -8627,7 +8838,6 @@ CONFIG_RUNTIME_TESTING_MENU=y
+ # CONFIG_TEST_HEXDUMP is not set
+ # CONFIG_TEST_KSTRTOX is not set
+ # CONFIG_TEST_BITMAP is not set
+-# CONFIG_TEST_UUID is not set
+ # CONFIG_TEST_XARRAY is not set
+ # CONFIG_TEST_MAPLE_TREE is not set
+ # CONFIG_TEST_RHASHTABLE is not set
+@@ -8635,8 +8845,10 @@ CONFIG_RUNTIME_TESTING_MENU=y
+ # CONFIG_TEST_LKM is not set
+ # CONFIG_TEST_BITOPS is not set
+ # CONFIG_TEST_VMALLOC is not set
++# CONFIG_TEST_WORKQUEUE is not set
+ # CONFIG_TEST_BPF is not set
+ # CONFIG_FIND_BIT_BENCHMARK is not set
++# CONFIG_REGION_ALLOC_BENCHMARK is not set
+ # CONFIG_TEST_FIRMWARE is not set
+ # CONFIG_TEST_SYSCTL is not set
+ # CONFIG_TEST_UDELAY is not set
+@@ -8660,3 +8872,4 @@ CONFIG_MEMTEST=y
+ # end of Kernel hacking
+ 
+ CONFIG_IO_URING_ZCRX=y
++CONFIG_IO_URING_BPF=y
