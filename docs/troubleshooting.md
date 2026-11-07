@@ -31,8 +31,8 @@ partitions, fix extlinux.conf or rewrite a partition with `install/flash-partiti
 Boot the previous kernel from RAM with `fastboot boot`, then `sudo install/rollback-kernel.sh`.
 For the 6.19.5-t825 → 7.3.1-t825 transition, leave the old module directory in place;
 rollback can restore the boot files without `modules-prev.tar`. Same-release
-reinstalls restore their saved modules too. Restore the previous DTB manually if
-you replaced it; see [the update procedure](kernel.md#updating-and-rolling-back-on-the-tablet).
+reinstalls restore their saved modules too. If update was given the matching DTB
+as its fourth argument, rollback also restores the DTB `.prev`; see [the update procedure](kernel.md#updating-and-rolling-back-on-the-tablet).
 If extlinux.conf has a second label pointing at older files, change `default` to it.
 
 ## No sound / audio card missing
