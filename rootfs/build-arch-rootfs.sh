@@ -102,6 +102,8 @@ copy_dev etc/machine-info etc/machine-info 644
 copy_dev usr/lib/modules-load.d/00-device-samsung-gts3lwifi.conf usr/lib/modules-load.d/00-device-samsung-gts3lwifi.conf 644
 copy_dev usr/lib/systemd/system/gts3-bdaddr.service usr/lib/systemd/system/gts3-bdaddr.service 644
 copy_dev usr/lib/udev/rules.d/90-gts3-bdaddr.rules usr/lib/udev/rules.d/90-gts3-bdaddr.rules 644
+# LED timeout only; do not import the upstream Home-to-Meta hwdb mapping.
+copy_dev usr/lib/udev/rules.d/61-gts3-keys.rules usr/lib/udev/rules.d/61-gts3-keys.rules 644
 copy_dev usr/lib/udev/rules.d/61-gts3-accel.rules usr/lib/udev/rules.d/61-gts3-accel.rules 644
 # Keep this repo's Hyprland orientation matrix; both copies request 12 Hz.
 # /etc overrides /usr/lib, including its sampling-frequency rule.

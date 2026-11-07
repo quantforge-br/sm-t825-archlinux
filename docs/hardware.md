@@ -14,6 +14,7 @@ For the SM-T820 and for details of each driver, see upstream's
 | Display, GPU (Adreno 530, freedreno) | works | 2048x1536, Hyprland at scale 2; Chromium's GPU rasterization hangs it, see [troubleshooting](troubleshooting.md) |
 | Touchscreen, S-Pen | works | `synaptics-s5807`, `wacom-w9019-digitizer`; follow the rotation |
 | Keys: power, volume, Home | works | Home opens the launcher, power toggles the panel (desktop/) |
+| Back/Recent touch keys (TC305K) | not tested | upstream T820 only; input-events LED timeout rule included |
 | Wi-Fi (QCA6174, ath10k) | works | needs `board.bin` from your own `system` partition; country GB unless changed ([below](#wi-fi-country)) |
 | Bluetooth | works | address from EFS (`gts3-bdaddr`); RFCOMM/BNEP retained from 6.19.5 r10 |
 | USB network gadget | works | 172.16.42.1 on the tablet, NCM, ID `04e8:6863` |
