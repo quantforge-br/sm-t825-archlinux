@@ -134,14 +134,14 @@ is a separate task. Arch retains its firmware extraction and desktop key policy.
 
 ## Build and validation
 
-Use an isolated pmbootstrap configuration, for example the one used for this move:
+Configure pmbootstrap with the pinned pmaports checkout, then build both packages:
 
 ```sh
-pmbootstrap --config /var/tmp/polly-kernel73/pmbootstrap.cfg build --force linux-postmarketos-qcom-msm8996
-pmbootstrap --config /var/tmp/polly-kernel73/pmbootstrap.cfg build --force device-samsung-gts3lwifi
+pmbootstrap build --force linux-postmarketos-qcom-msm8996
+pmbootstrap build --force device-samsung-gts3lwifi
 ```
 
-The APKs land in `/var/tmp/polly-kernel73/work/packages/edge/aarch64/`. Inspect
+The APKs land in `$(pmbootstrap config work)/packages/edge/aarch64/`. Inspect
 `boot/vmlinuz` (gzip-decompress it before `strings`), both DTBs under `boot/dtbs/qcom/`,
 and the build's `.config` or the embedded IKCONFIG with Linux's
 `scripts/extract-ikconfig`. The expected version is `Linux version 7.3.1-t825`.
@@ -152,6 +152,9 @@ Build and static checks are host evidence; they do not validate tablet hardware.
 
 The kernel lives in `/boot` (ext2 on `cache`), which pacman never touches.
 Keep a known-good 6.19.5 test image and its device tree for recovery.
+**7.3.1 requires its matching DTB. Do not use the 6.19.5 DTB with it:** the
+ADSP/GPU/SLPI/Venus reserved-memory addresses and board definitions changed,
+including cdc_reset_active, the MultiMedia4 headset link, touch keys and jack support.
 
 1. Build both packages and refresh your pmbootstrap rootfs/initramfs. With your
    own isolated config, use a wrapper as `PMB` for `install/make-initramfs.sh`
@@ -176,24 +179,54 @@ Keep a known-good 6.19.5 test image and its device tree for recovery.
    Venus decode/encode, S Pen, touch and charging. These are pending human tests.
 3. After the RAM test passes, boot the old installed kernel before updating.
    Make the archive with `tar -C <extracted-apk>/lib/modules -cf modules.tar 7.3.1-t825`.
-   Copy it, vmlinuz and initramfs to the tablet. Back up the old
-   `/boot/dtbs/qcom/msm8996-samsung-gts3llte.dtb` as `.prev`, then install the new
-   DTB from the package. Run `sudo install/update-kernel.sh modules.tar vmlinuz initramfs`
-   and reboot. The script manages modules and the two boot files; DTB replacement
-   and its backup are manual.
-4. To roll back, boot the known-good RAM image if necessary, restore the saved DTB,
-   then run `sudo install/rollback-kernel.sh` and reboot. During the 6.19.5 → 7.3.1
-   transition the old modules remain in place, so restoring vmlinuz/initramfs is
-   sufficient for the kernel/modules pair even without `modules-prev.tar`.
+   Copy it, vmlinuz, initramfs and the new `msm8996-samsung-gts3llte.dtb` to the tablet.
+   Install them together, passing the DTB as the fourth argument:
 
-For same-release reinstalls, update saves the replaced module directory in
-`/var/tmp/t825-kernel/modules-prev.tar` and records its release in `modules-version`;
-rollback restores that archive along with the boot files. A first install of a
-new release removes a stale archive instead of trying to back up a nonexistent
-directory. A legacy 6.19.5 archive without metadata needs
-`sudo KVER=6.19.5-t825 install/rollback-kernel.sh`. Keep the boot files and modules
-from the same build together. There is one rollback slot; each update replaces it.
-`ROOT=/path/to/offline-root` redirects both scripts (its `/boot` must be mounted).
+   ```sh
+   sudo install/update-kernel.sh modules.tar vmlinuz initramfs msm8996-samsung-gts3llte.dtb
+   ```
+
+   The script backs up the installed kernel, initramfs and DTB as `.prev`, then
+   installs the new files. Reboot and verify the installed kernel.
+4. To roll back, boot the known-good RAM image if necessary, then run
+   `sudo install/rollback-kernel.sh` and reboot. Rollback restores the kernel,
+   initramfs and the DTB `.prev` when present. During the 6.19.5 → 7.3.1 transition,
+   the old modules remain in place and no modules archive is needed.
+
+Update validates the incoming gzip kernel's release against `KVER` before writing
+anything to `/boot`. To decide whether to archive modules, it reads the release
+from the **installed kernel that will become `.prev`**. This also works after a
+RAM test or with an offline root; the host's running kernel is irrelevant.
+When that release equals `KVER` and its module directory exists, update saves
+`/var/tmp/t825-kernel/modules-prev.tar` and writes `modules-version`. Rollback
+restores the archive using that recorded release.
+
+On a release transition, even when `/usr/lib/modules/7.3.1-t825` was staged for
+the RAM test, update treats it as a fresh install: it removes any stale archive
+and `modules-version`, leaves the 6.19.5 modules intact, and installs the new
+modules. A legacy 6.19.5 archive without metadata needs
+`sudo KVER=6.19.5-t825 install/rollback-kernel.sh`; a mismatched archive produces
+an explicit error before restoration.
+
+The fourth DTB argument is optional for reinstalls that keep an already matching
+DTB. Omitting it leaves the installed DTB alone and removes an unrelated DTB
+`.prev`, so rollback cannot restore a DTB from an earlier update. For this
+6.19.5 → 7.3.1 migration, always supply the new DTB.
+
+Both scripts check free boot space for all temporary copies plus filesystem
+overhead before writing, copy to temporary files on the same filesystem, sync,
+and rename each completed file. Update stages all backups and replacement boot
+files before replacing any destination; rollback stages all boot files before
+restoring them. A copy failure leaves the existing files and backups intact.
+This needs space for the staged copies as well as the installed files and any
+existing backups. Individual renames are atomic; a power loss between renames
+can still interrupt the set, so keep the known-good RAM image available.
+
+Keep the boot files and modules from the same build together. There is one
+rollback slot; each update replaces it. `ROOT=/path/to/offline-root` redirects
+both scripts (its `/boot` must be mounted). Run `python3 install/test-kernel-scripts.py`
+for the fake-root tests, including staged modules, same-release reinstalls,
+legacy metadata, DTBs, invalid inputs, free-space checks and failed copies.
 
 ## Runtime evidence, risks and follow-ups
 

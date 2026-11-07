@@ -83,6 +83,8 @@ This kernel includes upstream's Book Cover Keyboard hot-plug, sensor timestamps/
 shared-buffer GPU fixes, display resume, touch keys, headset jack and Venus updates through 0182.
 Upstream tested suspend with Wi-Fi resume on the T820; those results still need repeating on T825.
 One upstream tester reported a T825 7.3.1 boot on main plus modem work; this exact build is untested.
+Use the DTB from the 7.3.1 package: the previous 6.19.5 release DTBs must not be used
+with 7.3.1 because the reserved-memory layout and board definitions changed.
 
 ## Warnings
 
@@ -302,8 +304,8 @@ gh release download --repo quantforge-br/sm-t825-archlinux --pattern '*' --dir r
 | `lk2nd-gts3llte-23.1-fd380ac6.img` | `436ba23f...ce96a` | lk2nd for the SM-T825, tested |
 | `linux-postmarketos-qcom-msm8996-6.19.5-r13.apk` | `43cf1ac7...b882c` | previous 6.19.5 kernel package r13 (modules, vmlinuz, device trees) |
 | `vmlinuz-6.19.5-t825-r13` | `a304d67e...` | the kernel from that package |
-| `msm8996-samsung-gts3llte.dtb` | `b1f1bd62...` | SM-T825 device tree with the top speakers |
-| `apq8096-samsung-gts3lwifi.dtb` | `fd727baa...` | SM-T820 device tree, appended next to the SM-T825 one in boot images |
+| `msm8996-samsung-gts3llte.dtb` | `b1f1bd62...` | previous 6.19.5 release: SM-T825 device tree with the top speakers |
+| `apq8096-samsung-gts3lwifi.dtb` | `fd727baa...` | previous 6.19.5 release: SM-T820 device tree, appended next to the SM-T825 one in boot images |
 
 Not published, because they contain the firmware and calibration of the tablet they were made on:
 initramfs, boot images, the boot file system and the rootfs image. Steps 5-8 make yours.
