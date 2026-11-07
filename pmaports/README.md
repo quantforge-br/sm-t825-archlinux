@@ -1,11 +1,21 @@
 # pmaports packages
 
-Copy both directories into `device/testing/` of a pmaports checkout at commit
-`367abb3e17df1299380271c9e52c0824fc7378d3` (replace the existing `linux-postmarketos-qcom-msm8996`).
-See the main README, step 4, and [docs/kernel.md](../docs/kernel.md).
+Copy both package directories into `device/testing/` of a pmaports checkout at
+`367abb3e17df1299380271c9e52c0824fc7378d3`, replacing the existing kernel directory.
+This base is retained and used for both package builds. See the main README,
+step 4, and [docs/kernel.md](../docs/kernel.md) for isolated builds and RAM testing.
 
-- `linux-postmarketos-qcom-msm8996/`: 6.19.5, pkgrel 13. Patches 0001-0113 and the base config are
-  identical to wh1ter0z3/gts3lwifi-mainline commit `363ed94`; 0122-0123 come from upstream commit
-  `007853c` (GPU faults with shared buffers); 0114, 0201 and the config changes are ours.
-- `device-samsung-gts3lwifi/`: the device package of the same upstream commit (pkgrel 5).
-- `pmaports-367abb3e-kernel.diff`: the kernel package against pmaports `367abb3e`.
+- `linux-postmarketos-qcom-msm8996/`: **7.3.1-r0**, release `7.3.1-t825`.
+  All 194 upstream patches (70 m-series and 124 numbered through 0182) match
+  wh1ter0z3/gts3lwifi-mainline **9f81231**. Local additions are config deltas from
+  6.19.5 r9–r11, 0201 GPU hang accounting and 0202 top speakers (formerly 0114).
+- `device-samsung-gts3lwifi/`: **1-r7**, with upstream headset/jack audio and
+  the 12 Hz accelerometer rule. GNSS/KDE/TrustZone integration is outside this move.
+  Arch's UCM copy matches the package; its accelerometer override retains the
+  Hyprland matrix and the same 12 Hz setting.
+- `pmaports-367abb3e-kernel.diff`: APKBUILD and config against the pinned pmaports
+  base, regenerated from these sources; patches are supplied by the directory.
+
+The source version is newer than the previous 6.19.5-r13 binaries in `release/`.
+This 7.3.1 build has no SM-T825 runtime validation yet; see the evidence and
+pending hardware checks in [docs/kernel.md](../docs/kernel.md).

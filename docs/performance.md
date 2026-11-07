@@ -3,7 +3,9 @@
 Hyprland on this tablet composites a 2048x1536 panel on an Adreno 530, so the GPU sets
 the limit. These numbers come from frame traces on an SM-T825 running the desktop from
 this repository: Hyprland 0.57, DMS, kitty and Brave, with window rounding 12 and border 2
-kept as they are.
+kept as they are. The measurements used the previous **6.19.5-t825 r13** kernel.
+They have not been repeated on **7.3.1-t825 r0**; the new GPU OPP, sensor-rate and
+other upstream changes do not establish a performance improvement on this tablet.
 
 ## Method
 

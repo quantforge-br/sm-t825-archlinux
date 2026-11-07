@@ -1,6 +1,9 @@
 # Hardware status on the SM-T825
 
-Tested on one SM-T825 (bootloader T825UBU3CUF1) with kernel 6.19.5-t825 r13 and Arch Linux ARM.
+Historical results: tested on one SM-T825 (bootloader T825UBU3CUF1) with kernel 6.19.5-t825 r13 and Arch Linux ARM.
+The source package is now 7.3.1-t825 r0; **all runtime checks below remain untested
+on this repo's SM-T825 build**. One upstream tester reported boot/UI/Wi-Fi/audio on
+7.3.1 main plus modem work; that is not validation of this exact package.
 For the SM-T820 and for details of each driver, see upstream's
 [status table](https://github.com/wh1ter0z3/gts3lwifi-mainline#status).
 
@@ -12,26 +15,30 @@ For the SM-T820 and for details of each driver, see upstream's
 | Touchscreen, S-Pen | works | `synaptics-s5807`, `wacom-w9019-digitizer`; follow the rotation |
 | Keys: power, volume, Home | works | Home opens the launcher, power toggles the panel (desktop/) |
 | Wi-Fi (QCA6174, ath10k) | works | needs `board.bin` from your own `system` partition; country GB unless changed ([below](#wi-fi-country)) |
-| Bluetooth | works | address from EFS (`gts3-bdaddr`); RFCOMM/BNEP since r10 |
+| Bluetooth | works | address from EFS (`gts3-bdaddr`); RFCOMM/BNEP retained from 6.19.5 r10 |
 | USB network gadget | works | 172.16.42.1 on the tablet, NCM, ID `04e8:6863` |
-| Speakers (4) | works | top pair needs kernel r11 or newer (patch 0114); top = left, bottom = right |
+| Speakers (4) | works | top pair enabled since 6.19.5 r11 (0114, now 0202); top = left, bottom = right |
 | Microphones (2) | works | |
-| Headphone jack | not tested | no jack detection in the port yet |
+| Headphone jack | not tested | 7.3.1 adds jack/headset support, upstream tested on T820 only |
 | Cameras (front S5K5E3, rear IMX258) | works | libcamera software ISP, 1280x720 at 30 fps |
 | Video decode/encode (Venus) | works | H.264/VP8/VP9 decode, H.264 encode, through GStreamer V4L2 |
 | Accelerometer, gyroscope, magnetometer, light | works | through the SLPI (`qcom-smgr`); needs `sns.reg` from EFS |
 | Auto-rotation | works | `iio-sensor-proxy` + `desktop/autorotate`; mount matrix in `rootfs/files/61-gts3-accel.rules` |
 | Battery, charging | works | SM5705 gauge and charger: capacity, status, USB-C input online |
 | microSD | works | an 8 GB SanDisk card runs at UHS DDR50; the controller goes up to SDR104 |
-| LTE modem, SIM, GPS | **no** | not supported by the port |
-| Suspend | not tested | upstream reports s2idle only |
-| Book Cover Keyboard | not tested | needs upstream's newer patches for hot-plug |
+| LTE modem, SIM, GPS | **no** | still disabled/unsupported on T825 in this package; upstream GNSS works on T820 |
+| Suspend | not tested | s2idle; upstream T820 passed four cycles with Wi-Fi after resume using 0147+0148 |
+| Book Cover Keyboard | not tested | hot-plug patches are included; not tested here |
 
-Messages seen on every boot that do no harm: `qcrypto` probe errors, `bam-dma-engine 644000`
+Historical 6.19.5 boot messages without observed failures: `qcrypto` probe errors, `bam-dma-engine 644000`
 -22, `stmpe-i2c 7-0040` -6, ath10k missing `board-2.bin` (falls back to `board.bin`), two Bluetooth
 "Frame reassembly failed (-84)", `MultiMedia1: ASoC: no backend DAIs enabled`,
 `psci: [Firmware Bug]: failed to set PC/OSI mode`,
 `[pmOS-rd]: Unable to resize root partition: failed to find qualifying partition`.
+
+7.3.1 disables the QCE driver, so the old `qcrypto` probe observation does not describe
+the new build. Upstream also reports pclk RCG warnings, Bluetooth boot timeouts and
+WCD9335 capture overflow messages; see [kernel risks](kernel.md#runtime-evidence-risks-and-follow-ups).
 
 ## Wi-Fi country
 
