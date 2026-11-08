@@ -1,5 +1,5 @@
 diff --git a/device/testing/linux-postmarketos-qcom-msm8996/APKBUILD b/device/testing/linux-postmarketos-qcom-msm8996/APKBUILD
-index 601fa9f44..ad832408a 100644
+index 601fa9f44..e262eea9e 100644
 --- a/device/testing/linux-postmarketos-qcom-msm8996/APKBUILD
 +++ b/device/testing/linux-postmarketos-qcom-msm8996/APKBUILD
 @@ -2,12 +2,12 @@
@@ -7,8 +7,9 @@ index 601fa9f44..ad832408a 100644
  _flavor="postmarketos-qcom-msm8996"
  pkgname=linux-$_flavor
 -pkgver=6.19.5
+-pkgrel=0
 +pkgver=7.3.1
- pkgrel=0
++pkgrel=1
  pkgdesc="Kernel close to mainline with extra patches for Qualcomm MSM8996 devices"
  arch="aarch64"
  _carch="arm64"
@@ -228,7 +229,30 @@ index 601fa9f44..ad832408a 100644
  
  prepare() {
  	default_prepare
-@@ -61,6 +256,202 @@ package() {
+@@ -44,6 +239,22 @@ build() {
+ 	unset LDFLAGS
+ 	make ARCH="$_carch" LLVM=1 \
+ 		KBUILD_BUILD_VERSION="$((pkgrel + 1 ))-$_flavor"
++
++	# lk2nd extlinux compares the decompressed byte count, not image_size.
++	local image_size max_size=${LK2ND_MAX_KERNEL_SIZE:-28106752}
++	case "$max_size" in
++		''|*[!0-9]*) error "Invalid LK2ND_MAX_KERNEL_SIZE: $max_size"; return 1 ;;
++	esac
++	if ! [ "$max_size" -gt 0 ] || ! [ "$max_size" -le 4294967295 ]; then
++		error "LK2ND_MAX_KERNEL_SIZE must be between 1 and 4294967295"
++		return 1
++	fi
++	image_size=$(wc -c < "arch/$_carch/boot/Image")
++	if [ "$image_size" -gt "$max_size" ]; then
++		error "Kernel too big for lk2nd extlinux: $image_size bytes > $max_size"
++		return 1
++	fi
++	echo "lk2nd size check: $image_size bytes <= $max_size"
+ }
+ 
+ package() {
+@@ -61,6 +272,202 @@ package() {
  		INSTALL_DTBS_PATH="$pkgdir"/boot/dtbs
  }
  sha512sums="

@@ -1,6 +1,6 @@
 # Kernel
 
-The source package is `linux-postmarketos-qcom-msm8996` **7.3.1-r0**, with release
+The source package is `linux-postmarketos-qcom-msm8996` **7.3.1-r1**, with release
 string **7.3.1-t825** and modules in `/usr/lib/modules/7.3.1-t825` on Arch
 (`/lib/modules/7.3.1-t825` inside the APK). It replaces the previous 6.19.5-r13
 source package. The files in `release/` remain the previous 6.19.5 release.
@@ -12,7 +12,7 @@ All 194 upstream patches are byte-identical: 70 `m001`–`m071` patches (no m056
 and 124 numbered patches from `0001` through `0182`, with upstream's gaps and
 APKBUILD order. The package uses the kernel.org 7.3.1 tarball; msm8996-mainline's
 last base tag was 6.19.5. Upstream's `APKBUILD.pmaports` is named `APKBUILD` here,
-with our pkgrel reset to 0, config checksum and two appended local patches.
+with our package revision, config checksum and two appended local patches.
 No a5xx hangcheck backport is included.
 
 Copy the complete directories in `pmaports/` to `device/testing/` in a pmaports
@@ -28,11 +28,12 @@ Revision numbers restart for 7.3.1; “r9–r13” below refers to 6.19.5 histor
 | Package | Revision | Contents |
 |---|---|---|
 | Kernel 7.3.1 | r0 | Upstream 9f81231 series, retained config below, unchanged 0201 and rebased 0202 |
+| Kernel 7.3.1 | r1 | Trim tracing to fit persistent boot; enforce the lk2nd size budget during build/install |
 | Device 1 | r6 | Upstream headset microphone, jack controls and WirePlumber ACP/jack setup |
 | Device 1 | r7 | Upstream accelerometer matrix and 12 Hz request, enabled by kernel patch 0143 |
 | Device 1 | r8 | Upstream TC305K Back/Recent input-events LED timeout rule |
 
-| Origin | Retained in 7.3.1-r0 | Purpose |
+| Origin | Retained in 7.3.1-r1 | Purpose |
 |---|---|---|
 | r9 | `CONFIG_LOCALVERSION="-t825"` | Separate release/module directory |
 | r9 | `CONFIG_SECURITY_LANDLOCK=y`; `landlock` first in `CONFIG_LSM` | pacman download sandbox |
@@ -50,6 +51,48 @@ Landlock's selected SECURITY_NETWORK/PATH and logging default, and the MGLRU
 WALKS_MMU selection (STATS remains off). These are consequences of the requested
 config and `olddefconfig`, not extra tuning. Upstream disables CRYPTO_DEV_QCE
 because 7.3 marks it BROKEN on ARCH_QCOM; CPU crypto extensions remain available.
+
+### Size-focused configuration changes in r1
+
+The r13 config in commit `8d6a3e4` (unchanged since `b915c97`) was compared
+with the 7.3.1-r0 config at `a1fd48d`. The Image grew by **1,910,784 bytes**.
+The config adds built-in pinctrl drivers for Eliza, Hawi, IPQ5210, IPQ9650,
+Maili, Nord and Shikra, and GCC drivers for Eliza, Kaanapali, Nord, Shikra,
+Hawi, IPQ5210 and IPQ9650. Other additions include scheduler/arm64 features,
+Kerberos/Camellia crypto and promoted crypto/netfilter dependencies. Compiler
+and kernel code also changed; the config diff alone cannot assign byte counts
+to those sources of growth.
+
+Non-QCOM platforms, `KALLSYMS_ALL`, BTF and KUnit/selftests were already off.
+DWARF debug information lives outside the raw Image, so disabling it would
+not address this limit. The final trim disables `CONFIG_FTRACE`, including
+function/function-graph tracing, event tracing and kprobe/uprobe/BPF trace
+attachments selected through that menu. This gives measured savings without
+changing any hardware-driver selection or converting built-ins to modules.
+
+Measured with the same isolated Alpine clang 23.1.5 build setup:
+
+| Measurement | Decompressed Image / lk2nd metric | Gzip bytes | Incremental Image savings |
+|---|---:|---:|---:|
+| 6.19.5-r13 reference | 27,445,760 | 11,324,059 | — |
+| 7.3.1-r0 baseline | 29,356,544 | 11,925,603 | — |
+| Disable function/function-graph tracing (trial) | 28,434,944 | 11,705,043 | 921,600 |
+| Disable remaining ftrace/event infrastructure (r1) | 23,966,208 | 10,526,949 | 4,468,736 |
+
+Total Image savings are **5,390,336 bytes**; headroom is **4,140,544 bytes**
+against 28,106,752. The final arm64 header `image_size` is **24,707,072**,
+which is deliberately not used as the metric. Gzip byte counts can vary with
+build timestamps. A broad exploratory debug trim was discarded in favor of
+this tracing-only change.
+
+Kept: `-t825`, Landlock-first LSM, SELinux off, CONNMARK, RFCOMM/BNEP, MGLRU,
+THP madvise; MDP5/DSI/panel, Adreno a5xx, WCD9335/ADSP, SLPI/SMGR, ath10k,
+Bluetooth, Venus/cameras, NCM gadget, touchscreen/S Pen/touch keys/gpio-keys,
+SM5705, thermal, btrfs, ext4's ext2 support, Tailscale netfilter, rmtfs/qrtr
+and remoteproc. `modules-initfs` still contains `msm` and
+`panel-samsung-ams968hh01`; no initramfs module requirement changes.
+Kallsyms, perf, BPF networking/syscalls, debugfs, dynamic debug, pstore/ramoops
+and the embedded config remain available for runtime diagnosis.
 
 ### Patch accounting
 
@@ -139,6 +182,49 @@ KDE key mappings are not needed for this SM-T825 kernel migration and are not
 imported. The LTE modem DSP is still disabled in this tree; GNSS/LTE enablement
 is a separate task. Arch retains its firmware extraction and desktop key policy.
 
+## Persistent-boot size budget
+
+lk2nd **23.1-next-fd380ac6** rejects a gzip kernel using its **actual decompressed
+byte count**, not the arm64 header's `image_size`. At revision
+[fd380ac637d1af38598e3f3c5321d4c962b96315](https://github.com/msm8916-mainline/lk2nd/tree/fd380ac637d1af38598e3f3c5321d4c962b96315):
+
+- [`lib/zlib_inflate/decompress.c:133–134`](https://github.com/msm8916-mainline/lk2nd/blob/fd380ac637d1af38598e3f3c5321d4c962b96315/lib/zlib_inflate/decompress.c#L133) returns `stream->total_out`.
+- [`lk2nd/boot/extlinux.c:578–595`](https://github.com/msm8916-mainline/lk2nd/blob/fd380ac637d1af38598e3f3c5321d4c962b96315/lk2nd/boot/extlinux.c#L578) stores that count in `kernel_size` and compares it with `kernel_max_size`.
+- [`extlinux.c:479–531`](https://github.com/msm8916-mainline/lk2nd/blob/fd380ac637d1af38598e3f3c5321d4c962b96315/lk2nd/boot/extlinux.c#L479) computes `rounddown(boot_memory - initramfs_bytes, 4096) - 2097152 - kernel_offset`.
+  [`lk2nd/boot/rules.mk:15`](https://github.com/msm8916-mainline/lk2nd/blob/fd380ac637d1af38598e3f3c5321d4c962b96315/lk2nd/boot/rules.mk#L15) defaults boot memory to `0x03200000` (50 MiB).
+
+For the failed install, the initramfs is **22,222,608 bytes** and the arm64
+`text_offset` is **0**. Thus `rounddown(52428800 - 22222608, 4096) - 2097152 - 0`
+is **28,106,752 bytes**. This is a budget for that boot layout, not a universal
+lk2nd maximum: a larger initramfs reduces it. The nonzero header `image_size`
+only selects use of `text_offset`; it is not the size being compared. For raw,
+uncompressed kernels, extlinux instead uses `(file_bytes / 16 + 1) * 16`.
+This package and installer use gzip kernels.
+
+Measure without binutils, checking the complete gzip stream for corruption:
+
+```bash
+set -o pipefail
+gzip -dc -- vmlinuz | wc -c       # lk2nd metric
+stat -c %s vmlinuz               # compressed size
+wc -c < arch/arm64/boot/Image    # same metric in the build tree
+```
+
+`install/update-kernel.sh` refuses an oversized kernel before any mutation;
+APKBUILD also fails after compilation if `Image` exceeds the budget. Both
+use `LK2ND_MAX_KERNEL_SIZE=28106752` by default. Override that environment
+variable only for a measured boot layout (and lower it if the initramfs grows).
+The release target is **at most 27,000,000 bytes**, leaving at least 1,106,752
+bytes of headroom against the failed install's layout.
+
+A successful **RAM `fastboot boot` test cannot validate this limit**. Its
+[`app/aboot/aboot.c:3354–3395`](https://github.com/msm8916-mainline/lk2nd/blob/fd380ac637d1af38598e3f3c5321d4c962b96315/app/aboot/aboot.c#L3354)
+path decompresses into scratch memory and uses boot-image load addresses;
+it does not run extlinux's `choose_addrs()` budget check. The 7.3.1-r0 RAM
+success therefore did not predict persistent-boot success. Keep the RAM test
+for hardware validation, and perform this size check before persistent install.
+The r1 build still needs tablet validation; no tablet access is part of this fix.
+
 ## Build and validation
 
 Configure pmbootstrap with the pinned pmaports checkout, then build both packages:
@@ -184,7 +270,8 @@ including cdc_reset_active, the MultiMedia4 headset link, touch keys and jack su
    and `tools/gpuhang.c`, all four speakers, headset insertion/removal and mic,
    repeated suspend plus Wi-Fi after resume, sensors/rotation, both cameras,
    Venus decode/encode, S Pen, touch and charging. These are pending human tests.
-3. After the RAM test passes, boot the old installed kernel before updating.
+3. After the RAM test passes, verify the decompressed-size budget above, then
+   boot the old installed kernel before updating.
    Make the archive with `tar -C <extracted-apk>/lib/modules -cf modules.tar 7.3.1-t825`.
    Copy it, vmlinuz, initramfs and the new `msm8996-samsung-gts3llte.dtb` to the tablet.
    Install them together, passing the DTB as the fourth argument:
