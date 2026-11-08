@@ -4,7 +4,7 @@
 # modules.tar: "tar -C <package>/lib/modules -cf modules.tar 7.3.1-t825"
 # ROOT redirects to an offline root with its boot partition mounted.
 set -euo pipefail
-for tool in grep tar depmod mountpoint mktemp cp chmod sync mv stat df tail rm mkdir cat gzip awk sha256sum; do
+for tool in grep tar depmod mountpoint mktemp cp chmod sync mv stat df tail rm mkdir cat gzip awk sha256sum wc; do
     command -v "$tool" >/dev/null || { echo "missing required command: $tool" >&2; exit 1; }
 done
 mods=${1:?modules tar}; kernel=${2:?vmlinuz}; initramfs=${3:?initramfs}; dtb=${4:-}
@@ -26,6 +26,22 @@ release() {
 }
 if ! incoming=$(release "$kernel") || [[ "$incoming" != "$KVER" ]]; then
     echo "$kernel does not contain Linux version $KVER" >&2
+    exit 1
+fi
+# lk2nd fd380ac6 extlinux.c:581-595 compares the decompressor's output
+# count, not the arm64 Image header image_size. Consume and validate gzip fully.
+LK2ND_MAX_KERNEL_SIZE=${LK2ND_MAX_KERNEL_SIZE:-28106752}
+if [[ ! "$LK2ND_MAX_KERNEL_SIZE" =~ ^[1-9][0-9]{0,9}$ ]] ||
+   ((LK2ND_MAX_KERNEL_SIZE > 4294967295)); then
+    echo "LK2ND_MAX_KERNEL_SIZE must be a positive byte count <= 4294967295" >&2
+    exit 1
+fi
+if ! kernel_size=$(gzip -dc -- "$kernel" | wc -c); then
+    echo "cannot decompress $kernel to check the lk2nd size limit" >&2
+    exit 1
+fi
+if ((kernel_size > LK2ND_MAX_KERNEL_SIZE)); then
+    echo "kernel too big for lk2nd extlinux: $kernel_size decompressed bytes > LK2ND_MAX_KERNEL_SIZE=$LK2ND_MAX_KERNEL_SIZE; refusing before any mutation" >&2
     exit 1
 fi
 # The installed kernel becomes .prev. Do not infer its release from staged

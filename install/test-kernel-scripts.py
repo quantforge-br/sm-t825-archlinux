@@ -26,7 +26,8 @@ class KernelScripts(unittest.TestCase):
         self.bin.mkdir()
         self.env = dict(os.environ, ROOT=str(self.root), PATH=str(self.bin) + ':' + os.environ['PATH'])
         for key in ('KVER', 'FAIL_COPY_MATCH', 'LOW_SPACE', 'FAIL_EXTRACT', 'FAIL_DEPMOD',
-                    'FAIL_MV_MATCH', 'FAIL_RM_MATCH', 'ALLOW_LEGACY_MODULES'):
+                    'FAIL_MV_MATCH', 'FAIL_RM_MATCH', 'ALLOW_LEGACY_MODULES',
+                    'LK2ND_MAX_KERNEL_SIZE'):
             self.env.pop(key, None)
         real_cp = shutil.which('cp')
         real_df = shutil.which('df')
@@ -196,6 +197,36 @@ fi''',
                 before = self.snapshot()
                 result = self.update(success=False)
                 self.assertIn('does not contain Linux version', result.stderr)
+                self.assertEqual(before, self.snapshot())
+
+    def test_lk2nd_over_limit_refused_without_mutation(self):
+        # Highly compressible: compressed size and header image_size both fit.
+        data = bytearray(28106753)
+        data[16:24] = (64).to_bytes(8, 'little')
+        data[56:60] = b'ARM\x64'
+        banner = b'Linux version ' + NEW.encode() + b' (test)\0'
+        data[64:64 + len(banner)] = banner
+        self.kernel.write_bytes(gzip.compress(data, mtime=0))
+        before = self.snapshot()
+        directories = sorted(str(p) for p in self.root.rglob('*') if p.is_dir())
+        result = self.update(success=False)
+        self.assertIn('28106753 decompressed bytes > LK2ND_MAX_KERNEL_SIZE=28106752', result.stderr)
+        self.assertEqual(before, self.snapshot())
+        self.assertEqual(directories, sorted(str(p) for p in self.root.rglob('*') if p.is_dir()))
+
+    def test_lk2nd_under_limit_and_exact_limit_ok(self):
+        size = len(gzip.decompress(self.kernel.read_bytes()))
+        for limit in (size + 1, size):
+            with self.subTest(limit=limit):
+                self.update(extra={'LK2ND_MAX_KERNEL_SIZE': str(limit)})
+
+    def test_lk2nd_override_and_invalid_limit_refused(self):
+        size = len(gzip.decompress(self.kernel.read_bytes()))
+        for limit in (str(size - 1), '0', '-1', 'abc', '1+1', '4294967296', '99999999999999999999'):
+            with self.subTest(limit=limit):
+                before = self.snapshot()
+                result = self.update(success=False, extra={'LK2ND_MAX_KERNEL_SIZE': limit})
+                self.assertIn('LK2ND_MAX_KERNEL_SIZE', result.stderr)
                 self.assertEqual(before, self.snapshot())
 
     def test_binary_banner_without_strings(self):
