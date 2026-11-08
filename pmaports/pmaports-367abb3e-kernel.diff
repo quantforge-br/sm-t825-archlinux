@@ -1,5 +1,5 @@
 diff --git a/device/testing/linux-postmarketos-qcom-msm8996/APKBUILD b/device/testing/linux-postmarketos-qcom-msm8996/APKBUILD
-index 601fa9f44..e262eea9e 100644
+index 601fa9f44..d16dc93e6 100644
 --- a/device/testing/linux-postmarketos-qcom-msm8996/APKBUILD
 +++ b/device/testing/linux-postmarketos-qcom-msm8996/APKBUILD
 @@ -2,12 +2,12 @@
@@ -229,12 +229,16 @@ index 601fa9f44..e262eea9e 100644
  
  prepare() {
  	default_prepare
-@@ -44,6 +239,22 @@ build() {
+@@ -44,6 +239,26 @@ build() {
  	unset LDFLAGS
  	make ARCH="$_carch" LLVM=1 \
  		KBUILD_BUILD_VERSION="$((pkgrel + 1 ))-$_flavor"
 +
-+	# lk2nd extlinux compares the decompressed byte count, not image_size.
++	# Early warning for the reference layout: 50 MiB boot memory, 22222608-byte
++	# initramfs, 2 MiB tags and zero text_offset. The installer is the real
++	# size guarantee: it computes the budget from the actual initramfs/header.
++	# pmbootstrap may not forward LK2ND_MAX_KERNEL_SIZE into the build chroot.
++	# lk2nd extlinux.c:578-595 compares decompressed bytes, not image_size.
 +	local image_size max_size=${LK2ND_MAX_KERNEL_SIZE:-28106752}
 +	case "$max_size" in
 +		''|*[!0-9]*) error "Invalid LK2ND_MAX_KERNEL_SIZE: $max_size"; return 1 ;;
@@ -252,7 +256,7 @@ index 601fa9f44..e262eea9e 100644
  }
  
  package() {
-@@ -61,6 +272,202 @@ package() {
+@@ -61,6 +276,202 @@ package() {
  		INSTALL_DTBS_PATH="$pkgdir"/boot/dtbs
  }
  sha512sums="

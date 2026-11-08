@@ -91,8 +91,26 @@ Bluetooth, Venus/cameras, NCM gadget, touchscreen/S Pen/touch keys/gpio-keys,
 SM5705, thermal, btrfs, ext4's ext2 support, Tailscale netfilter, rmtfs/qrtr
 and remoteproc. `modules-initfs` still contains `msm` and
 `panel-samsung-ams968hh01`; no initramfs module requirement changes.
-Kallsyms, perf, BPF networking/syscalls, debugfs, dynamic debug, pstore/ramoops
+Kallsyms, perf hardware/software counters, BPF networking/syscalls, debugfs, dynamic debug, pstore/ramoops
 and the embedded config remain available for runtime diagnosis.
+
+The tracing trim removes these runtime diagnostics:
+
+- Perf tracepoint workloads, including `perf trace`, `perf sched` and
+  `perf record -e sched:*`; retained perf counters do not restore them.
+- Kprobe/uprobe events and tracing-based bpftrace/BCC workflows.
+- The tracefs interface at `/sys/kernel/tracing` (or debugfs `tracing/`),
+  and trace-cmd recording. Keeping debugfs does not keep its tracing interface.
+- MSM GPU and DRM tracepoints. Powertop loses tracepoint-based accounting and
+  is degraded, even though some non-tracing measurements remain available.
+
+A repository scan of `pmaports/device-samsung-gts3lwifi/`, `rootfs/` and `tools/`
+found no tracefs, perf, debugfs-tracing, bpftrace/BCC, trace-cmd or powertop
+consumers. `tools/gpuhang.c` uses EGL/GLES reset status and dmesg, not tracing.
+However, the historical frame-counting method in [performance.md](performance.md)
+uses `drm_msm_atomic` and `drm` tracepoints on 6.19.5-r13. That measurement method
+cannot be repeated with the trimmed r1 kernel. No config change is made to
+restore these diagnostic features.
 
 ### Patch accounting
 
@@ -197,9 +215,26 @@ For the failed install, the initramfs is **22,222,608 bytes** and the arm64
 `text_offset` is **0**. Thus `rounddown(52428800 - 22222608, 4096) - 2097152 - 0`
 is **28,106,752 bytes**. This is a budget for that boot layout, not a universal
 lk2nd maximum: a larger initramfs reduces it. The nonzero header `image_size`
-only selects use of `text_offset`; it is not the size being compared. For raw,
+only selects use of `text_offset`; it is not the size being compared.
+For an arm64 header with zero `image_size`, the offset is `0x80000`; an
+arm64 `text_offset` greater than 2 MiB forces offset zero even in that case.
+Without ARM64 magic, the offset is `0x8000`. The installer decodes the first
+64 bytes without binutils and applies these same rules. For raw,
 uncompressed kernels, extlinux instead uses `(file_bytes / 16 + 1) * 16`.
 This package and installer use gzip kernels.
+
+lk2nd's inflate stops at the first gzip member
+([`decompress.c:119–134`](https://github.com/msm8916-mainline/lk2nd/blob/fd380ac637d1af38598e3f3c5321d4c962b96315/lib/zlib_inflate/decompress.c#L119)),
+whereas `gzip -dc` concatenates all members. The installer's byte count is
+therefore conservative for concatenated gzip streams; it also rejects CRC
+errors and truncation even when a Linux version banner was already decoded.
+
+The DTB must be **strictly smaller than 2,097,152 bytes** (`MAX_TAGS_SIZE`):
+[`extlinux.c:600–607`](https://github.com/msm8916-mainline/lk2nd/blob/fd380ac637d1af38598e3f3c5321d4c962b96315/lk2nd/boot/extlinux.c#L600)
+rejects a load that fills the reservation. The reservation is already subtracted
+in the formula; actual DTB bytes do not further consume the kernel budget.
+The installer rejects a DTB at or above that size when the fourth argument is
+provided; an existing DTB retained by omitting it still needs to satisfy this rule.
 
 Measure without binutils, checking the complete gzip stream for corruption:
 
@@ -210,12 +245,32 @@ stat -c %s vmlinuz               # compressed size
 wc -c < arch/arm64/boot/Image    # same metric in the build tree
 ```
 
-`install/update-kernel.sh` refuses an oversized kernel before any mutation;
-APKBUILD also fails after compilation if `Image` exceeds the budget. Both
-use `LK2ND_MAX_KERNEL_SIZE=28106752` by default. Override that environment
-variable only for a measured boot layout (and lower it if the initramfs grows).
-The release target is **at most 27,000,000 bytes**, leaving at least 1,106,752
-bytes of headroom against the failed install's layout.
+`install/update-kernel.sh` is the actual boot-layout size guarantee: before any
+mutation, it uses the size of the initramfs passed as argument 3 and the kernel's
+header to compute the budget. `LK2ND_BOOT_MEM_SIZE` defaults to **52,428,800**
+bytes; override it only to match the bootloader's configured pool. The optional
+`LK2ND_MAX_KERNEL_SIZE` is an extra cap with no default in the installer:
+`effective = min(computed_budget, cap)` when provided. A cap can never enlarge
+the computed budget. The installer prints the arithmetic and refuses an
+initramfs at or above boot memory, or a nonpositive budget, instead of allowing
+lk2nd's uint32 arithmetic to wrap. Overrides must be positive decimal byte
+counts no larger than 4,294,967,295.
+
+The APKBUILD check is only an **early warning for the reference layout**:
+22,222,608-byte initramfs, 50 MiB pool, 2 MiB tags and zero text offset. It
+fails if `Image` exceeds `LK2ND_MAX_KERNEL_SIZE` (build default **28,106,752**).
+It cannot guarantee that a later initramfs fits. pmbootstrap may not forward
+that environment override into its build chroot; do not assume a host-side
+assignment changes the build limit. The installer independently checks the
+actual artifacts.
+
+**At most 27,000,000 Image bytes is a manual release goal**, not an additional
+automated build limit. It leaves at least 1,106,752 bytes of headroom against
+the reference layout. Measure it with the commands above for each release.
+With r1's **23,966,208-byte Image** and zero text offset, the largest fitting
+initramfs is **26,361,856 bytes**: the budget is then 23,969,792. One more
+initramfs byte drops the rounded budget to 23,965,696, below the Image size.
+The unrounded figure 26,365,440 does not fit after 4096-byte rounding.
 
 A successful **RAM `fastboot boot` test cannot validate this limit**. Its
 [`app/aboot/aboot.c:3354–3395`](https://github.com/msm8916-mainline/lk2nd/blob/fd380ac637d1af38598e3f3c5321d4c962b96315/app/aboot/aboot.c#L3354)
