@@ -4,7 +4,7 @@
 # modules.tar: "tar -C <package>/lib/modules -cf modules.tar 7.3.1-t825"
 # ROOT redirects to an offline root with its boot partition mounted.
 set -euo pipefail
-for tool in grep tar depmod mountpoint mktemp cp chmod sync mv stat df tail rm mkdir cat gzip awk sha256sum wc; do
+for tool in grep tar depmod mountpoint mktemp cp chmod sync mv stat df tail rm mkdir cat gzip awk sha256sum wc head od; do
     command -v "$tool" >/dev/null || { echo "missing required command: $tool" >&2; exit 1; }
 done
 mods=${1:?modules tar}; kernel=${2:?vmlinuz}; initramfs=${3:?initramfs}; dtb=${4:-}
@@ -17,6 +17,79 @@ case "$KVER" in ''|.|..|*/*) echo "invalid KVER" >&2; exit 1;; esac
 mountpoint -q "$ROOT/boot" || { echo "$ROOT/boot is not mounted" >&2; exit 1; }
 # Consume the full streams: early exits could SIGPIPE gzip/tar under pipefail.
 tar -tf "$mods" | grep -Fx "$KVER/modules.dep" >/dev/null || { echo "$mods has no $KVER/modules.dep" >&2; exit 1; }
+LK2ND_BOOT_MEM_SIZE=${LK2ND_BOOT_MEM_SIZE:-52428800}
+if [[ ! "$LK2ND_BOOT_MEM_SIZE" =~ ^[1-9][0-9]{0,9}$ ]] ||
+   ((LK2ND_BOOT_MEM_SIZE > 4294967295)); then
+    echo "LK2ND_BOOT_MEM_SIZE must be a positive byte count <= 4294967295" >&2
+    exit 1
+fi
+# lk2nd fd380ac6 extlinux.c:578-595 compares the decompressor's output
+# count, not image_size. Validate the complete stream before reading its header.
+# gzip -dc counts all members; lk2nd inflates only the first (conservative).
+if ! kernel_size=$(gzip -dc -- "$kernel" | wc -c); then
+    echo "cannot decompress $kernel to check the lk2nd size limit" >&2
+    exit 1
+fi
+ramdisk_size=$(stat -Lc %s "$initramfs")
+if ((ramdisk_size >= LK2ND_BOOT_MEM_SIZE)); then
+    echo "lk2nd budget refused: initramfs=$ramdisk_size >= boot_mem=$LK2ND_BOOT_MEM_SIZE; rounddown($LK2ND_BOOT_MEM_SIZE - $ramdisk_size, 4096) - 2097152 - kernel_offset cannot yield a positive budget; refusing before any mutation" >&2
+    exit 1
+fi
+# choose_addrs() in extlinux.c:489-535 uses the first 64-byte Image header.
+# Drain the remainder after head so gzip cannot SIGPIPE under pipefail.
+# Bytewise decoding avoids host endianness and unsigned 64-bit shell overflow.
+if ! header_bytes=$(gzip -dc -- "$kernel" | { head -c 64 | od -An -v -tu1; cat >/dev/null; }); then
+    echo "cannot decompress $kernel to read its lk2nd header" >&2
+    exit 1
+fi
+header_bytes=${header_bytes//$'\n'/ }
+read -r -a header <<< "$header_bytes"
+if ((${#header[@]} != 64)); then
+    echo "cannot read the first 64 bytes of the decompressed kernel" >&2
+    exit 1
+fi
+text_offset=$((header[8] | (header[9] << 8) | (header[10] << 16)))
+text_offset_high=0
+image_size_nonzero=0
+for ((i=0; i<8; i++)); do
+    image_size_nonzero=$((image_size_nonzero | header[16+i]))
+done
+for ((i=11; i<16; i++)); do
+    text_offset_high=$((text_offset_high | header[i]))
+done
+if ((header[56] == 65 && header[57] == 82 && header[58] == 77 && header[59] == 100)); then
+    if ((image_size_nonzero != 0)); then
+        kernel_offset=$text_offset
+    else
+        kernel_offset=$((0x80000))
+    fi
+    if ((text_offset_high != 0 || text_offset > 2 * 1024 * 1024)); then
+        kernel_offset=0
+    fi
+else
+    kernel_offset=$((0x8000))
+fi
+ramdisk_offset=$(((LK2ND_BOOT_MEM_SIZE - ramdisk_size) / 4096 * 4096))
+tags_offset=$((ramdisk_offset - 2 * 1024 * 1024))
+budget=$((tags_offset - kernel_offset))
+if ((budget <= 0)); then
+    echo "lk2nd budget refused: rounddown($LK2ND_BOOT_MEM_SIZE - $ramdisk_size, 4096) - 2097152 - $kernel_offset = $ramdisk_offset - 2097152 - $kernel_offset = $budget; refusing before any mutation" >&2
+    exit 1
+fi
+effective=$budget
+if [[ -n "${LK2ND_MAX_KERNEL_SIZE:-}" ]]; then
+    if [[ ! "$LK2ND_MAX_KERNEL_SIZE" =~ ^[1-9][0-9]{0,9}$ ]] ||
+       ((LK2ND_MAX_KERNEL_SIZE > 4294967295)); then
+        echo "LK2ND_MAX_KERNEL_SIZE must be a positive byte count <= 4294967295" >&2
+        exit 1
+    fi
+    if ((LK2ND_MAX_KERNEL_SIZE < effective)); then effective=$LK2ND_MAX_KERNEL_SIZE; fi
+fi
+echo "lk2nd budget: rounddown($LK2ND_BOOT_MEM_SIZE - $ramdisk_size, 4096) - 2097152 - $kernel_offset = $ramdisk_offset - 2097152 - $kernel_offset = $budget; cap=${LK2ND_MAX_KERNEL_SIZE:-none}; effective=$effective; kernel=$kernel_size" >&2
+if ((kernel_size > effective)); then
+    echo "kernel too big for lk2nd extlinux: $kernel_size decompressed bytes > effective limit $effective; refusing before any mutation" >&2
+    exit 1
+fi
 release() {
     # grep scans binary data directly; binutils/strings is not required.
     # Do not use grep -m1: consume gzip fully so CRC/truncation errors propagate.
@@ -28,21 +101,13 @@ if ! incoming=$(release "$kernel") || [[ "$incoming" != "$KVER" ]]; then
     echo "$kernel does not contain Linux version $KVER" >&2
     exit 1
 fi
-# lk2nd fd380ac6 extlinux.c:581-595 compares the decompressor's output
-# count, not the arm64 Image header image_size. Consume and validate gzip fully.
-LK2ND_MAX_KERNEL_SIZE=${LK2ND_MAX_KERNEL_SIZE:-28106752}
-if [[ ! "$LK2ND_MAX_KERNEL_SIZE" =~ ^[1-9][0-9]{0,9}$ ]] ||
-   ((LK2ND_MAX_KERNEL_SIZE > 4294967295)); then
-    echo "LK2ND_MAX_KERNEL_SIZE must be a positive byte count <= 4294967295" >&2
-    exit 1
-fi
-if ! kernel_size=$(gzip -dc -- "$kernel" | wc -c); then
-    echo "cannot decompress $kernel to check the lk2nd size limit" >&2
-    exit 1
-fi
-if ((kernel_size > LK2ND_MAX_KERNEL_SIZE)); then
-    echo "kernel too big for lk2nd extlinux: $kernel_size decompressed bytes > LK2ND_MAX_KERNEL_SIZE=$LK2ND_MAX_KERNEL_SIZE; refusing before any mutation" >&2
-    exit 1
+# The DTB has its own fixed reservation; it does not reduce the kernel budget.
+if [[ -n "$dtb" ]]; then
+    dtb_size=$(stat -Lc %s "$dtb")
+    if ((dtb_size >= 2097152)); then
+        echo "DTB too big for lk2nd: $dtb_size bytes >= MAX_TAGS_SIZE=2097152; refusing before any mutation" >&2
+        exit 1
+    fi
 fi
 # The installed kernel becomes .prev. Do not infer its release from staged
 # modules or uname (which may identify a RAM test kernel or an offline host).
