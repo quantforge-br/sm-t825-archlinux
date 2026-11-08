@@ -27,7 +27,7 @@ class KernelScripts(unittest.TestCase):
         self.env = dict(os.environ, ROOT=str(self.root), PATH=str(self.bin) + ':' + os.environ['PATH'])
         for key in ('KVER', 'FAIL_COPY_MATCH', 'LOW_SPACE', 'FAIL_EXTRACT', 'FAIL_DEPMOD',
                     'FAIL_MV_MATCH', 'FAIL_RM_MATCH', 'ALLOW_LEGACY_MODULES',
-                    'LK2ND_MAX_KERNEL_SIZE'):
+                    'LK2ND_MAX_KERNEL_SIZE', 'LK2ND_BOOT_MEM_SIZE'):
             self.env.pop(key, None)
         real_cp = shutil.which('cp')
         real_df = shutil.which('df')
@@ -91,7 +91,10 @@ fi''',
 
     @staticmethod
     def image(version):
-        return gzip.compress(b'\0Linux version ' + version.encode() + b' (test build)\0', mtime=0)
+        header = bytearray(64)
+        header[16:24] = (4096).to_bytes(8, 'little')
+        header[56:60] = b'ARM\x64'
+        return gzip.compress(header + b'Linux version ' + version.encode() + b' (test build)\0', mtime=0)
 
     def put(self, name, data):
         p = self.root / name
@@ -196,7 +199,8 @@ fi''',
                 self.kernel.write_bytes(image)
                 before = self.snapshot()
                 result = self.update(success=False)
-                self.assertIn('does not contain Linux version', result.stderr)
+                self.assertIn('does not contain Linux version' if image == self.image(OLD)
+                              else 'cannot decompress', result.stderr)
                 self.assertEqual(before, self.snapshot())
 
     def test_lk2nd_over_limit_refused_without_mutation(self):
@@ -209,8 +213,8 @@ fi''',
         self.kernel.write_bytes(gzip.compress(data, mtime=0))
         before = self.snapshot()
         directories = sorted(str(p) for p in self.root.rglob('*') if p.is_dir())
-        result = self.update(success=False)
-        self.assertIn('28106753 decompressed bytes > LK2ND_MAX_KERNEL_SIZE=28106752', result.stderr)
+        result = self.update(success=False, extra={'LK2ND_MAX_KERNEL_SIZE': '28106752'})
+        self.assertIn('28106753 decompressed bytes > effective limit 28106752', result.stderr)
         self.assertEqual(before, self.snapshot())
         self.assertEqual(directories, sorted(str(p) for p in self.root.rglob('*') if p.is_dir()))
 
@@ -226,8 +230,133 @@ fi''',
             with self.subTest(limit=limit):
                 before = self.snapshot()
                 result = self.update(success=False, extra={'LK2ND_MAX_KERNEL_SIZE': limit})
-                self.assertIn('LK2ND_MAX_KERNEL_SIZE', result.stderr)
+                self.assertIn('effective limit' if limit == str(size - 1)
+                              else 'LK2ND_MAX_KERNEL_SIZE', result.stderr)
                 self.assertEqual(before, self.snapshot())
+
+    def sized_kernel(self, size, *, text_offset=0, image_size=4096, arm64=True):
+        data = bytearray(size)
+        data[8:16] = text_offset.to_bytes(8, 'little')
+        data[16:24] = image_size.to_bytes(8, 'little')
+        data[56:60] = b'ARM\x64' if arm64 else b'nope'
+        banner = b'Linux version ' + NEW.encode() + b' (test)\0'
+        data[64:64 + len(banner)] = banner
+        self.kernel.write_bytes(gzip.compress(data, mtime=0))
+
+    def sized_initramfs(self, size):
+        with self.initramfs.open('wb') as stream:
+            stream.truncate(size)
+
+    def refused_without_mutation(self, **kwargs):
+        before = self.snapshot()
+        directories = sorted(str(p) for p in self.root.rglob('*') if p.is_dir())
+        result = self.update(success=False, **kwargs)
+        self.assertEqual(before, self.snapshot())
+        self.assertEqual(directories, sorted(str(p) for p in self.root.rglob('*') if p.is_dir()))
+        return result
+
+    def test_lk2nd_actual_initramfs_sets_budget(self):
+        self.sized_kernel(23966208)
+        self.sized_initramfs(22222608)
+        result = self.update()
+        self.assertIn('rounddown(52428800 - 22222608, 4096) - 2097152 - 0 = 30203904 - 2097152 - 0 = 28106752', result.stderr)
+        self.sized_initramfs(28000000)
+        # An extra cap can only tighten the computed budget, never bypass it.
+        result = self.refused_without_mutation(extra={'LK2ND_MAX_KERNEL_SIZE': '50000000'})
+        self.assertIn('kernel too big', result.stderr)
+        self.assertIn('cap=50000000', result.stderr)
+
+    def test_lk2nd_reference_cap_is_optional(self):
+        self.sized_kernel(29356544)
+        self.update()  # Small initramfs: the historical reference cap is irrelevant.
+        result = self.refused_without_mutation(extra={'LK2ND_MAX_KERNEL_SIZE': '28106752'})
+        self.assertIn('29356544 decompressed bytes > effective limit 28106752', result.stderr)
+
+    def test_lk2nd_rounddown_boundary(self):
+        self.sized_kernel(23966208)
+        self.sized_initramfs(26361856)
+        result = self.update()
+        self.assertIn('effective=23969792; kernel=23966208', result.stderr)
+        self.sized_initramfs(26361857)
+        result = self.refused_without_mutation()
+        self.assertIn('rounddown(52428800 - 26361857, 4096) - 2097152 - 0 = 26062848 - 2097152 - 0 = 23965696', result.stderr)
+
+    def test_lk2nd_initramfs_at_or_above_boot_memory(self):
+        for size in (52428800, 52428801, 2**32):
+            with self.subTest(size=size):
+                self.sized_initramfs(size)
+                result = self.refused_without_mutation()
+                self.assertIn(f'initramfs={size} >= boot_mem=52428800', result.stderr)
+
+    def test_lk2nd_zero_and_negative_budget(self):
+        for size in (52428800 - 2097152, 52428800 - 2097152 + 1):
+            with self.subTest(size=size):
+                self.sized_initramfs(size)
+                result = self.refused_without_mutation()
+                self.assertIn('lk2nd budget refused: rounddown(', result.stderr)
+
+    def test_lk2nd_header_offsets(self):
+        # Use a small boot-memory override to test offsets without huge fixtures.
+        for fields, offset in (({'text_offset': 4096}, 4096),
+                               ({'image_size': 0, 'text_offset': 4096}, 0x80000),
+                               ({'arm64': False}, 0x8000),
+                               ({'text_offset': 2097152}, 2097152),
+                               ({'text_offset': 2097153}, 0),
+                               ({'text_offset': 2**63}, 0),
+                               ({'text_offset': 2**64 - 1, 'image_size': 0}, 0),
+                               ({'image_size': 2**63, 'text_offset': 4096}, 4096)):
+            with self.subTest(fields=fields):
+                self.sized_kernel(4096, **fields)
+                mem = 2097152 + offset + 4096 + 4096
+                self.sized_initramfs(4096)
+                result = self.update(extra={'LK2ND_BOOT_MEM_SIZE': str(mem)})
+                self.assertIn(f'- 2097152 - {offset} = 4096', result.stderr)
+                self.sized_initramfs(4097)
+                result = self.refused_without_mutation(extra={'LK2ND_BOOT_MEM_SIZE': str(mem)})
+                self.assertIn(f'- 2097152 - {offset} = 0', result.stderr)
+
+    def test_lk2nd_invalid_boot_memory(self):
+        for value in ('0', '-1', 'abc', '1+1', '4294967296', '99999999999999999999'):
+            with self.subTest(value=value):
+                result = self.refused_without_mutation(extra={'LK2ND_BOOT_MEM_SIZE': value})
+                self.assertIn('LK2ND_BOOT_MEM_SIZE must be', result.stderr)
+
+    def test_lk2nd_short_header_refused(self):
+        self.kernel.write_bytes(gzip.compress(b'Linux version ' + NEW.encode() + b' '))
+        result = self.refused_without_mutation()
+        self.assertIn('cannot read the first 64 bytes', result.stderr)
+
+    def test_lk2nd_readable_banner_with_late_gzip_corruption(self):
+        data = gzip.decompress(self.image(NEW)) + b'\0' * 200000
+        compressed = gzip.compress(data, mtime=0)
+        bad_crc = compressed[:-8] + bytes([compressed[-8] ^ 1]) + compressed[-7:]
+        for blob in (compressed[:-8], bad_crc):
+            with self.subTest(truncated=len(blob) != len(compressed)):
+                self.kernel.write_bytes(blob)
+                decoded = subprocess.run(['gzip', '-dc', str(self.kernel)], capture_output=True)
+                self.assertIn(b'Linux version ' + NEW.encode(), decoded.stdout)
+                self.assertNotEqual(decoded.returncode, 0)
+                result = self.refused_without_mutation()
+                self.assertIn('cannot decompress', result.stderr)
+
+    def test_lk2nd_concatenated_members_are_conservative(self):
+        self.sized_kernel(4096)
+        self.kernel.write_bytes(self.kernel.read_bytes() + gzip.compress(b'\0' * 4096))
+        result = self.refused_without_mutation(extra={'LK2ND_MAX_KERNEL_SIZE': '4096'})
+        self.assertIn('8192 decompressed bytes > effective limit 4096', result.stderr)
+
+    def test_lk2nd_dtb_has_separate_size_limit(self):
+        self.sized_initramfs(22222608)
+        for size in (2097152, 2097153):
+            with self.subTest(size=size):
+                with self.dtb.open('wb') as stream:
+                    stream.truncate(size)
+                result = self.refused_without_mutation()
+                self.assertIn(f'DTB too big for lk2nd: {size} bytes >= MAX_TAGS_SIZE=2097152', result.stderr)
+        with self.dtb.open('wb') as stream:
+            stream.truncate(2097151)
+        result = self.update()
+        self.assertIn('effective=28106752', result.stderr)
 
     def test_binary_banner_without_strings(self):
         stub = self.bin / 'strings'
@@ -415,7 +544,7 @@ fi''',
     def test_update_old_cleanup_failure_still_publishes_boot_files(self):
         self.same_release_setup()
         self.kernel.write_bytes(gzip.compress(
-            b'\0Linux version ' + NEW.encode() + b' (replacement build)\0', mtime=0))
+            b'\0' * 64 + b'Linux version ' + NEW.encode() + b' (replacement build)\0', mtime=0))
         old = self.root / f'usr/lib/modules/.{NEW}.old'
         result = self.update(old_left=True, extra={'FAIL_RM_MATCH': str(old)})
         self.assertIn(f'warning: could not remove {old}', result.stderr)
@@ -435,7 +564,7 @@ fi''',
         self.same_release_setup()
         previous = self.snapshot()
         self.kernel.write_bytes(gzip.compress(
-            b'\0Linux version ' + NEW.encode() + b' (replacement build)\0', mtime=0))
+            b'\0' * 64 + b'Linux version ' + NEW.encode() + b' (replacement build)\0', mtime=0))
         self.update()
         old = self.root / f'usr/lib/modules/.{NEW}.old'
         result = self.rollback(old_left=True, extra={'FAIL_RM_MATCH': str(old)})
