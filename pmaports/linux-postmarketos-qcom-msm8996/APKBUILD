@@ -3,7 +3,7 @@ maintainer="Yassine Oudjana (Tooniis) <y.oudjana@protonmail.com>"
 _flavor="postmarketos-qcom-msm8996"
 pkgname=linux-$_flavor
 pkgver=7.3.1
-pkgrel=0
+pkgrel=1
 pkgdesc="Kernel close to mainline with extra patches for Qualcomm MSM8996 devices"
 arch="aarch64"
 _carch="arm64"
@@ -239,6 +239,22 @@ build() {
 	unset LDFLAGS
 	make ARCH="$_carch" LLVM=1 \
 		KBUILD_BUILD_VERSION="$((pkgrel + 1 ))-$_flavor"
+
+	# lk2nd extlinux compares the decompressed byte count, not image_size.
+	local image_size max_size=${LK2ND_MAX_KERNEL_SIZE:-28106752}
+	case "$max_size" in
+		''|*[!0-9]*) error "Invalid LK2ND_MAX_KERNEL_SIZE: $max_size"; return 1 ;;
+	esac
+	if ! [ "$max_size" -gt 0 ] || ! [ "$max_size" -le 4294967295 ]; then
+		error "LK2ND_MAX_KERNEL_SIZE must be between 1 and 4294967295"
+		return 1
+	fi
+	image_size=$(wc -c < "arch/$_carch/boot/Image")
+	if [ "$image_size" -gt "$max_size" ]; then
+		error "Kernel too big for lk2nd extlinux: $image_size bytes > $max_size"
+		return 1
+	fi
+	echo "lk2nd size check: $image_size bytes <= $max_size"
 }
 
 package() {
