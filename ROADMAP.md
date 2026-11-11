@@ -237,6 +237,11 @@ running another experiment that can lose USB, SSH, or modem responsiveness.
   remains gated on independent recovery covering that interval, not merely on
   restoring SSH or making the candidate smaller. Review and four host tests:
   `artifacts/roadmap-7.3/kexec-preentry-review-20261110T225843Z/`.
+  **BLOCKED** on the hardware watchdog gate above: the only route that can
+  recover a stall between `kexec -e` and the new supervisor is a validated
+  tablet watchdog, and its expiry test is deferred to the physical batch. Both
+  kexec runners stop with `BLOCKED_PREENTRY_RECOVERY` before device access.
+  Evidence: `artifacts/roadmap-7.3/kexec-preentry-review-20261110T225843Z/`.
 - [x] Add a minimal pre-supervisor kexec proof candidate. It contains only the
   static recovery supervisor, BusyBox and a tmpfs init. Fastboot return alone
   cannot distinguish its execution from a panic or old-kernel reset; the runner
