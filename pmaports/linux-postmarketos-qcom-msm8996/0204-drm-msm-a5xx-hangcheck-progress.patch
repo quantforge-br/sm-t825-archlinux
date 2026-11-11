@@ -1,0 +1,90 @@
+From 65222fbe88896d7999b6c7dd779ecb52889ffd66 Mon Sep 17 00:00:00 2001
+From: Dmitry Baryshkov <dmitry.baryshkov@oss.qualcomm.com>
+Date: Wed, 30 Sep 2026 16:36:48 +0300
+Subject: [PATCH] drm/msm/a5xx: Add hangcheck progress detection
+
+A5xx has no progress callback, so any submit still running when the
+hangcheck timer expires is declared hung, and long compute dispatches
+such as KHR-GLES31.core.compute_shader.simple-compute-shared_context are
+reset on A530 while still making progress.
+
+Comparing the CP IB1/IB2 state, as a3xx and a6xx do, is not enough: during
+a long dispatch the CP has fetched the whole IB and waits in one packet.
+Also count ALU working cycles on SP performance counter 0, which Mesa
+leaves to the kernel (and the kernel hasn't been using up to now).
+
+Assisted-by: LLM
+Signed-off-by: Dmitry Baryshkov <dmitry.baryshkov@oss.qualcomm.com>
+Patchwork: https://patchwork.freedesktop.org/patch/757302/
+Message-ID: <20260930-adreno-progress-v2-3-3882f0fcd7b4@oss.qualcomm.com>
+Signed-off-by: Rob Clark <robin.clark@oss.qualcomm.com>
+---
+ drivers/gpu/drm/msm/adreno/a5xx_gpu.c | 27 +++++++++++++++++++++++++++
+ drivers/gpu/drm/msm/adreno/a5xx_gpu.h |  2 ++
+ 2 files changed, 29 insertions(+)
+
+diff --git a/drivers/gpu/drm/msm/adreno/a5xx_gpu.c b/drivers/gpu/drm/msm/adreno/a5xx_gpu.c
+index 3974aaf6fd33f3..16c7335c4b1f85 100644
+--- a/drivers/gpu/drm/msm/adreno/a5xx_gpu.c
++++ b/drivers/gpu/drm/msm/adreno/a5xx_gpu.c
+@@ -748,6 +748,9 @@ static int a5xx_hw_init(struct msm_gpu *gpu)
+ 	/* Select RBBM0 to countable 6 to get the busy status for devfreq */
+ 	gpu_write(gpu, REG_A5XX_RBBM_PERFCTR_RBBM_SEL_0, 6);
+ 
++	/* Select SP0 to count ALU cycles for hangcheck progress detection */
++	gpu_write(gpu, REG_A5XX_SP_PERFCTR_SP_SEL_0, PERF_SP_ALU_WORKING_CYCLES);
++
+ 	/* Increase VFD cache access so LRZ and other data gets evicted less */
+ 	gpu_write(gpu, REG_A5XX_UCHE_CACHE_WAYS, 0x02);
+ 
+@@ -1730,6 +1733,29 @@ static uint32_t a5xx_get_rptr(struct msm_gpu *gpu, struct msm_ringbuffer *ring)
+ 	return ring->memptrs->rptr = gpu_read(gpu, REG_A5XX_CP_RB_RPTR);
+ }
+ 
++static bool a5xx_progress(struct msm_gpu *gpu, struct msm_ringbuffer *ring)
++{
++	struct adreno_gpu *adreno_gpu = to_adreno_gpu(gpu);
++	struct a5xx_gpu *a5xx_gpu = to_a5xx_gpu(adreno_gpu);
++	struct msm_cp_state cp_state = {
++		.ib1_base = gpu_read64(gpu, REG_A5XX_CP_IB1_BASE),
++		.ib2_base = gpu_read64(gpu, REG_A5XX_CP_IB2_BASE),
++		.ib1_rem  = gpu_read(gpu, REG_A5XX_CP_IB1_BUFSZ),
++		.ib2_rem  = gpu_read(gpu, REG_A5XX_CP_IB2_BUFSZ),
++	};
++	u64 alu_cycles = gpu_read64(gpu, REG_A5XX_RBBM_PERFCTR_SP_0_LO);
++	bool progress;
++
++	/* The CP can stall on one packet while shaders keep running */
++	progress = !!memcmp(&cp_state, &ring->last_cp_state, sizeof(cp_state)) ||
++		   alu_cycles != a5xx_gpu->last_alu_cycles;
++
++	ring->last_cp_state = cp_state;
++	a5xx_gpu->last_alu_cycles = alu_cycles;
++
++	return progress;
++}
++
+ static void check_speed_bin(struct device *dev)
+ {
+ 	struct nvmem_cell *cell;
+@@ -1843,6 +1869,7 @@ const struct adreno_gpu_funcs a5xx_gpu_funcs = {
+ 		.gpu_state_put = a5xx_gpu_state_put,
+ 		.create_vm = adreno_create_vm,
+ 		.get_rptr = a5xx_get_rptr,
++		.progress = a5xx_progress,
+ 	},
+ 	.init = a5xx_gpu_init,
+ 	.get_timestamp = a5xx_get_timestamp,
+diff --git a/drivers/gpu/drm/msm/adreno/a5xx_gpu.h b/drivers/gpu/drm/msm/adreno/a5xx_gpu.h
+index 407bb950d35026..fb05f1ca3e81a2 100644
+--- a/drivers/gpu/drm/msm/adreno/a5xx_gpu.h
++++ b/drivers/gpu/drm/msm/adreno/a5xx_gpu.h
+@@ -36,6 +36,8 @@ struct a5xx_gpu {
+ 	uint64_t preempt_iova[MSM_GPU_MAX_RINGS];
+ 	uint32_t last_seqno[MSM_GPU_MAX_RINGS];
+ 
++	uint64_t last_alu_cycles;
++
+ 	atomic_t preempt_state;
+ 	spinlock_t preempt_start_lock;
+ 	struct timer_list preempt_timer;
