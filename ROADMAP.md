@@ -743,6 +743,14 @@ MSS diagnostic kernel APK SHA-256:
   overlap (8.64–10.92 s clean, 9.74–11.39 s warning). This excludes a fixed
   configuration error; the race itself is unidentified. Evidence:
   `artifacts/roadmap-7.3/pclk-boot-frequency-20261111T152337Z/`.
+  A read-only collector (`tools/t825-pclk-state.sh`) run after authorized
+  round trips found that the warning matches a register state in 5/5 distinct
+  boots: in both warning boots pclk0 and pclk1 `CMD_RCGR` stay at
+  `0x00000010` (DIRTY_CFG set, CMD_UPDATE clear) about 50 s after boot; in the
+  three clean boots both read zero. CFG, M, N, D and rates are otherwise
+  identical, and byte RCGs are never dirty. The pixel RCGs did not latch their
+  configuration. Whether dsi0pll was not yet running at the update is untested.
+  Evidence: `artifacts/roadmap-7.3/pclk-state-correlation-20261111T153349Z/`.
 - [ ] Compare charge/idle/suspend consumption under matched load and temperature.
   An exploratory profile sampled the SM5705 fuel gauge during idle,
   a fixed Python CPU loop and a window after 20-second s2idle, without changing

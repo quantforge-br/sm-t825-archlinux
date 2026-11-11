@@ -100,3 +100,18 @@ intermittent rather than a fixed result of the clock plan. No other kernel
 display or clock message differs between a warning boot and a clean boot, and
 fbcon start times overlap. A failure-time capture of CMD_RCGR/CFG_RCGR and DSI
 PLL lock remains the next step. Evidence: `artifacts/roadmap-7.3/pclk-boot-frequency-20261111T152337Z/`.
+
+## Register state in warning boots
+
+`tools/t825-pclk-state.sh` reads the MMCC regmap debugfs file one register at
+a time and also records common-clock state; it writes nothing. Across five
+distinct installed boots reached by authorized round trips, both warning boots
+left pclk0 and pclk1 `CMD_RCGR` (`0x2000`, `0x2020`) at `0x00000010`, which
+is DIRTY_CFG with CMD_UPDATE already clear. All three clean boots read
+`0x00000000`. CFG_RCGR (`0x00000100`, dsi0pll source), M/N/D, rates and parents
+match in every boot, and byte0/byte1 are never dirty. So the shadow
+configuration is the same and the failure is that the pixel RCGs never latched
+it. Both pixel RCGs use dsi0pll in bonded DSI mode. One explanation is that
+CMD_UPDATE is requested before the dsi0pll output runs, but that is untested; it
+needs a PLL lock read at the time of `clk_pixel_set_rate`. Evidence:
+`artifacts/roadmap-7.3/pclk-state-correlation-20261111T153349Z/`.
