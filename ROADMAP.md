@@ -736,6 +736,13 @@ MSS diagnostic kernel APK SHA-256:
   `artifacts/roadmap-7.3/pclk-live-boundary-20261111T103933Z/analysis.json`.
   The parser and regression test are `tools/analyze-t825-pclk.py` and
   `tools/test-t825-pclk-analysis.py`.
+  The persistent journal shows the warning is intermittent: across 25 boots of
+  the same installed kernel (identical Linux version line and command line),
+  13 boots logged all four warnings and 12 logged none. Outside the warning
+  stacks, display and clock messages are identical, and fbcon timing ranges
+  overlap (8.64–10.92 s clean, 9.74–11.39 s warning). This excludes a fixed
+  configuration error; the race itself is unidentified. Evidence:
+  `artifacts/roadmap-7.3/pclk-boot-frequency-20261111T152337Z/`.
 - [ ] Compare charge/idle/suspend consumption under matched load and temperature.
   An exploratory profile sampled the SM5705 fuel gauge during idle,
   a fixed Python CPU loop and a window after 20-second s2idle, without changing

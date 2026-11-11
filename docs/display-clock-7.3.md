@@ -90,3 +90,13 @@ kernel stall or establish that suspend actually occurred.
 classify an incomplete stack as the fbcon boundary. Its regression tests cover
 both a complete six-function boundary and an unknown stack:
 `python3 tools/test-t825-pclk-analysis.py`.
+
+## Boot frequency
+
+The persistent journal on 2026-11-11 covered 25 boots of the installed
+`7.3.1-t825 #2` kernel with one command line. Thirteen boots logged two
+`pclk0` and two `pclk1` warnings; twelve logged none, so the warning is
+intermittent rather than a fixed result of the clock plan. No other kernel
+display or clock message differs between a warning boot and a clean boot, and
+fbcon start times overlap. A failure-time capture of CMD_RCGR/CFG_RCGR and DSI
+PLL lock remains the next step. Evidence: `artifacts/roadmap-7.3/pclk-boot-frequency-20261111T152337Z/`.
