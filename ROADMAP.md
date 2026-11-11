@@ -817,9 +817,14 @@ MSS diagnostic kernel APK SHA-256:
   it could pass without observing suspend success and provided no independent
   recovery timer. A calibrated external power measurement or
   charger-disconnected matched test is still required.
-  **BLOCKED**: needs a calibrated external meter or an operator to disconnect
-  the charger for a matched run. Last software-only evidence:
-  `artifacts/roadmap-7.3/suspend-bt-10-20261110T065730Z/`.
+  Operator run 2026-11-11 with the charger disconnected (installed r1,
+  brightness 255, schedutil, 31-32 C): three matched 60 s windows gave idle
+  medians -857/-864/-867 mA and single-core load -1179/-1179/-1179 mA; three
+  30 s s2idle cycles each incremented suspend_stats success. The fuel gauge
+  cannot sample during suspend, so suspend draw is not measured.
+  **BLOCKED**: suspend consumption and charge-mode comparison need a
+  calibrated external meter. Evidence:
+  `artifacts/roadmap-7.3/power-matched-20261111T221955Z/summary.json`.
 
 ## Phase 3: GPU and compositor
 
