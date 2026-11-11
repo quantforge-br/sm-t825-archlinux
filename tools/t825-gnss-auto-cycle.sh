@@ -12,7 +12,7 @@ out=$(realpath "$out")
 # so editing the development sources cannot corrupt an in-flight collector.
 if [ "${T825_RUNNER_SNAPSHOT:-0}" != 1 ]; then
 	mkdir "$out/runner"
-	for source in t825-gnss-auto-cycle.sh t825-gnss-hold-test.sh t825-telnet.py test-t825-gnss-ram-image.py; do
+	for source in t825-gnss-auto-cycle.sh t825-gnss-hold-test.sh t825-gnss-locfix.py t825-telnet.py test-t825-gnss-ram-image.py; do
 		cp "$HERE/tools/$source" "$out/runner/$source"
 	done
 	sha256sum "$out/runner/"* > "$out/runner.sha256"

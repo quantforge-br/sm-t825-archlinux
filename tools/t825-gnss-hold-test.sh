@@ -32,6 +32,46 @@ cleanup() {
 	find "$out" -maxdepth 1 -type f ! -name SHA256SUMS -exec sha256sum {} + > "$out/SHA256SUMS"
 }
 trap cleanup EXIT
+# Optional bounded fix session (T825_GNSS_FIX_SECONDS). The host renews a
+# short supervisor lease over SSH; if the host or transport stops, the lease
+# lapses within 90 s and the original deadline resets the tablet.
+fix_seconds=${T825_GNSS_FIX_SECONDS:-0}
+case "$fix_seconds" in
+	0) ;;
+	*[!0-9]*|'') echo "invalid T825_GNSS_FIX_SECONDS" >&2; exit 2 ;;
+	*) { [ "$fix_seconds" -ge 60 ] && [ "$fix_seconds" -le 1800 ]; } ||
+		{ echo "T825_GNSS_FIX_SECONDS must be 60..1800" >&2; exit 2; } ;;
+esac
+fix_ssh() {
+	timeout "${2:-15}" ssh -o ConnectTimeout=3 -o ConnectionAttempts=1 -o BatchMode=yes \
+		"${T825_SSH_TARGET:-172.16.42.1}" "$1"
+}
+lease_command='python3 -c "import os,time;t=int(time.clock_gettime(time.CLOCK_BOOTTIME))+90;open(\"/run/t825-recovery/lease.tmp\",\"w\").write(str(t));os.replace(\"/run/t825-recovery/lease.tmp\",\"/run/t825-recovery/lease\");print(\"lease\",t)"'
+gnss_fix_session() {
+	local end failures=0 log=/run/t825-mssdiag/locfix.log
+	fix_ssh "sudo -n sh -c '$lease_command'" > "$out/gnss-fix-lease.txt" 2>&1 || true
+	fix_ssh "sudo -n sh -c 'cat > /run/t825-mssdiag/locfix.py'" < "$runner/t825-gnss-locfix.py" ||
+		{ status 'FAIL: could not stage the LOC fix client; lease will lapse'; return 0; }
+	fix_ssh "sudo -n setsid python3 /run/t825-mssdiag/locfix.py --seconds $((fix_seconds - 30)) --sustain ${T825_GNSS_FIX_SUSTAIN:-120} --log $log </dev/null >/dev/null 2>&1 &" ||
+		{ status 'FAIL: could not start the LOC fix client; lease will lapse'; return 0; }
+	end=$((SECONDS + fix_seconds))
+	while [ "$SECONDS" -lt "$end" ]; do
+		if fix_ssh "sudo -n sh -c '$lease_command; tail -n 2 $log; grep -q DONE\$ $log && echo T825_FIX_DONE'" >> "$out/gnss-fix-progress.txt" 2>&1; then
+			failures=0
+		else
+			failures=$((failures + 1))
+			[ "$failures" -lt 3 ] || { echo "lease renewal failed 3 times" >> "$out/gnss-fix-progress.txt"; break; }
+		fi
+		tail -n 1 "$out/gnss-fix-progress.txt" | grep -qx T825_FIX_DONE && break
+		sleep 20
+	done
+	fix_ssh "sudo -n cat $log" 30 > "$out/gnss-fix.log" 2>&1 || true
+	if grep -q 'RESULT .*"reason": "sustained_fix"' "$out/gnss-fix.log"; then
+		status 'PASS: sustained GNSS fix recorded; lease released, deadline armed'
+	else
+		status 'PASS: post-pivot verified; GNSS fix session ended without a sustained fix; lease released'
+	fi
+}
 trap 'exit 143' TERM HUP
 trap 'exit 130' INT
 timeout 20 fastboot -s "$serial" boot "$image" > "$out/fastboot.txt" 2>&1
@@ -155,6 +195,7 @@ REMOTE
 	then
 		grep -qx T825_POSTPIVOT_READY "$out/post-pivot.txt" || { status 'FAIL: missing verified handoff marker'; exit 1; }
 		status 'PASS: post-pivot SSH and original supervisor verified; deadline remains armed'
+		[ "$fix_seconds" = 0 ] || gnss_fix_session
 		exit 0
 	fi
 	sleep 2
