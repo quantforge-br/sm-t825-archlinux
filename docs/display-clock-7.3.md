@@ -136,3 +136,13 @@ stopped: the RCG cannot move a running root onto a stopped PLL. Whether the
 root runs on entry varies from boot to boot. The candidate fix, enabling the
 parent during the change (CLK_OPS_PARENT_ENABLE) or locking the PLL first, has
 not been tested. Evidence: `artifacts/roadmap-7.3/rcg-trace-analysis-20261111/`.
+
+## Parent-enable fix
+
+Patch 0210 adds `CLK_OPS_PARENT_ENABLE` to `pclk0_clk_src` and `pclk1_clk_src` in
+`mmcc-msm8996.c`. CCF then prepares and enables the new parent (dsi0pll) for
+the duration of the rate change. In six RAM boots with the trace enabled, the
+first pixel update always started with the root running (`0x000000f0`), the
+state that failed without the fix, and always latched (`after=0`, 500 polls
+left). No boot logged the warning. The installed kernel does not carry 0210
+yet. Evidence: `artifacts/roadmap-7.3/pclk-parent-enable-analysis-20261111/`.

@@ -709,7 +709,7 @@ MSS diagnostic kernel APK SHA-256:
   recovery from a still-running diagnostic.
 - [ ] Test both microphones, every speaker and CTIA insertion/removal, including
   twenty route cycles without audible or recurring kernel errors.
-- [ ] Investigate `pclk0_clk_src: rcg didn't update its configuration` using
+- [x] Investigate `pclk0_clk_src: rcg didn't update its configuration` using
   before/after clock and power state; verify patches 0147 and 0148 on the T825.
   The installed kernel reproduces two `pclk0` and two `pclk1` warnings at boot,
   while the display remains functional. A bounded 15-second s2idle comparison
@@ -763,6 +763,14 @@ MSS diagnostic kernel APK SHA-256:
   dsi0pll unprepared and disabled. A running RCG cannot switch to a stopped
   source, so the warning depends on the inherited root state. A parent-enable
   fix is untested. Evidence: `artifacts/roadmap-7.3/rcg-trace-analysis-20261111/`.
+  Patch 0210 sets `CLK_OPS_PARENT_ENABLE` on pclk0/pclk1 so CCF enables dsi0pll
+  around the rate change. Six RAM boots with the fix all entered in the failing
+  state (root running) and every pixel update latched, with dsi0pll prepared
+  and enabled and no warning. Without the fix, 13 of 25 boots warn. The cause is
+  identified and the fix works in the RAM diagnostic kernel. The installed
+  kernel does not carry 0210 yet; that belongs to the kernel update gate.
+  Evidence: `artifacts/roadmap-7.3/pclk-parent-enable-analysis-20261111/` and
+  `artifacts/roadmap-7.3/pclk-parent-enable-series-20261111T162031Z/`.
 - [ ] Compare charge/idle/suspend consumption under matched load and temperature.
   An exploratory profile sampled the SM5705 fuel gauge during idle,
   a fixed Python CPU loop and a window after 20-second s2idle, without changing
