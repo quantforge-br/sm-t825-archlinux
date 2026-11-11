@@ -3,12 +3,15 @@
 # TWRP before anything is written. Streams with "adb exec-out", so nothing has to fit in TWRP's
 # RAM-backed /tmp. Compares a SHA-256 taken on the tablet with the local copy.
 #   install/backup-partitions.sh <output dir>
-# EFS, modemst1/2 and persist hold this unit's IMEI, calibration and keys: keep them safe and
-# private. system is 4 GB; only bdwlan30.bin is used from it (install/extract-firmware.sh).
+# EFS, modemst1/2, FSG/FSC and persist hold this unit's IMEI, calibration, modem state and keys:
+# keep them safe and private. system is 4 GB; only bdwlan30.bin is used from it
+# (install/extract-firmware.sh).
 set -euo pipefail
+umask 077
 out=${1:?output directory}
-parts=${PARTS:-efs modemst1 modemst2 persist param boot recovery apnhlos modem dsp system}
+parts=${PARTS:-efs modemst1 modemst2 fsg fsc persist param boot recovery apnhlos modem dsp system}
 mkdir -p "$out"
+chmod 700 "$out"
 adb get-state >/dev/null
 for p in $parts; do
 	dev=/dev/block/bootdevice/by-name/$p
@@ -18,5 +21,10 @@ for p in $parts; do
 	remote=$(adb shell "sha256sum $dev" | cut -d' ' -f1)
 	local_=$(sha256sum "$out/$p.img" | cut -d' ' -f1)
 	echo "$local_  $p.img" >> "$out/SHA256SUMS"
-	[ "$remote" = "$local_" ] && echo "ok $p $(stat -c %s "$out/$p.img") bytes" || { echo "HASH MISMATCH $p"; exit 1; }
+	if [ "$remote" = "$local_" ]; then
+		echo "ok $p $(stat -c %s "$out/$p.img") bytes"
+	else
+		echo "HASH MISMATCH $p"
+		exit 1
+	fi
 done
