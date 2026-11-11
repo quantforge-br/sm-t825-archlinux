@@ -909,6 +909,10 @@ Pin revisions and review changes individually rather than importing a branch.
   **BLOCKED**: needs the tablet under open sky; the latest MSS RAM cycle
   answered LOC queries but got no fix:
   `artifacts/roadmap-7.3/authorized-gnss-qmi-20261111T175504Z/`.
+  `tools/t825-fastboot-session.py --gnss-image ... --gnss-fix-seconds 900`
+  now keeps one QRTR LOC session open and logs NMEA/position reports under a
+  host-renewed 90 s recovery lease; it needs USB reach to a window. The
+  operator session on 2026-11-11 had no cable path to open sky.
 
 Historical evidence: `artifacts/roadmap-7.3/gnss-ram-20261108/hardware-v17-20261109T173200Z/`.
 Old images through v58 are historical diagnostics and fail the current
