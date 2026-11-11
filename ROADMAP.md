@@ -730,10 +730,17 @@ MSS diagnostic kernel APK SHA-256:
   recovery from a still-running diagnostic.
 - [ ] Test both microphones, every speaker and CTIA insertion/removal, including
   twenty route cycles without audible or recurring kernel errors.
-  **BLOCKED**: audible speaker checks, acoustic microphone input and CTIA plug
-  cycles need a person at the tablet. Remote RAM captures pass three phases
+  Remote RAM captures pass three phases
   with zero channel-removal errors and a lossless event trace:
   `artifacts/roadmap-7.3/authorized-audio-event-ring-20261111T133727Z/`.
+  Operator session 2026-11-11 (installed r1): the bottom speaker pair played
+  left/right tones from distinct sides, both microphones captured independent
+  speech about 25 dB above silence, headphones played correct stereo, and 21
+  insertion/removal cycles paired without kernel messages or pops. One TX
+  port 1 overflow appeared once at capture start and did not recur.
+  **BLOCKED**: the top speaker pair is not described in the SM-T825 DT, and
+  the CTIA headset microphone needs a headset with a microphone. Evidence:
+  `artifacts/roadmap-7.3/audio-physical-20261111/summary.json`.
 - [x] Investigate `pclk0_clk_src: rcg didn't update its configuration` using
   before/after clock and power state; verify patches 0147 and 0148 on the T825.
   The installed kernel reproduces two `pclk0` and two `pclk1` warnings at boot,
