@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: tabs3-linux maintainers <noreply@example.invalid>
+Date: Sun, 8 Nov 2026 00:00:00 +0000
+Subject: [PATCH] arm64: dts: qcom: gts3llte: enable MSS for diagnostics
+
+The production SM-T825 DT keeps the modem DSP disabled until its own modem
+firmware, rmtfs and recovery path have been checked.  This patch is deliberately
+named .patch.disabled so the normal APKBUILD never applies it.  Set
+T825_MSS_DIAGNOSTIC=1 when building a private test kernel; the device package
+must also contain the matching modem firmware and GNSS userspace services.
+
+---
+ arch/arm64/boot/dts/qcom/msm8996-samsung-gts3llte.dts | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/qcom/msm8996-samsung-gts3llte.dts b/arch/arm64/boot/dts/qcom/msm8996-samsung-gts3llte.dts
+--- a/arch/arm64/boot/dts/qcom/msm8996-samsung-gts3llte.dts
++++ b/arch/arm64/boot/dts/qcom/msm8996-samsung-gts3llte.dts
+@@ -44,7 +44,7 @@
+ };
+ 
+ &mss_pil {
+-	status = "disabled";
++	status = "okay";
+ };
+ 
+ &tlmm {
+-- 
+2.50.0

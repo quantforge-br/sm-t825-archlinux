@@ -227,13 +227,26 @@ source="
 	0182-media-venus-vdec-crop-to-stream-size.patch
 	0201-drm-msm-shared-vm-hang-accounting.patch
 	0202-arm64-dts-qcom-gts3llte-top-speakers.patch
+	0203-arm64-dts-qcom-gts3llte-enable-mss-diagnostic.patch.disabled
 	0204-drm-msm-a5xx-hangcheck-progress.patch
 "
 builddir="$srcdir/linux-$pkgver"
 
 prepare() {
+	local mss=0
+	if [ "${T825_MSS_DIAGNOSTIC:-0}" = 1 ] || [ -e "$startdir/.t825-enable-mss" ]; then
+		mss=1
+	fi
 	default_prepare
 	cp "$srcdir/config-$_flavor.$CARCH" .config
+	# abuild deliberately sanitizes arbitrary host environment variables.  The
+	# sentinel gives the private diagnostic build an explicit, auditable opt-in;
+	# T825_MSS_DIAGNOSTIC remains useful when invoking abuild directly.
+	if [ "$mss" = 1 ]; then
+		msg "enabling the SM-T825 MSS for a private diagnostic build"
+		patch -p1 < "$srcdir/0203-arm64-dts-qcom-gts3llte-enable-mss-diagnostic.patch.disabled"
+		sed -i 's/^CONFIG_LOCALVERSION=.*/CONFIG_LOCALVERSION="-t825-mssdiag"/' .config
+	fi
 }
 
 build() {
@@ -475,5 +488,6 @@ b2c5b5ddc8779172b05b20bdc2509ac4896e8d74f6e3eaf6c4919e8bb6e947cff383df7054331ffc
 92fcd7cd2729b29f3116ee84ec39d9ad95330ed1eb17127acdbf4b673052145b37e238349d143ae62ca48babcb7467ec466d1e6b9f5a48e10df237509bcca489  0182-media-venus-vdec-crop-to-stream-size.patch
 e38dd6a448f0a372724f24583862d34c8f4e238e3ac359909e93b0e99da8a18b3e246f5a5dea48d9b6644056719173d15d2745eb72056a03766d754f4ca5a21e  0201-drm-msm-shared-vm-hang-accounting.patch
 c306fa5ffb96d31c701d5f400963636f1ac5340c63992760506f1cd992c64bc5e36623af7d79d32c8ceda7a1d226b6ff3aed3daab52235b8e442c4dff8950002  0202-arm64-dts-qcom-gts3llte-top-speakers.patch
+44edc596cc55ad96e1994c2b79237353d6b5d2f5f1e73eba3561a8d360981a6df9771258ae87c859e16a85b436baeaaa2afc187bfd87ae2df7c73ff383cdaca9  0203-arm64-dts-qcom-gts3llte-enable-mss-diagnostic.patch.disabled
 b73dcb152dec56f77733405934ede400541b5a06ef7c45a9fb9a9b49c7ef39e2fe3099e22fb15c593ec0c79c92e1b4d954f4375dcaa2853f94b3ce2d1f8c9772  0204-drm-msm-a5xx-hangcheck-progress.patch
 "
