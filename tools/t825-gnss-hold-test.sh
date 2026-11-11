@@ -75,6 +75,8 @@ fi
 printf '%s\n' 'touch /tmp/continue_boot; echo T825_RELEASED' | timeout 10 python3 "$runner/t825-telnet.py" --host 172.16.42.1 --port 23 > "$out/release.txt" 2>&1 || true
 ip -brief link > "$out/host-link-after-release.txt" 2>&1 || true
 lsusb > "$out/host-usb-after-release.txt" 2>&1 || true
+gnss_probe_timeout=60
+[ "${T825_QMI_MODEM_PROBE:-0}" != 1 ] || gnss_probe_timeout=110
 # In inspect mode the MSS hook intentionally remains in initramfs. Collect LOC
 # while QRTR/qmicli are alive, then release the root handoff explicitly.
 {
@@ -84,7 +86,16 @@ lsusb > "$out/host-usb-after-release.txt" 2>&1 || true
 		'/usr/bin/busybox timeout 25 qmicli --device=qrtr://0 --loc-get-position-report 2>&1 || true' \
 		'echo --- initramfs-gnss-sv ---' \
 		'/usr/bin/busybox timeout 25 qmicli --device=qrtr://0 --loc-get-gnss-sv-info 2>&1 || true'
-} | timeout 60 python3 "$runner/t825-telnet.py" --host 172.16.42.1 --port 23 > "$out/initramfs-gnss.txt" 2>&1 || true
+	# Optional read-only modem queries (no PIN, no IDs, no state changes).
+	if [ "${T825_QMI_MODEM_PROBE:-0}" = 1 ]; then
+		for query in dms-get-operating-mode dms-get-revision dms-get-capabilities \
+			uim-get-card-status nas-get-serving-system nas-get-signal-info \
+			wds-get-packet-service-status; do
+			printf '%s\n' "echo --- modem-$query ---" \
+				"/usr/bin/busybox timeout 6 qmicli --device=qrtr://0 --$query 2>&1 || true"
+		done
+	fi
+} | timeout "$gnss_probe_timeout" python3 "$runner/t825-telnet.py" --host 172.16.42.1 --port 23 > "$out/initramfs-gnss.txt" 2>&1 || true
 printf '%s\n' 'touch /run/t825-mssdiag/continue-pivot; echo T825_PIVOT_RELEASED' |
 	timeout 10 python3 "$runner/t825-telnet.py" --host 172.16.42.1 --port 23 > "$out/pivot-release.txt" 2>&1 || true
 # A lingering initramfs telnet listener distinguishes a failed switch_root
