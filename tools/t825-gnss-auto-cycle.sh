@@ -21,8 +21,16 @@ if [ "${T825_RUNNER_SNAPSHOT:-0}" != 1 ]; then
 fi
 runner=$(cd "$(dirname "$0")" && pwd)
 mkdir -p artifacts/roadmap-7.3
-exec 9>artifacts/roadmap-7.3/tablet-test.lock
-flock -n 9 || { echo 'Another hardware test holds the tablet lock'; exit 2; }
+# A parent session controller may pass its already locked descriptor. Accept it
+# only if it refers to the same lock file; otherwise take the lock normally.
+if [ -n "${T825_SESSION_LOCK_FD:-}" ]; then
+	case "$T825_SESSION_LOCK_FD" in *[!0-9]*|'') exit 2 ;; esac
+	[ "/proc/self/fd/$T825_SESSION_LOCK_FD" -ef artifacts/roadmap-7.3/tablet-test.lock ] ||
+		{ echo 'Inherited lock descriptor does not match the tablet lock'; exit 2; }
+else
+	exec 9>artifacts/roadmap-7.3/tablet-test.lock
+	flock -n 9 || { echo 'Another hardware test holds the tablet lock'; exit 2; }
+fi
 image=${1:-artifacts/roadmap-7.3/gnss-ram-20261108/v63-mss-loc-retry-ro/t825-v63.img}
 image=$(realpath "$image")
 cycles=${T825_AUTO_CYCLES:-1}

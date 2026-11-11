@@ -111,8 +111,12 @@ def main():
     parser.add_argument('--restore-bundle', type=Path, required=True)
     parser.add_argument('--source-image', type=Path, required=True)
     parser.add_argument('--audio-bundle', type=Path)
+    parser.add_argument('--gnss-image', type=Path,
+                        help='MSS/GNSS RAM image (one inspect-hold cycle with read-only modem queries)')
     parser.add_argument('--ssh-target', default='tabs3')
     args = parser.parse_args()
+    if args.audio_bundle and args.gnss_image:
+        parser.error('choose at most one diagnostic')
     repo = Path(__file__).resolve().parents[1]
     out = args.report.resolve()
     if os.environ.get('T825_SESSION_SNAPSHOT') != '1':
@@ -130,7 +134,9 @@ def main():
         for pattern in ('t825-fastboot-session.py', 't825-extlinux-*', 't825-readonly-cycle.py',
                         't825-telnet.py', 'test-t825-readonly-ram-image.py',
                         'test-t825-audiodiag-ram-image.py', 't825-audio-ram-probe.py',
-                        't825-audio-mic-phases.py', 't825-validate.py'):
+                        't825-audio-mic-phases.py', 't825-validate.py',
+                        't825-gnss-auto-cycle.sh', 't825-gnss-hold-test.sh',
+                        'test-t825-gnss-ram-image.py'):
             for source in (repo/'tools').glob(pattern):
                 shutil.copy2(source, runner/source.name)
         (out/'runner.sha256').write_text(''.join(sha(p)+'  '+p.name+'\n' for p in sorted(runner.iterdir())))
@@ -164,6 +170,17 @@ def main():
                     str(runner/'test-t825-audiodiag-ram-image.py'), str(audio)], 60)
                 if result.returncode:
                     raise ValueError('audio image failed offline validation')
+            gnss = None
+            if args.gnss_image:
+                gnss_dir = out/'gnss-bundle'
+                shutil.copytree(args.gnss_image.resolve().parent, gnss_dir)
+                gnss = gnss_dir/args.gnss_image.name
+                result = subprocess.run([sys.executable, str(runner/'test-t825-gnss-ram-image.py')],
+                    capture_output=True, text=True, timeout=60,
+                    env={**os.environ, 'T825_RAM_IMAGE': str(gnss), 'T825_RAM_BUNDLE': str(gnss_dir)})
+                (out/'gnss-validation.log').write_text(result.stdout+result.stderr+'\nrc='+str(result.returncode)+'\n')
+                if result.returncode:
+                    raise ValueError('GNSS image failed offline validation')
             (out/'inputs.sha256').write_text(''.join(sha(p)+'  '+str(p.relative_to(out))+'\n'
                 for p in sorted(out.rglob('*')) if p.is_file() and ('bundle' in str(p.relative_to(out)) or p.name == 'source.img')))
             before = session.remote({'mode': 'inspect'})
@@ -191,6 +208,18 @@ def main():
                         'T825_READONLY_LOCK_FD': str(lock.fileno())})
                 decision['diagnostic_rc'] = child.returncode
                 decision['diagnostic'] = json.loads((out/'audio-cycle/result.json').read_text())
+            if gnss:
+                command = ['bash', str(runner/'t825-gnss-auto-cycle.sh'), str(gnss)]
+                with (out/'gnss-cycle.log').open('w') as log:
+                    child = subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, timeout=520,
+                        cwd=repo, pass_fds=(lock.fileno(),), env={**os.environ,
+                        'T825_SESSION_LOCK_FD': str(lock.fileno()), 'T825_SOURCE_ROOT': str(repo),
+                        'T825_RUNNER_SNAPSHOT': '1', 'T825_REPORT_DIR': str(out/'gnss-cycle'),
+                        'T825_AUTO_CYCLES': '1', 'T825_WAIT_SECONDS': '300',
+                        'T825_QMI_MODEM_PROBE': '1'})
+                decision['diagnostic_rc'] = child.returncode
+                tsv = out/'gnss-cycle/results.tsv'
+                decision['diagnostic'] = {'kind': 'gnss', 'results': tsv.read_text() if tsv.exists() else None}
             decision['status'] = 'RESTORING'
         except Exception as exc:
             decision['error'] = str(exc)
