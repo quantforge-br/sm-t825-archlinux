@@ -37,5 +37,28 @@ class RoadmapAudit(unittest.TestCase):
         self.assertEqual(result["open_gate_count"], 0)
 
 
+    def test_blocked_gate_needs_evidence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "ROADMAP.md"
+            path.write_text(
+                "- [ ] Submit patches\n"
+                "  **BLOCKED** (2026-11-11): needs the author's sign-off.\n"
+                "  Evidence `artifacts/roadmap-7.3/`.\n"
+                "- [ ] Test rollback\n"
+                "  **BLOCKED** without evidence.\n"
+            )
+            result = audit_module.audit(path, collect_transport=False)
+        self.assertEqual(result["blocked_gate_count"], 1)
+        self.assertEqual([g["line"] for g in result["open_gates"]], [4])
+        self.assertEqual(result["status"], "INCOMPLETE")
+
+    def test_all_blocked_is_resolved_with_blockers(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "ROADMAP.md"
+            path.write_text("- [ ] Gate\n  **BLOCKED**: `artifacts/roadmap-7.3/`\n")
+            result = audit_module.audit(path, collect_transport=False)
+        self.assertEqual(result["status"], "RESOLVED_WITH_BLOCKERS")
+
+
 if __name__ == "__main__":
     unittest.main()

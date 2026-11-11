@@ -63,27 +63,52 @@ def transport_state() -> dict[str, object]:
     }
 
 
+BLOCKED = re.compile(r"\*\*BLOCKED\*\*")
+ARTIFACT = re.compile(r"`(artifacts/[^`]+)`")
+
+
+def gate_body(lines: list[str], start: int) -> str:
+    """Return a gate's text up to the next list item, heading or blank line."""
+    body = [lines[start]]
+    for line in lines[start + 1:]:
+        if not line.strip() or line.startswith(("- [", "#")):
+            break
+        body.append(line)
+    return "\n".join(body)
+
+
 def audit(roadmap: Path, *, collect_transport: bool = True) -> dict[str, object]:
     text = roadmap.read_text()
     lines = text.splitlines()
     open_items = []
-    for number, line in enumerate(lines, 1):
+    for index, line in enumerate(lines):
         match = re.match(r"^- \[ \] (.*)$", line)
         if match:
             item = match.group(1).strip()
+            body = gate_body(lines, index)
+            # A BLOCKED record counts only with local evidence attached.
+            blocked = bool(BLOCKED.search(body)) and bool(ARTIFACT.search(body))
             open_items.append({
-                "line": number,
+                "line": index + 1,
                 "text": item,
                 "scope": "hardware" if HARDWARE_WORDS.search(item) else "offline",
+                "state": "blocked" if blocked else "open",
             })
-    refs = sorted(set(re.findall(r"`(artifacts/[^`]+)`", text)))
+    refs = sorted(set(ARTIFACT.findall(text)))
     evidence = [{"path": path, "exists": (ROOT / path).exists()} for path in refs]
     missing = [entry["path"] for entry in evidence if not entry["exists"]]
+    unresolved = [item for item in open_items if item["state"] == "open"]
+    if missing or unresolved:
+        status = "INCOMPLETE"
+    else:
+        status = "PASS" if not open_items else "RESOLVED_WITH_BLOCKERS"
     return {
-        "status": "PASS" if not open_items and not missing else "INCOMPLETE",
+        "status": status,
         "roadmap": str(roadmap),
-        "open_gate_count": len(open_items),
-        "open_gates": open_items,
+        "open_gate_count": len(unresolved),
+        "blocked_gate_count": len(open_items) - len(unresolved),
+        "open_gates": unresolved,
+        "blocked_gates": [item for item in open_items if item["state"] == "blocked"],
         "artifact_reference_count": len(evidence),
         "missing_artifacts": missing,
         "transport": transport_state() if collect_transport else None,
