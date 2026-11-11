@@ -3,7 +3,8 @@
 # partitions into /lib/firmware/updates (searched before /lib/firmware):
 #  - apnhlos: Samsung-signed GPU zap shader, Venus and SLPI (sensor core)
 #    firmware
-#  - modem: Samsung-signed ADSP (audio DSP) firmware
+#  - modem: Samsung-signed ADSP (audio DSP) firmware; when the DT exposes
+#    the MSS remoteproc, also MBA/modem images and modem_pr for GNSS/LTE
 #  - system (Android): the Wi-Fi board data, etc/firmware/bdwlan30.bin ->
 #    ath10k board.bin. apnhlos has a bdwlan30.bin too, but a different one;
 #    Wi-Fi was brought up with this one (docs/wifi.md)
@@ -56,6 +57,18 @@ if mount_part modem; then
 	for f in "$tmp"/modem/image/adsp.*; do
 		copy "$f" "$FW/${f##*/}"
 	done
+	# Keep the production DT unchanged: only an MSS diagnostic DT has this
+	# remoteproc node, so only that boot copies the modem image.
+	if [ -e /sys/bus/platform/devices/2080000.remoteproc ]; then
+		for f in "$tmp"/modem/image/mba.mbn "$tmp"/modem/image/modem.*; do
+			copy "$f" "$FW/${f##*/}"
+		done
+		while IFS= read -r f; do
+			copy "$tmp/modem/image/$f" "$FW/$f"
+		done <<EOF
+$(cd "$tmp/modem/image" && find modem_pr -type f 2>/dev/null)
+EOF
+	fi
 fi
 
 if mount_part system; then
@@ -74,6 +87,9 @@ fi
 
 for r in /sys/class/remoteproc/remoteproc*; do
 	[ -e "$r/state" ] || continue
+	case "$(readlink "$r/device/driver" 2>/dev/null)" in
+	*/qcom-q6v5-mss) continue ;;
+	esac
 	if [ "$(cat "$r/state")" = offline ]; then
 		echo start > "$r/state" || echo "gts3-firmware: could not start $(cat "$r/name")" >&2
 	fi
