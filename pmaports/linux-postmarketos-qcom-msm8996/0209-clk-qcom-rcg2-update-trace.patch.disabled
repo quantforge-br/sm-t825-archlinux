@@ -1,0 +1,85 @@
+Subject: [PATCH] clk: qcom: rcg2: add opt-in pixel/byte update trace
+
+Private RAM-only evidence for the SM-T825 pclk0/pclk1 "rcg didn't update
+its configuration" warning, default off. With clk_qcom.rcg_update_trace=1,
+update_config() logs CMD_RCGR before the update, the value that ended the
+poll, the remaining poll budget and CFG_RCGR for pixel and byte RCGs,
+plus the prepare/enable state and rate of up to five parent clocks.
+The update sequence, timeout and return values are unchanged.
+This is not a production fix.
+
+---
+diff --git a/drivers/clk/qcom/clk-rcg2.c b/drivers/clk/qcom/clk-rcg2.c
+--- a/drivers/clk/qcom/clk-rcg2.c
++++ b/drivers/clk/qcom/clk-rcg2.c
+@@ -16,6 +16,8 @@
+ #include <linux/math64.h>
+ #include <linux/gcd.h>
+ #include <linux/minmax.h>
++#include <linux/moduleparam.h>
++#include <linux/string.h>
+ #include <linux/slab.h>
+ 
+ #include <asm/div64.h>
+@@ -111,13 +113,44 @@
+ 	return __clk_rcg2_get_parent(hw, cfg);
+ }
+ 
++static bool rcg_update_trace;
++module_param(rcg_update_trace, bool, 0444);
++MODULE_PARM_DESC(rcg_update_trace,
++		 "Log pixel/byte RCG update state and parent chain (diagnostic)");
++
++static void rcg2_trace_update(struct clk_rcg2 *rcg, const char *name,
++			      u32 before, u32 after, int left)
++{
++	struct clk_hw *parent = clk_hw_get_parent(&rcg->clkr.hw);
++	u32 cfg = 0;
++	int depth;
++
++	if (!rcg_update_trace ||
++	    (strncmp(name, "pclk", 4) && strncmp(name, "byte", 4)))
++		return;
++
++	regmap_read(rcg->clkr.regmap, rcg->cmd_rcgr + CFG_REG, &cfg);
++	pr_info("rcg2-trace %s before=%08x after=%08x left=%d cfg=%08x\n",
++		name, before, after, left, cfg);
++	for (depth = 0; parent && depth < 5; depth++) {
++		pr_info("rcg2-trace %s parent%d=%s prepared=%d enabled=%d rate=%lu\n",
++			name, depth, clk_hw_get_name(parent),
++			clk_hw_is_prepared(parent), clk_hw_is_enabled(parent),
++			clk_hw_get_rate(parent));
++		parent = clk_hw_get_parent(parent);
++	}
++}
++
+ static int update_config(struct clk_rcg2 *rcg)
+ {
+ 	int count, ret;
+-	u32 cmd;
++	u32 cmd, before = 0;
+ 	struct clk_hw *hw = &rcg->clkr.hw;
+ 	const char *name = clk_hw_get_name(hw);
+ 
++	if (rcg_update_trace)
++		regmap_read(rcg->clkr.regmap, rcg->cmd_rcgr + CMD_REG, &before);
++
+ 	ret = regmap_update_bits(rcg->clkr.regmap, rcg->cmd_rcgr + CMD_REG,
+ 				 CMD_UPDATE, CMD_UPDATE);
+ 	if (ret)
+@@ -128,11 +161,14 @@
+ 		ret = regmap_read(rcg->clkr.regmap, rcg->cmd_rcgr + CMD_REG, &cmd);
+ 		if (ret)
+ 			return ret;
+-		if (!(cmd & CMD_UPDATE))
++		if (!(cmd & CMD_UPDATE)) {
++			rcg2_trace_update(rcg, name, before, cmd, count);
+ 			return 0;
++		}
+ 		udelay(1);
+ 	}
+ 
++	rcg2_trace_update(rcg, name, before, cmd, 0);
+ 	WARN(1, "%s: rcg didn't update its configuration.", name);
+ 	return -EBUSY;
+ }

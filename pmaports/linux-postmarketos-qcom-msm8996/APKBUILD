@@ -233,6 +233,7 @@ source="
 	0206-slimbus-stream-transaction-diagnostics.patch.disabled
 	0207-slimbus-ngd-channel-removal-experiment.patch.disabled
 	0208-slimbus-audio-event-trace.patch.disabled
+	0209-clk-qcom-rcg2-update-trace.patch.disabled
 "
 builddir="$srcdir/linux-$pkgver"
 
@@ -265,6 +266,7 @@ prepare() {
 		patch -p1 < "$srcdir/0206-slimbus-stream-transaction-diagnostics.patch.disabled"
 		patch -p1 < "$srcdir/0207-slimbus-ngd-channel-removal-experiment.patch.disabled"
 		patch -p1 < "$srcdir/0208-slimbus-audio-event-trace.patch.disabled"
+		patch -p1 < "$srcdir/0209-clk-qcom-rcg2-update-trace.patch.disabled"
 		sed -i 's/^CONFIG_LOCALVERSION=.*/CONFIG_LOCALVERSION="-t825-audiodiag"/' .config
 	fi
 }
@@ -514,4 +516,5 @@ d5e6cacf01f280598d678632c5c609370828b2424a533ec0117f715c11d01f477bfe811c98cd6bd2
 291839df50cb735d278ebc574b613377eb305c8bab1cfa3f42faffcd2dd555ecaa181ab35a371860f46b7cb1683621ba80f7797dcc38dd6a8911d5cd4cd17415  0206-slimbus-stream-transaction-diagnostics.patch.disabled
 3ee8cbbceb804ed8c1a4d9ed416e12225a02fe7f8448dd437fc9b80f65c1e93db547d4125e226ecb7d3597f745b862bd059d3c98ac50a77df6592f923fb5e7e9  0207-slimbus-ngd-channel-removal-experiment.patch.disabled
 39d43c4559e6874fdd308df5d021ebfbd1e4ac3de05c75332bf7597221488ec7258ce54aced6203ab40ac26233d12a9eef8a06a23719c9da65898a50ab2cada1  0208-slimbus-audio-event-trace.patch.disabled
+bf2ddfbf76d698cf904170451b58d1fa887407ffbbe85c9852747bc5e3755d632136dc313ad611f95900f3d0024a9280966e3914337d3066384a5a44bd16718d  0209-clk-qcom-rcg2-update-trace.patch.disabled
 "
