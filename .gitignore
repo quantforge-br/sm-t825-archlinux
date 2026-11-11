@@ -12,3 +12,7 @@ pwhash
 # Release binaries are uploaded as release assets; only the checksums are tracked
 /release/*
 !/release/SHA256SUMS
+# Local agent state, session logs and Python caches
+/.pi/
+/codex-session-*.md
+__pycache__/
