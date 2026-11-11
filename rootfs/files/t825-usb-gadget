@@ -11,15 +11,38 @@ fi
 
 udc=
 for _ in $(seq 1 30); do
-    udc=$(ls /sys/class/udc 2>/dev/null | head -n 1 || true)
+    for candidate in /sys/class/udc/*; do
+        [ -e "$candidate" ] || continue
+        udc=${candidate##*/}
+        break
+    done
     [ -n "$udc" ] && break
     sleep 1
 done
 [ -n "$udc" ] || { echo "No USB device controller found" >&2; exit 1; }
 
 mkdir -p "$gadget"
-[ -e "$gadget/UDC" ] && printf '
-' > "$gadget/UDC" || true
+
+# The initramfs creates the diagnostic gadget before switch_root. Reusing it
+# is essential: clearing UDC here causes a disconnect during the root handoff
+# and can strand the host before sshd becomes reachable. Only build a new
+# configuration when no active network function is present.
+active_udc=$(cat "$gadget/UDC" 2>/dev/null || true)
+existing_iface=
+for existing_function in ncm.usb0 rndis.usb0; do
+    if [ -e "$gadget/functions/$existing_function/ifname" ]; then
+        existing_iface=$(cat "$gadget/functions/$existing_function/ifname" 2>/dev/null || true)
+        [ -n "$existing_iface" ] && break
+    fi
+done
+if [ -n "$active_udc" ] && [ -n "$existing_iface" ]; then
+    ip link set "$existing_iface" up
+    ip addr replace 172.16.42.1/24 dev "$existing_iface"
+    printf '%s (%s)\n' "$existing_iface" "$active_udc"
+    exit 0
+fi
+
+[ -e "$gadget/UDC" ] && printf '\n' > "$gadget/UDC" || true
 
 rm -f "$gadget/configs/c.1/ncm.usb0" "$gadget/configs/c.1/rndis.usb0"
 rmdir "$gadget/functions/ncm.usb0" 2>/dev/null || true

@@ -1,8 +1,8 @@
 [Unit]
 Description=Persistent T825 USB network gadget
 DefaultDependencies=no
-After=sys-kernel-config.mount systemd-udevd.service
-Before=systemd-networkd.service NetworkManager.service sshd.service
+After=sys-kernel-config.mount systemd-udevd.service local-fs.target
+Before=network-pre.target systemd-networkd.service NetworkManager.service sshd.service
 Wants=sys-kernel-config.mount
 
 [Service]
