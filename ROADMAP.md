@@ -897,6 +897,12 @@ complete modem stack in production before recovery and boot logs are established
   acceptance gates.
 - [ ] Test rollback with the preserved working image before an installed update.
 - [ ] Submit generic patches upstream separately from T825-specific changes.
+  **BLOCKED** (2026-11-11): the series is prepared but not sent. 122 generic,
+  1 board-only, 1 mixed and 78 excluded patches are classified; only one generic
+  patch is checkpatch-clean, 32 lack Signed-off-by and 66 carry a placeholder
+  author. Sending needs the author's real identity, DCO sign-off and explicit
+  approval. See [upstream series](docs/upstream-series-7.3.md) and
+  `artifacts/roadmap-7.3/upstream-series-20261111T151728Z/`.
 
 Advance by reproducible hardware evidence. A successful build, archive inspection
 or isolated RAM boot does not complete the compatibility roadmap.
