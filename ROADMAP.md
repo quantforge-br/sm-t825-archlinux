@@ -496,16 +496,15 @@ Post-reboot evidence from 2026-11-09:
   `artifacts/roadmap-7.3/bluetooth-config-trace-20261110T122454Z/`.
   All four resets completed successfully; two new `Frame reassembly failed
   (-84)` lines still occurred, so these lines alone do not explain `-110`.
-
   A detached series repeated the frozen-payload rebind trace 15 times with an
   independent restoration timer each time. All 15 classified
-  BKno_new_hci_reset_timeoutBK and restored the controller; with the three earlier
+  `no_new_hci_reset_timeout` and restored the controller; with the three earlier
   controls that is 18 rebinds without a timeout, while recent installed boots
   timed out in 1/5 and 1/1 runs. The timeout depends on boot-time conditions
   that a rebind does not reproduce. **BLOCKED**: the first-failure IBS capture
   needs an installed-boot series, which needs independent recovery for
   installed boots (watchdog gate, line 180) or the operator present. Evidence:
-  BKartifacts/roadmap-7.3/bluetooth-hci-trace-series-20261111T172014Z/`.
+  `artifacts/roadmap-7.3/bluetooth-hci-trace-series-20261111T172014Z/`.
 - [x] Guard the reboot runner against mixed payloads and repeated failing tests.
   It snapshots itself, records deployed helper/service/udev hashes, checks them
   before and after each reboot, binds fastboot to serial `957be8c9`, waits for
