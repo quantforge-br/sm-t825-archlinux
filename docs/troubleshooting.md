@@ -1,7 +1,7 @@
 # Troubleshooting and recovery
 
-These hardware observations come from the previous 6.19.5-r13 release. The 7.3.1
-source package needs SM-T825 runtime validation; see [kernel notes](kernel.md).
+These hardware observations include the previous 6.19.5-r13 release and the
+bounded 7.3.1 SM-T825 validation; see [kernel notes](kernel.md) for scope.
 
 ## Key combinations
 
@@ -11,6 +11,48 @@ source package needs SM-T825 runtime validation; see [kernel notes](kernel.md).
 | Volume Down while lk2nd starts | lk2nd fastboot |
 | Power + Volume Up + Home | TWRP |
 | Power + Volume Down + Home | Samsung Download mode (Odin/Heimdall) |
+
+## A normal restart goes directly to Arch Linux
+
+With a valid extlinux configuration, this is normal: lk2nd automatically boots
+the installed system. A normal reboot, including the diagnostic supervisor's
+reset, does not itself select fastboot. Earlier diagnostic returns to fastboot
+depended on the boot-selection state at the time and do not prove that the
+current installation will stay in fastboot after a reset.
+
+To enter lk2nd fastboot manually, force a restart with Power + Volume Down
+until the screen goes black, release the buttons, then press and hold Volume
+Down as the screen turns on or the device vibrates. Release it when the lk2nd
+fastboot screen appears. Do not hold Home for this sequence: that combination
+selects Samsung Download mode. The lk2nd documentation recommends delaying the
+volume key until the stock bootloader has passed its own key-selection stage.
+
+Diagnostic automation must not use `t825-reboot-fastboot` to bypass this step:
+that helper renames a persistent boot file, which violates the project test
+policy. Validate the actual reset destination before promising consecutive
+unattended fastboot cycles.
+
+The helper is the earlier remote Arch-to-fastboot solution, not a missing
+kernel feature. It renames `/boot/extlinux/extlinux.conf` to
+`extlinux.conf.fastboot` and requests a normal reboot. `/boot` is the persistent
+`cache` filesystem; avoiding a flash of the partition named `boot` does not
+make this operation nonpersistent. Reusing it requires an explicit exception
+to `AGENTS.md` and a verified restoration path. The direct-init read-only
+diagnostics neither mount `/boot` nor run `t825-extlinux-restore.service`, so
+their successful boot alone will not restore normal Arch autoboot.
+
+Do not substitute `systemctl reboot --reboot-argument=bootloader`: on this
+tablet Samsung S-Boot consumes that reason and enters Download before lk2nd.
+
+With the authorized exception recorded in `AGENTS.md`, the host controller
+`tools/t825-fastboot-session.py` can now perform the guarded route remotely:
+it snapshots and hashes `extlinux.conf`, invokes the installed helper through
+SSH, waits for lk2nd fastboot, boots a validated RAM image, restores the file
+inside the diagnostic initramfs, and verifies a new Arch boot ID. The accepted
+round trip is archived at
+`artifacts/roadmap-7.3/authorized-fastboot-roundtrip-20261111T101000Z/`.
+The controller is detached and bounded; it does not flash partitions. A
+complete kernel/SoC lockup still requires the separate hardware-watchdog gate.
 
 ## The tablet stays in lk2nd fastboot
 
@@ -58,7 +100,7 @@ opens or while it loads a page. This is a GPU hang, not memory:
 
 Fixes, both in this repository:
 
-1. Patch 0201 (tested on 6.19.5-r13, retained in 7.3.1-r0 but untested there): a hang in another process no longer counts as a reset for Hyprland
+1. Patch 0201 (tested on 6.19.5-r13 and reproduced on the installed 7.3.1-r1 build): a hang in another process no longer counts as a reset for Hyprland
    ([kernel.md](kernel.md#gpu-hangs-and-the-compositor-patch-0201)).
 2. `--disable-gpu-rasterization` for the browser (`desktop/install.sh` adds it to
    `~/.config/brave-origin-flags.conf`, `brave-flags.conf` and `chromium-flags.conf`).

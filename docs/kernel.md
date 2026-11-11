@@ -1,9 +1,10 @@
 # Kernel
 
-The source package is `linux-postmarketos-qcom-msm8996` **7.3.1-r1**, with release
+The source package is `linux-postmarketos-qcom-msm8996` **7.3.1-r2**, with release
 string **7.3.1-t825** and modules in `/usr/lib/modules/7.3.1-t825` on Arch
 (`/lib/modules/7.3.1-t825` inside the APK). It replaces the previous 6.19.5-r13
-source package. The files in `release/` remain the previous 6.19.5 release.
+source package. The files in `release/` remain the previous 6.19.5 release; the
+tablet currently still boots the already-installed `7.3.1-t825` r1 image.
 
 ## Sources and relation to upstream
 
@@ -12,8 +13,18 @@ All 194 upstream patches are byte-identical: 70 `m001`–`m071` patches (no m056
 and 124 numbered patches from `0001` through `0182`, with upstream's gaps and
 APKBUILD order. The package uses the kernel.org 7.3.1 tarball; msm8996-mainline's
 last base tag was 6.19.5. Upstream's `APKBUILD.pmaports` is named `APKBUILD` here,
-with our package revision, config checksum and two appended local patches.
-No a5xx hangcheck backport is included.
+with our package revision, config checksum, production patches 0201, 0202 and
+0204, and four opt-in private patches (0203 MSS, 0205 codec diagnostics,
+0206 SLIMbus diagnostics and 0207 experimental NGD channel removal).
+The package also carries 0204, the upstream A5xx hangcheck progress detection
+backport from `65222fbe8`. It is applied after 0201 and 0202, and was checked
+against vanilla Linux 7.3.1 and the 0201 tree. The normal r2 payload now has an
+exact `#3` RAM-boot identity check, a verified read-only root transition and
+an observed automatic return to installed r1 in 275.535 seconds. Evidence:
+`artifacts/roadmap-7.3/readonly-r2-cycle-20261111T002227Z/`. This does not run a
+graphical session; use the controlled GPU workload before installing r2
+persistently. Reset returned to Linux, so another unattended fastboot cycle
+was not available.
 
 Copy the complete directories in `pmaports/` to `device/testing/` in a pmaports
 checkout at **367abb3e17df1299380271c9e52c0824fc7378d3**. This base still provides
@@ -29,11 +40,14 @@ Revision numbers restart for 7.3.1; “r9–r13” below refers to 6.19.5 histor
 |---|---|---|
 | Kernel 7.3.1 | r0 | Upstream 9f81231 series, retained config below, unchanged 0201 and rebased 0202 |
 | Kernel 7.3.1 | r1 | Trim tracing to fit persistent boot; enforce the lk2nd size budget during build/install |
+| Kernel 7.3.1 | r2 | 0204 A5xx hangcheck progress detection; normal `#3` RAM handoff and automatic return to installed r1 accepted; controlled GPU recovery comparison remains open |
 | Device 1 | r6 | Upstream headset microphone, jack controls and WirePlumber ACP/jack setup |
 | Device 1 | r7 | Upstream accelerometer matrix and 12 Hz request, enabled by kernel patch 0143 |
 | Device 1 | r8 | Upstream TC305K Back/Recent input-events LED timeout rule |
+| Device 1 | r10 candidate | HCI readiness no longer waits for delayed BlueZ daemon exposure; the combined r10 helper test was rejected after 2/8 faults |
+| Device 1 | r11 control | r9 helper plus eight-second delay; earlier 20/20 was contradicted by a later 1/5 timeout control. r12 experiments were rejected and r11 restored; see [investigation](bluetooth-7.3.md) |
 
-| Origin | Retained in 7.3.1-r1 | Purpose |
+| Origin | Retained in 7.3.1-r2 | Purpose |
 |---|---|---|
 | r9 | `CONFIG_LOCALVERSION="-t825"` | Separate release/module directory |
 | r9 | `CONFIG_SECURITY_LANDLOCK=y`; `landlock` first in `CONFIG_LSM` | pacman download sandbox |
@@ -152,8 +166,8 @@ link. The LTE tree inherits the quaternary TDM pinctrl/link and RT5508 amplifier
 at 0x34 and 0x35 from the Wi-Fi tree; TLMM 25–28 stay reserved. Both SPI/I2C
 controllers sharing the quaternary pins remain disabled. Decompiled package DTBs
 verify this layout. All four speakers played on this repo's 6.19.5 build (top left,
-bottom right in landscape with Home on the right); 7.3.1 on the SM-T825 is untested
-here and must repeat that check.
+bottom right in landscape with Home on the right); the 7.3.1 baseline has not yet
+remeasured speaker acoustics or headset routing.
 
 ### GPU hangs and the compositor (patch 0201)
 
@@ -175,8 +189,81 @@ submits hang as well (the kernel log shows "ME master split" and another "hangch
 lockup"), and if one of them is Hyprland's, Hyprland is the guilty one and still exits. So the
 browser flag in `desktop/browser/chromium-flags.conf` matters more: it removes the hangs.
 
-The patch is retained unchanged and compiles on 7.3.1. Its runtime behavior must
-be rechecked on the SM-T825; the earlier r13 result is not a 7.3.1 test.
+The patch is retained unchanged and compiles on 7.3.1. The installed SM-T825 build
+ran three synthetic resets: each identified `gpuhang` as guilty, recovered normal
+drawing and kept the same Hyprland process. This validates reset handling, not the
+root cause of Chromium/Mesa hangs.
+The repeat on the installed r1 kernel is archived at
+`artifacts/roadmap-7.3/gpu-r1-20261110T080117Z/`; all three runs passed with the
+same Hyprland process. A matching r2 run remains pending because this tablet's
+remote bootloader command currently enters Samsung Download mode rather than
+lk2nd fastboot, and no flashing path is permitted.
+The normal r2 RAM image is retained at
+`artifacts/roadmap-7.3/normal-r2-boot-20261110/t825-normal-r2.img`; it lacks
+validated independent recovery. The later candidate in
+`normal-r2-recovery-20261110d/` is **rejected: do not boot it**. Merely adding
+a supervisor does not disable installer mutations, protect the root block
+devices or prove survival across `switch_root`. Its construction also used
+DTBs from the MSS diagnostic tree without validating the production state.
+The unsafe experimental builder has been removed.
+
+The report `artifacts/roadmap-7.3/r2-ram-validation-20261110T114526Z/` actually
+observed installed r1 (`#2-postmarketos-qcom-msm8996`), and contains no fastboot
+boot transcript. Its `decision.json` rejects r2 and supervisor acceptance; only
+one installed-r1 software reboot with Bluetooth readiness passed. A new
+comparison requires verified r2 identity and a validated read-only diagnostic
+root with RAM-backed writable paths for the graphical session.
+The real-browser collector `tools/t825-chromium-gpu-test.sh` was added with a
+bounded Wayland/WebGL workload and DRM/kernel/Hyprland capture. The tablet has
+Brave-origin rather than a `chromium` executable; a 10-second run completed with
+Hyprland's PID unchanged and no new GPU reset lines. This is a workload baseline,
+not the required real-hang reproduction. Evidence:
+`artifacts/roadmap-7.3/chromium-gpu-20261110T084239Z/`.
+
+The first attempt to chain that workload onto the recovery-capable r2 image is
+recorded at `artifacts/roadmap-7.3/gpu-r2-ram-20261110T115000Z/`. The tablet's
+normal reboot path returned directly to installed r1, so the guarded host
+runner correctly stopped before issuing `fastboot boot`; the tablet remained
+healthy and no r2 GPU result was claimed. A future comparison needs a remote
+boot-mode transition that exposes lk2nd fastboot without renaming persistent
+boot files.
+The reset action and boot-mode selection are separate. The live kernel exposes
+`bootloader`, `recovery` and `normal` through
+`/sys/class/reboot-mode/qcom-pon/reboot_modes`; PS_HOLD (`syscon-reboot`)
+performs the reset. The documented lk2nd base enables `USE_PON_REBOOT_REG=1`
+and interprets PON reason `0x02` as fastboot. That is also Linux's `bootloader`
+value, already observed to select Samsung Download before lk2nd. Unknown
+strings such as `fastboot` do not supply an alternate mode in Linux's
+`reboot-mode` driver. The previously used `t825-reboot-fastboot` helper remains
+installed: it renames `/boot/extlinux/extlinux.conf` to `extlinux.conf.fastboot`
+and requests a normal reboot. This changes the persistent `cache` filesystem
+mounted at `/boot`, although it does not flash the partition named `boot`.
+The unattended test policy explicitly forbids that mutation. Its restore
+service requires a writable `/boot` and systemd; the direct-init read-only
+diagnostics do not run it. Reusing this route requires an explicit policy
+exception and a verified restoration path after the test session.
+The read-only source/live audit is retained at
+`artifacts/roadmap-7.3/reboot-route-source-audit-20261110T180230Z/`.
+After explicit authorization for the persistent extlinux exception, a detached
+round-trip controller was validated. It entered lk2nd fastboot remotely,
+restored the original 919-byte configuration from a validated RAM image, and
+returned to Arch with a new boot ID and the original SHA-256. Evidence is in
+`artifacts/roadmap-7.3/authorized-fastboot-roundtrip-20261111T101000Z/`.
+It establishes no new tested route: the dirty installed lk2nd device additions
+were not reconstructed. Kexec is configured and not disabled. A native aarch64
+`kexec-tools` 2.0.32 probe loaded and unloaded the read-only candidate through
+the legacy syscall, with `/sys/kernel/kexec/loaded` returning to zero and no
+`kexec -e`; this is recorded at
+`artifacts/roadmap-7.3/kexec-route-audit-20261110/`. A nonpersistent handoff
+route remains a prerequisite for the r2 RAM comparison from installed Linux,
+and execution still requires independent reset recovery. The first guarded
+execution attempt is recorded at
+`artifacts/roadmap-7.3/kexec-cycle-20261110T191300Z/`: load succeeded and
+`kexec -e` was invoked, but no SSH, ADB or fastboot appeared for 360 seconds.
+The host saw the Samsung NCM product without carrier and repeated USB resets;
+the candidate supervisor was therefore unobserved. The runner now stops the
+installed USB gadget immediately before a future execution, but another cycle
+must wait for manual fastboot recovery and a reviewed pre-supervisor route.
 
 ## Device files
 
@@ -278,7 +365,9 @@ path decompresses into scratch memory and uses boot-image load addresses;
 it does not run extlinux's `choose_addrs()` budget check. The 7.3.1-r0 RAM
 success therefore did not predict persistent-boot success. Keep the RAM test
 for hardware validation, and perform this size check before persistent install.
-The r1 build still needs tablet validation; no tablet access is part of this fix.
+The r1 build is installed on the SM-T825; its runtime baseline is recorded in
+[baseline-7.3.md](baseline-7.3.md). This size calculation still must be repeated
+for every new initramfs before persistent installation.
 
 ## Build and validation
 
@@ -311,7 +400,9 @@ including cdc_reset_active, the MultiMedia4 headset link, touch keys and jack su
    Copy the new modules to the tablet's `/usr/lib/modules/7.3.1-t825` before the
    RAM test; leave `/usr/lib/modules/6.19.5-t825` intact. Userspace may need modules
    not in the initramfs during the RAM boot.
-2. **Test from RAM first.** On the tablet run `t825-reboot-fastboot`; on the host:
+2. **Test from RAM first.** Start with the tablet already in lk2nd fastboot.
+   Do not use `t825-reboot-fastboot` under the current diagnostic policy: it
+   mutates persistent `/boot` as explained above. On the host:
 
    ```sh
    KERNEL=/var/tmp/t825-boot/vmlinuz INITRAMFS=/var/tmp/t825-boot/initramfs \
@@ -411,23 +502,201 @@ legacy metadata, DTBs, invalid inputs, free-space checks and failed copies.
 
 ## Runtime evidence, risks and follow-ups
 
-This repo's 7.3.1 build is **untested on the SM-T825**. Upstream's older migration
-notes describe T820 testing only. Its [newer README at 9f81231](https://github.com/wh1ter0z3/gts3lwifi-mainline/blob/9f81231/README.md#needs-testing)
-records one T825 tester's successful 7.3.1 boot, smooth UI, Wi-Fi and audio on
-`t825-modem` (main plus modem work), not this exact build. Do not generalize it to
-our device tree, Arch userspace or the rest of the hardware.
+This repo's installed 7.3.1 build now has a bounded SM-T825 baseline; see
+[baseline-7.3.md](baseline-7.3.md). Upstream's migration notes describe T820
+testing and one T825 tester's modem branch. Do not generalize those results to
+the production DT or to LTE functionality. The MSS/GNSS path remains an opt-in
+diagnostic build and has not been installed persistently.
 
 Upstream tested four consecutive 20-second s2idle cycles on the T820 with patches
 0147 (keep PCIe link/Wi-Fi power) and 0148 (MDP5 resume pipe assignment), with
-Wi-Fi traffic after resume. Suspend and Wi-Fi resume remain untested here on T825.
+Wi-Fi traffic after resume. The installed T825 build passed ten 10-second cycles
+with RTC wake, Wi-Fi ICMP, Bluetooth, PipeWire and sensors; a post-reboot repeat
+passed ten additional cycles. See the baseline for the log-continuity guard.
 
 Upstream's migration notes report more `pclk0_clk_src: rcg didn't update its
 configuration` warnings (picture still correct), intermittent Bluetooth
 `Opcode 0x0c03 failed: -110` at boot (also present on 6.19), and occasional
 `wcd9335: overflow error on TX port 1` at capture start (recordings played back).
 A failed Bluetooth controller recovered upstream with `rmmod hci_uart; modprobe hci_uart`.
+The private r9 device package was then deployed with a read-only EFS read, three
+consecutive controller/address probes, and one bounded QCA UART rebind. A detached
+20-cycle reboot run required no manual reset and recorded 15 PASS and 5 FAULT
+cycles. The faults remained the same transient `Frame reassembly failed (-84)` /
+`Opcode 0x0c03 failed: -110` sequence, so r9 recovery is useful but the Bluetooth
+compatibility item remains open. Evidence: `artifacts/roadmap-7.3/bluetooth-auto-20261110T060000Z/`.
+A detached ten-cycle s2idle/RTC coexistence run then passed Bluetooth presence,
+Wi-Fi ICMP return, PipeWire and sensors after every wake. This closes the
+suspend coexistence sub-gate while the repeated-boot fault rate remains open.
+Evidence: `artifacts/roadmap-7.3/suspend-bt-10-20261110T065730Z/`.
+The r9 boot logs show the helper's BlueZ readiness check waiting through a
+completed HCI setup and then causing another UART rebind. The candidate helper
+now gates only on `btmgmt` primary-controller/address state. With `bluetoothd`
+stopped on the running tablet, the candidate exited successfully without a
+QCA setup delta; only the expected read-only EFS mount appeared in the kernel
+delta. A fresh detached boot run is still required to quantify the reduction.
+Evidence: `artifacts/roadmap-7.3/bluetooth-helper-candidate-20261110T071635Z/`.
+The detached r10 run produced 18 PASS and 2 FAULT cycles. The two faults still
+showed a second QCA firmware setup followed by `Opcode 0x0c03 failed: -110`,
+so the daemon-readiness fix reduces the observed rate but does not close the
+boot compatibility gate. The package-installed r9 helper was restored after
+the test and its hash was verified. Evidence:
+`artifacts/roadmap-7.3/bluetooth-r10-auto-20261110T072338Z/`.
+The follow-up r11 service-order candidate keeps the r9 helper and adds an
+eight-second pre-start delay, allowing the initial QCA setup to settle before
+the address helper runs. A detached 20-cycle run passed every cycle with the
+EFS address present and no `Opcode 0x0c03 failed: -110`; the known initial
+`Frame reassembly failed (-84)` warning remained. The rebuilt r11 APK payload
+hashes match that tested control. A separate r10-helper plus delay run failed
+2/8 and was rejected. The tested r11 payload was installed after the experiment
+without a reboot. A later five-reboot control reproduced `-110` once, so the
+delay cannot be described as a proven fix. r12 experiments (longer delay and
+waiting for a primary controller) were rejected and the r11 control restored.
+See [Bluetooth investigation](bluetooth-7.3.md). Historical evidence and APK hashes are in
+`artifacts/roadmap-7.3/bluetooth-delay-candidate-20261110T084940Z/`.
+An EFS-BDADDR NVM candidate was then tested by replacing the placeholder address
+bytes in `nvm_00440302.bin`. The following boot still emitted `Frame reassembly
+failed (-84)`, performed a second QCA setup and reported `Opcode 0x0c03 failed:
+-110`; the controller later became usable. The candidate was removed immediately
+and no modified firmware remains installed. Evidence, hashes and the removed
+candidate are in `artifacts/roadmap-7.3/nvm-candidate-20261110T081749Z/`.
+The direct ALSA/UCM route matrix also passed twenty repetitions each for the
+speaker PCM (`hw:0,0`), headphone PCM (`hw:0,1`) and stereo microphone PCM
+(`hw:0,2`), with mixer state restored after every repetition. The kernel still
+reported `wcd9335_slimbus_irq: overflow error on TX port 1, value 5` in 12/20
+cycles; route functionality therefore does not close the codec regression.
+Evidence: `artifacts/roadmap-7.3/audio-routes-20261110T081500Z/`.
+The stage-aware validator then kept one UCM context for ten repetitions and
+reproduced five new overflows. Every one occurred during `route-N-mic-transfer`;
+no speaker/headphone stage reported a new fault, all captures delivered 48,000
+frames, and the mixer state matched its pre-test snapshot. This narrows the
+remaining hypothesis to the WCD9335 microphone/SLIMbus capture transfer while
+leaving the codec fix unaccepted. Evidence:
+`artifacts/roadmap-7.3/audio-validator-10-20261110T065155Z/`.
+Source inspection of `sound/soc/codecs/wcd9335.c` shows that the interrupt
+handler logs the TX port status, disables that port's overflow/underflow
+interrupt bit, and clears the status. It does not reset the SLIMbus port or
+rebuild the stream. The repeated `TX1 value 5` therefore cannot be treated as
+a harmless logging artifact, but changing the handler without register-level
+evidence could hide a transport fault. Keep the next experiment focused on
+capturing the configured TX port, watermark and channel map around `hw_params`
+and `trigger`; no codec patch is accepted yet. The source defines bit 0 as
+overflow, bit 1 as underflow and bit 2 as port closed, so value `5` means
+**overflow plus port closed**. It is not an overflow-only code.
+
+The phase-split microphone collector (`tools/t825-audio-mic-phases.sh`) keeps
+`start/read` and `drop` in one no-I/O interval and samples `close` separately.
+Its first hardware run delivered all 48,000 frames but observed `TX1 value 5`
+at `18488.860752` during the active read interval. The stream used 48 kHz
+stereo, 960-frame periods and a 7,680-frame buffer; the mixer and boot ID were
+restored unchanged. The report is
+`artifacts/roadmap-7.3/audio-mic-phases-20261110T165846Z/`. Since the IRQ is
+deferred and the collector does not read codec registers, this narrows timing
+without proving whether SLIMbus or codec configuration caused the overflow.
 7.3.x is not a long-term base and will reach EOL; plan a later supported-kernel move.
 
-Follow-ups: hardware validation above; evaluate the a5xx hangcheck backport
-`65222fbe8` separately (out of scope here); track the clock, Bluetooth and WCD9335
-issues; update published binaries only after tablet testing.
+Follow-ups: compare the controlled GPU workload before/after 0204; track the
+clock, Bluetooth and WCD9335 issues; obtain an outdoor GNSS fix; update
+published binaries only after tablet testing.
+`T825_MSS_DIAGNOSTIC=1`
+works with direct `abuild`; with `pmbootstrap`, create the private
+`.t825-enable-mss` sentinel because arbitrary host variables are sanitized.
+
+The diagnostic RAM image must account for the lk2nd boot pool too. Embedding all
+20 modem segments makes the initramfs about 61.5 MiB and cannot fit the 50 MiB
+pool used by the T825 boot layout. `install/make-gnss-ram-boot.sh` therefore
+mounts the signed `modem` partition read-only in initramfs and binds its
+`image/` directory over the firmware path. The current private v17 image has a
+22,969,562-byte initramfs and a calculated kernel budget of 27,328,512 bytes,
+leaving 3,362,304 bytes below the 23,966,208-byte decompressed kernel. This
+layout is still a RAM-only diagnostic: it does not write the modem partition or
+the calibration images.
+
+The first SM-T825 v7 boot reached the initramfs debug shell and exposed
+`2080000.remoteproc`, but `pmos_continue_boot` dropped the USB gadget during
+the rootfs hand-off before post-pivot logs could be collected. Diagnostic
+images mask `t825-usb-gadget.service` and `gts3-firmware.service` through
+transient `systemd.mask=` parameters; v32 additionally preserves the initramfs
+DHCP lease, makes the USB helper idempotent and stages transient sshd wants.
+The historical v32 hardware run still lost USB after release, so that image's
+post-pivot SSH remained unverified. It did, however, return autonomously to
+fastboot in 248 seconds.
+
+The persistent tablet root does not contain the diagnostic `rmtfs` and
+`tqftpserv` packages, so starting them only through systemd drop-ins in the
+build root cannot work after a RAM boot. The v17 image includes those daemons,
+`qrtr-lookup`, `qmicli` and their runtime libraries in initramfs. A hook starts
+`tqftpserv`, prepares the private calibration, starts the MSS before waiting
+for `qcom_rmtfs_mem1`, and then starts `rmtfs`; another cleanup hook moves
+`/run` into the mounted root so the daemons, QRTR sockets and logs survive
+`switch_root`. The v17 initramfs runs read-only QRTR/QMI probes before the
+pivot and preserves their logs under `/run/t825-mssdiag`; its cmdline also
+masks the persistent USB, firmware and duplicate QRTR service units for that
+boot.
+
+When packing a diagnostic image manually, set
+`T825_MSS_DIAGNOSTIC_BOOT=1` alongside `CMDLINE_EXTRA`; the image packer then
+adds both transient `systemd.mask=` parameters automatically.
+
+Unattended recovery is now handled by the v31 static AArch64 supervisor,
+not the earlier initramfs shell/systemd watchdog. The old v20–v30 archive checks
+were insufficient: the timer could start after a blocked modem operation, the
+shell could be killed by pmOS cleanup, and units packed in initramfs were not
+available in the installed root after `switch_root`.
+
+`install/prepare-t825-recovery.sh` installs the supervisor in the host build
+root and inserts arming immediately after the `/run` tmpfs mount, before USB
+module loading and stage 2. It is gated by `t825.mssdiag.hold`, expires after
+240 seconds and retains file descriptors across root replacement. An optional
+`/run/t825-recovery/lease` contains an absolute integer CLOCK_BOOTTIME expiry;
+each accepted extension is at most 120 seconds ahead, with a one-hour overall
+cap. A successful SSH marker does not disable recovery. The supervisor invokes
+the kernel reboot syscall and schedules an independent SysRq fallback for a
+stalled shutdown. This still requires a working scheduler/reset route.
+Diagnostic hold images also set `panic=10`; this does not cover an arbitrary
+kernel lockup.
+
+The cleanup hook stages the USB helper and unit in `/run`, then moves that
+tmpfs into the new root. The command line requests the USB unit and masks the
+extlinux restore service. The runner never renames persistent boot files and
+requires the tablet to be in fastboot initially. Returning to fastboot depends
+on the existing boot selection; it is not selected by the supervisor itself.
+
+On 2026-11-09/10, the tablet completed two minimal RAM-only recovery cycles in
+36/37 seconds and two RAM-only `switch_root`/lease cycles in 70/68 seconds.
+The v32-v34 handoff controls lost SSH after release but returned autonomously to
+fastboot in 248/249 seconds; those historical failures are retained as
+transport evidence. The later v59 read-only direct-root control reached the
+installed Arch root, replacement PID 1 and SSH while retaining the original
+supervisor, then returned to fastboot in 249 seconds. The MSS-enabled v60
+control repeated that result and exposed the `04e8:6863` NCM gadget after the
+pivot. The accepted direct-root path therefore passes the USB/systemd handoff;
+the earlier UDC loss belongs to rejected image variants.
+See
+[the recovery audit](unattended-recovery-audit.md) for reports and limitations.
+
+Build an acceptance variant with `T825_RECOVERY_ONLY=1` when invoking
+`install/make-gnss-ram-boot.sh`: it skips modem hooks and disables the MSS DT
+node. Validate the actual paired archive/image using
+`T825_RAM_IMAGE=... T825_RAM_BUNDLE=... python3 tools/test-t825-gnss-ram-image.py`.
+The validator checks header addresses, embedded archive identity, static ARM64
+recovery, early arming, transient units and the lk2nd memory budget. Its
+default bundle is the current v63 MSS/GNSS candidate
+(`v63-mss-loc-retry-ro/t825-v63.img`); obsolete v31 images are historical and
+must be passed explicitly when auditing their old evidence. The packer refuses
+command lines longer than the legacy 511-byte field.
+
+Launch an unattended cycle from an existing fastboot session with:
+
+```sh
+nohup setsid tools/t825-gnss-auto-cycle.sh PATH_TO_VALIDATED_IMAGE \
+  > artifacts/roadmap-7.3/gnss-host.log 2>&1 < /dev/null &
+printf '%s\n' "$!" > artifacts/roadmap-7.3/gnss-host.pid
+```
+
+The runner validates the bundle, pins the SM-T825 serial, takes a hardware-test
+lock, records separate diagnostic/recovery results and observes the final
+reset even after a collector failure. It stops further boots on failed recovery
+or diagnostic failure. `tools/t825-gnss-ram-test.sh` delegates to this runner;
+it no longer falls back to old images. Full-kernel/SoC recovery remains a
+separate hardware-watchdog acceptance gate.

@@ -1,9 +1,15 @@
 # Hardware status on the SM-T825
 
 Historical results: tested on one SM-T825 (bootloader T825UBU3CUF1) with kernel 6.19.5-t825 r13 and Arch Linux ARM.
-The source package is now 7.3.1-t825 r0; **all runtime checks below remain untested
-on this repo's SM-T825 build**. One upstream tester reported boot/UI/Wi-Fi/audio on
-7.3.1 main plus modem work; that is not validation of this exact package.
+The source package is now 7.3.1-t825 r2. A first runtime baseline of the installed
+build was collected on 2026-11-08; see [docs/baseline-7.3.md](baseline-7.3.md).
+The table below still contains historical 6.19.5 results unless a row is explicitly
+covered by the 7.3.1 baseline. The 7.3.1 checks covered microphone delivery,
+camera frame delivery, GNSS transport and suspend/resume. A post-reboot repetition passed
+20 audio captures, three camera repetitions and ten suspend cycles after a
+continuity fix for dmesg ring-buffer rotation; speaker/headset quality remains
+open. One upstream tester reported boot/UI/Wi-Fi/audio on 7.3.1 main plus modem
+work; that is not validation of this exact package.
 For the SM-T820 and for details of each driver, see upstream's
 [status table](https://github.com/wh1ter0z3/gts3lwifi-mainline#status).
 
@@ -16,19 +22,20 @@ For the SM-T820 and for details of each driver, see upstream's
 | Keys: power, volume, Home | works | Home opens the launcher, power toggles the panel (desktop/) |
 | Back/Recent touch keys (TC305K) | not tested | upstream T820 only; input-events LED timeout rule included |
 | Wi-Fi (QCA6174, ath10k) | works | needs `board.bin` from your own `system` partition; country GB unless changed ([below](#wi-fi-country)) |
-| Bluetooth | works | address from EFS (`gts3-bdaddr`); RFCOMM/BNEP retained from 6.19.5 r10 |
+| Bluetooth | operational; intermittent boot reset failure remains open | r11 passed an earlier 20/20 run but a later software reboot control reproduced `-110` in 1/5 cycles. r12 experiments were rejected; r11 files are restored. No modified NVM is shipped. See [investigation](bluetooth-7.3.md) |
 | USB network gadget | works | 172.16.42.1 on the tablet, NCM, ID `04e8:6863` |
-| Speakers (4) | works | top pair enabled since 6.19.5 r11 (0114, now 0202); top = left, bottom = right |
-| Microphones (2) | works | |
-| Headphone jack | not tested | 7.3.1 adds jack/headset support, upstream tested on T820 only |
-| Cameras (front S5K5E3, rear IMX258) | works | libcamera software ISP, 1280x720 at 30 fps |
+| Speakers (4) | works (historical) | top pair enabled since 6.19.5 r11 (0114, now 0202); top = left, bottom = right; acoustic route not remeasured on 7.3.1 |
+| Microphones (2) | works; 7.3.1 delivery PASS with codec warning | 20 one-second captures returned 48 kHz stereo without clipping. Stage-aware validation attributed five overflows in ten cycles to microphone transfer; a later full route run reproduced overflow in ten of twenty cycles with every PCM transfer completing. Individual acoustic microphones remain unverified |
+| Headphone jack | route PCM works; physical insertion not tested | direct `hw:0,1` headphone route completed 20 cycles; CTIA insertion/removal remains untested |
+| Cameras (front S5K5E3, rear IMX258) | works; 7.3.1 delivery PASS | three 90-frame captures per camera at 1280x720; 30.00–30.16 fps, no sequence gaps |
 | Video decode/encode (Venus) | works | H.264/VP8/VP9 decode, H.264 encode, through GStreamer V4L2 |
 | Accelerometer, gyroscope, magnetometer, light | works | through the SLPI (`qcom-smgr`); needs `sns.reg` from EFS |
 | Auto-rotation | works | `iio-sensor-proxy` + `desktop/autorotate`; mount matrix in `rootfs/files/61-gts3-accel.rules` |
 | Battery, charging | works | SM5705 gauge and charger: capacity, status, USB-C input online |
 | microSD | works | an 8 GB SanDisk card runs at UHS DDR50; the controller goes up to SDR104 |
-| LTE modem, SIM, GPS | **no** | still disabled/unsupported on T825 in this package; upstream GNSS works on T820 |
-| Suspend | not tested | s2idle; upstream T820 passed four cycles with Wi-Fi after resume using 0147+0148 |
+| LTE modem, SIM, GPS | LTE/SIM no; GNSS transport PASS, fix UNTESTED | v17 RAM boot exposed MSS, rmtfs, QRTR Location (PDS v2) and QMI LOC; `loc-start`/`loc-stop` passed, but no position or satellite report arrived in 90 s. No LTE data path was enabled. |
+| Suspend | 7.3.1 PASS | 10×10 s s2idle cycles passed with RTC, Wi-Fi ICMP, Bluetooth, PipeWire and sensors; the validator verifies continuity across rotated dmesg |
+| Power profile | relative baseline only | SM5705 fuel-gauge current was sampled during idle, fixed CPU load and after a 20 s s2idle request; charger remained connected and repeated medians varied, so no power-acceptance claim is made |
 | Book Cover Keyboard | not tested | hot-plug patches are included; not tested here |
 
 Historical 6.19.5 boot messages without observed failures: `qcrypto` probe errors, `bam-dma-engine 644000`

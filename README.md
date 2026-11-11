@@ -11,7 +11,7 @@ Arch Linux ARM on the LTE model instead, and holds what that takes beyond upstre
 kernel changes, configuration and the tested lk2nd image.
 
 > The previous 6.19.5-r13 release was tested on one SM-T825 with bootloader **T825UBU3CUF1**.
-> The 7.3.1 source package is build-tested only here; first test it from RAM ([kernel notes](docs/kernel.md)).
+> The 7.3.1 r2 source package has been boot-tested from RAM; test the controlled GPU workload before any persistent update ([kernel notes](docs/kernel.md)).
 > Read the warnings before you start: this replaces Android.
 
 ## Contents
@@ -20,6 +20,9 @@ kernel changes, configuration and the tested lk2nd image.
 - [How it boots](#how-it-boots)
 - [Differences from upstream](#differences-from-upstream)
 - [Warnings](#warnings)
+- [Roadmap de desenvolvimento](ROADMAP.md)
+- [Baseline do 7.3](docs/baseline-7.3.md)
+- [Auditoria do caminho GNSS/EFS](docs/gnss-efs-audit.md)
 - [What you need](#what-you-need)
 - [Installation](#installation)
 - [After the installation](#after-the-installation)
@@ -29,12 +32,16 @@ kernel changes, configuration and the tested lk2nd image.
 
 ## What works
 
-The following describes the previous 6.19.5-r13 hardware results, pending revalidation on 7.3.1:
+The following combines the previous 6.19.5-r13 hardware results with the first
+7.3.1-t825 checks on the connected SM-T825. The 7.3.1 evidence is bounded to
+frame/audio delivery, GPU recovery, GNSS transport and ten suspend cycles; see the [baseline](docs/baseline-7.3.md)
+for the remaining release gates:
 
 Display and GPU (Adreno 530, freedreno), touchscreen, S-Pen, power/volume/Home keys, Wi-Fi,
 Bluetooth, all four speakers, both microphones, front and rear cameras (libcamera), hardware video
 decode/encode (Venus), accelerometer/gyroscope/magnetometer/light sensor (auto-rotation), battery and
-charging, microSD, USB networking. The LTE modem, SIM and GPS do not work. Details and the list of
+charging, microSD, USB networking. The LTE modem and SIM remain disabled; GNSS transport is
+working but no position fix was obtained in the diagnostic run. Details and the list of
 harmless boot messages: [docs/hardware.md](docs/hardware.md).
 
 ## How it boots
@@ -69,7 +76,7 @@ Upstream: [wh1ter0z3/gts3lwifi-mainline](https://github.com/wh1ter0z3/gts3lwifi-
 | Boot | pmOS boot.img stored behind lk2nd in `boot` | extlinux.conf on `cache` as ext2; kernels are files in `/boot` |
 | Root file system | pmOS install on `userdata` | ext4 on `system`, optionally btrfs over `userdata` + `system` (28.3 GiB) |
 | lk2nd for gts3llte | built, "not tested on hardware" | the image used here, tested on an SM-T825 ([docs/lk2nd.md](docs/lk2nd.md)) |
-| Kernel | 7.3.1-r3 | 7.3.1-r0 with Landlock, connmark, RFCOMM/BNEP, MGLRU, THP madvise, `-t825`, GPU hang accounting and top speakers ([docs/kernel.md](docs/kernel.md)) |
+| Kernel | 7.3.1-r2 | 7.3.1-r2 with Landlock, connmark, RFCOMM/BNEP, MGLRU, THP madvise, `-t825`, GPU hang accounting, A5xx hangcheck progress detection and top speakers ([docs/kernel.md](docs/kernel.md)) |
 | Top speakers on the SM-T825 | left out "until checked" | enabled (0202, formerly 0114); four speakers tested on 6.19.5 only |
 | Firmware | `gts3-firmware` copies it from Android at every boot | extracted once from your partition dumps into the image and the initramfs (Android is gone) |
 | Accelerometer mount matrix (SM-T825) | `1,0,0; 0,-1,0; 0,0,-1`, for KWin's panel orientation handling | `0,-1,0; -1,0,0; 0,0,1` for Hyprland and `t825-autorotate` |
@@ -81,8 +88,10 @@ Upstream: [wh1ter0z3/gts3lwifi-mainline](https://github.com/wh1ter0z3/gts3lwifi-
 
 This kernel includes upstream's Book Cover Keyboard hot-plug, sensor timestamps/rate control,
 shared-buffer GPU fixes, display resume, touch keys, headset jack and Venus updates through 0182.
-Upstream tested suspend with Wi-Fi resume on the T820; those results still need repeating on T825.
-One upstream tester reported a T825 7.3.1 boot on main plus modem work; this exact build is untested.
+The installed build passed ten bounded s2idle cycles with Wi-Fi, Bluetooth, PipeWire and sensors;
+speaker/headset routing and modem functionality remain outside that baseline.
+One upstream tester reported a T825 7.3.1 boot on main plus modem work; that report does not validate
+the modem path in this exact build.
 Use the DTB from the 7.3.1 package: the previous 6.19.5 release DTBs must not be used
 with 7.3.1 because the reserved-memory layout and board definitions changed.
 
@@ -130,9 +139,9 @@ Start TWRP and plug the tablet in (`adb devices` shows `recovery`):
 install/backup-partitions.sh backup/
 ```
 
-It streams `efs modemst1 modemst2 persist param boot recovery apnhlos modem dsp system` with
+It streams `efs modemst1 modemst2 fsg fsc persist param boot recovery apnhlos modem dsp system` with
 `adb exec-out` and checks each copy against a SHA-256 taken on the tablet. Keep `backup/` private and
-safe: EFS holds your IMEI and calibration.
+safe: EFS, FSG and FSC hold IMEI, calibration and modem state; missing partition labels are skipped.
 
 ### 3. Install lk2nd
 
@@ -185,6 +194,19 @@ It mounts the dumps read-only and collects, as postmarketOS' `gts3-firmware` doe
 | `modem` | `image/adsp.*` | audio DSP |
 | `system` | `bdwlan30.bin` → `ath10k/QCA6174/hw3.0/board.bin` | Wi-Fi |
 | `efs` | `FactoryApp/sensors/sns.reg` → `qcom/sensors/sns.reg-samsung,gts3llte` | sensor calibration |
+
+The normal extraction deliberately excludes the modem MSS. For a private GNSS
+diagnostic image only, after verifying backups of `efs`, `modemst1/2`, `fsg` and
+`fsc`, opt in explicitly:
+
+```sh
+sudo EXTRACT_MSS=1 install/extract-firmware.sh backup/ firmware-mss/
+```
+
+This adds `mba.mbn`, `modem.*` and the `modem_pr/` QRTR/TFTP tree. The output is
+created owner-only and must remain outside the repository; it is consumed only
+by the opt-in MSS DT described in [ROADMAP.md](ROADMAP.md). Do not use this
+firmware with the production DT or enable the modem persistently.
 
 Samsung's Wi-Fi board file says country GB, and the radio never goes beyond the rules of that
 country. Put your own country in it now (ISO 3166-1 numeric code: 76 Brazil, 840 United States,
@@ -334,7 +356,7 @@ initramfs, boot images, the boot file system and the rootfs image. Steps 5-8 mak
 ## License
 
 - Scripts, tools, desktop files and documentation: MIT, see [LICENSE](LICENSE).
-- Kernel patches in `pmaports/linux-postmarketos-qcom-msm8996/`, including ours (0201, 0202):
+- Kernel patches in `pmaports/linux-postmarketos-qcom-msm8996/`, including ours (0201, 0202, 0204):
   GPL-2.0, like the Linux kernel. Device tree changes follow the SPDX headers of the files they patch.
 - Everything else that comes from postmarketOS pmaports or from wh1ter0z3/gts3lwifi-mainline (the
   APKBUILDs, the device package, the device files in `rootfs/files/` taken from it) keeps the
