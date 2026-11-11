@@ -59,6 +59,31 @@ interrupt, and does not explicitly list PM8994.
    first armed by the candidate cannot cover device shutdown, CPU teardown,
    relocation or early entry. A smaller initramfs does not fix that gap.
 
+## Live PON register state
+
+A read-only snapshot on 2026-11-11 (Arch boot
+`a653fa6f-fa9b-4c1d-8a75-d2af4138f407`) read only PON `0x800-0x80f` and
+`0x854-0x858` through regmap debugfs at fixed offsets; no register was written,
+no driver was loaded and the tablet was not rebooted. Evidence:
+`artifacts/roadmap-7.3/pm8994-pon-readonly-20261111T151136Z/`, collector
+`tools/t825-pmic-pon-snapshot.sh` and decoder `tools/analyze-t825-pon.py`.
+
+| Register | Value | Interpretation |
+|---|---|---|
+| `0x804`/`0x805` | `0x01`/`0x01` | PON peripheral, subtype `PON_PRIMARY`: generation 1 |
+| `0x808` | `0x41` | PON reason: hard reset and external power |
+| `0x80c` | `0x02` | Last power-off: PS_HOLD (not PMIC_WD, bit 2) |
+| `0x854`/`0x855` | `0x0f`/`0x03` | Bootloader-programmed S1/S2 timers; units unverified |
+| `0x856` | `0x08` | S2 reset type not defined by the pinned downstream enum |
+| `0x857` | `0x00` | Watchdog disabled (bit 7 clear) |
+
+Consequences: the running boot has no inherited armed PMIC timer, so the
+`WDOG_HW_RUNNING` takeover concern does not apply to this boot. The mainline
+probe would replace the bootloader's reset type `0x08` with `0x07` and cannot
+restore it. `POFF_REASON1` distinguishes a PMIC watchdog power-off from PS_HOLD,
+so a future expiry can be attributed by reading it on the next boot. Expiry,
+pet semantics, timer units and reset destination remain unvalidated.
+
 ## Required validation sequence
 
 First establish the PM8994 PON revision, timer units, pet semantics, register

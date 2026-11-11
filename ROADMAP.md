@@ -192,6 +192,11 @@ running another experiment that can lose USB, SSH, or modem responsiveness.
   is essential: the current watchdog core configuration can feed an inherited
   timer indefinitely before userspace opens it. Evidence:
   `artifacts/roadmap-7.3/pm8994-watchdog-source-20261110T230854Z/`.
+  A read-only live PON snapshot shows a generation-1 PON, the PMIC watchdog
+  disabled (`0x857=0x00`), bootloader timers `0x0f`/`0x03`, reset type `0x08`
+  and last power-off reason PS_HOLD (`0x80c=0x02`). The decoder can attribute a
+  later PMIC watchdog power-off; no expiry has been tested:
+  `artifacts/roadmap-7.3/pm8994-pon-readonly-20261111T151136Z/`.
 - [x] Separate reset action from boot-mode selection in a read-only audit.
   Live qcom-pon exposes `bootloader=0x02`, `recovery=0x01` and `normal=0x14`;
   PS_HOLD performs the reset. The documented lk2nd base reads PON `0x02` for
