@@ -837,7 +837,7 @@ MSS diagnostic kernel APK SHA-256:
   after 0201 and build the normal r2 package. RAM acceptance remains open in
   the normal-r2 boot and r1/r2 comparison gates below; the earlier checkbox
   incorrectly combined the completed build with unproven hardware acceptance.
-- [ ] Compare r1 and r2 using the same workload, changing only the stated
+- [x] Compare r1 and r2 using the same workload, changing only the stated
   hypothesis. Keep a control without 0201 as a separate experiment if needed.
   The normal r2 image at `normal-r2-boot-20261110/` lacks validated independent
   recovery. The attempted pairing in `normal-r2-recovery-20261110d/` is rejected
@@ -852,10 +852,14 @@ MSS diagnostic kernel APK SHA-256:
   Build and validate a read-only root with RAM-backed graphical-session writes,
   assert the complete kernel build identity, and observe actual RAM boot plus
   independent reset before performing the GPU comparison.
-  **BLOCKED**: the comparison needs the Hyprland session of an installed boot,
-  and a GPU hang there has no remote recovery until the watchdog gate (line
-  180) passes; run it with the operator present. r1 baseline:
-  `artifacts/roadmap-7.3/gpu-r1-20261110T080117Z/`.
+  Operator-attended run 2026-11-11 instead used installed boots with a
+  verified rollback (gate below): `tools/t825-gpu-compare.py` ran the same
+  binary on r1 (`#2`, msm.ko 57c36516) and r2 (`#3`, msm.ko 244758a7),
+  three repeats each. Finite draws matched (reset 0x0, no hangcheck). The
+  infinite draw was GUILTY (0x8253) with hangcheck recovery and the same
+  Hyprland process on both, but r2 took 3.7-5.2 s to declare the lockup
+  against 1.2-1.3 s on r1, consistent with 0204's progress check delaying
+  detection: `artifacts/roadmap-7.3/rollback-preserve-20261111T225106Z/gpu-r1.json`, `gpu-r2.json`.
 - [ ] Capture DRM state, kernel logs and Hyprland crash reports from real hangs;
   distinguish kernel recovery, Mesa command generation and compositor reset handling.
   The bounded runner `tools/t825-chromium-gpu-test.sh` supports Chromium and the
@@ -1004,11 +1008,15 @@ complete modem stack in production before recovery and boot logs are established
   results, including the accepted v59/v60 direct-root handoff, Bluetooth trace
   attribution, current v63 image validation default and the remaining open
   acceptance gates.
-- [ ] Test rollback with the preserved working image before an installed update.
-  The update/rollback scripts pass 44 offline tests. **BLOCKED** on hardware:
-  the test boots a new installed kernel, and a failed installed boot has no
-  remote recovery (line 180); run it with the operator present:
-  `artifacts/roadmap-7.3/rollback-offline-20261111/`.
+- [x] Test rollback with the preserved working image before an installed update.
+  The update/rollback scripts pass 44 offline tests:
+  `artifacts/roadmap-7.3/rollback-offline-20261111/`. Operator run
+  2026-11-11: r1 boot files, all 659 module files and an r1 fastboot recovery
+  image were saved on the host; `install/update-kernel.sh` installed r2
+  (`#3`, r2 modules overlaid on the r1 initramfs), which booted to Hyprland;
+  `install/rollback-kernel.sh` then restored r1 boot hashes and every module
+  file byte-for-byte, and r1 (`#2`) booted with a new boot ID and unchanged
+  extlinux: `artifacts/roadmap-7.3/rollback-preserve-20261111T225106Z/summary.json`.
 - [ ] Submit generic patches upstream separately from T825-specific changes.
   **BLOCKED** (2026-11-11): the series is prepared but not sent. 122 generic,
   1 board-only, 1 mixed and 78 excluded patches are classified; only one generic
