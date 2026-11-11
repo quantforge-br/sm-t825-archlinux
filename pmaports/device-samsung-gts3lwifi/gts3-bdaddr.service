@@ -2,7 +2,12 @@
 Description=Set the Bluetooth address from the efs partition
 After=bluetooth.service
 ConditionPathExists=/dev/disk/by-partlabel/efs
+StartLimitIntervalSec=120
+StartLimitBurst=5
 
 [Service]
-Type=oneshot
+Type=exec
+ExecStartPre=/usr/bin/sleep 8
 ExecStart=/usr/sbin/gts3-bdaddr
+Restart=on-failure
+RestartSec=5

@@ -1,60 +1,94 @@
 #!/bin/sh
-# Give the QCA6174 Bluetooth controller its per-device address.
-# The NVM file only carries a placeholder (00:00:00:00:5a:ad), so hci_qca
-# leaves hci0 unconfigured until a public address is set. Samsung keeps the
-# real one in bluetooth/bt_addr on the efs partition; mount it read-only
-# (noload: never replay the journal) just long enough to read it.
-#
-# Setting the address makes hci_qca run its setup again. At boot this races
-# with bluetoothd and the HCI reset can time out (-110), leaving no usable
-# controller. If the controller does not show up as configured, rebind the
-# serdev driver once and set the address again.
+# Give QCA6174 its public address from EFS, read-only without journal replay.
+# Setting the placeholder address starts asynchronous hci_qca setup. A device
+# in sysfs (or the "Configuration options" stanza in btmgmt) does not prove
+# that setup completed. Check a primary controller and bluetoothd separately.
 set -eu
-dev=/dev/disk/by-partlabel/efs
+export LC_ALL=C
+hci=${GTS3_BT_HCI_SYSFS:-/sys/class/bluetooth/hci0}
 mnt=$(mktemp -d)
-mount -o ro,noload "$dev" "$mnt"
+mounted=0
+cleanup() {
+	if [ "$mounted" -eq 1 ]; then umount "$mnt" || return; fi
+	rmdir "$mnt"
+}
+trap cleanup EXIT
+mount -o ro,noload /dev/disk/by-partlabel/efs "$mnt"
+mounted=1
 addr=$(tr -d '\r\n ' < "$mnt/bluetooth/bt_addr")
 umount "$mnt"
+mounted=0
 rmdir "$mnt"
-case "$addr" in
-??:??:??:??:??:??) ;;
-*) echo "gts3-bdaddr: unexpected bt_addr format" >&2; exit 1 ;;
-esac
-
-set_addr() {
-	i=0
-	until btmgmt --index 0 public-addr "$addr" >/dev/null 2>&1; do
-		i=$((i + 1))
-		[ "$i" -lt 30 ] || { echo "gts3-bdaddr: controller not ready" >&2; return 1; }
-		sleep 1
-	done
+trap - EXIT
+printf '%s\n' "$addr" | grep -Eq '^([[:xdigit:]]{2}:){5}[[:xdigit:]]{2}$' || {
+	echo 'gts3-bdaddr: unexpected bt_addr format' >&2
+	exit 1
 }
 
 configured() {
+	info=$(timeout 3 btmgmt --index 0 info 2>/dev/null) || return 1
+	printf '%s\n' "$info" | grep -q '^hci0:.*Primary controller' || return 1
+	printf '%s\n' "$info" | awk -v want="$addr" '
+		$1 == "addr" && toupper($2) == toupper(want) { found = 1 }
+		END { exit(found ? 0 : 1) }
+	' || return 1
+	# If bluetoothctl is installed, also require the daemon to expose hci0.
+	# This service runs after bluetooth.service; never use this check from a
+	# unit ordered before it, since D-Bus activation would create a deadlock.
+	if command -v bluetoothctl >/dev/null 2>&1; then
+		timeout 3 bluetoothctl show 2>/dev/null | grep -Fqi "Controller $addr " || return 1
+	fi
+}
+
+ready() {
+	# Wait for three consecutive successful probes: public-addr can complete
+	# before the asynchronous reset has finished, even with hci0 in sysfs.
 	i=0
+	stable=0
 	while [ "$i" -lt 15 ]; do
-		btmgmt info 2>/dev/null | grep -q "^hci0:" && return 0
+		if configured; then stable=$((stable + 1)); else stable=0; fi
+		[ "$stable" -lt 3 ] || return 0
 		i=$((i + 1))
 		sleep 1
 	done
 	return 1
 }
 
-set_addr
-configured && exit 0
+set_addr() {
+	i=0
+	while [ "$i" -lt 10 ]; do
+		timeout 5 btmgmt --index 0 public-addr "$addr" >/dev/null 2>&1 && return 0
+		i=$((i + 1))
+		sleep 1
+	done
+	return 1
+}
 
-echo "gts3-bdaddr: hci0 did not come up after setting the address, rebinding the driver" >&2
-serdev=$(readlink -f /sys/class/bluetooth/hci0/device)
+# Do not set the address again on a configured controller (Rejected/Busy).
+if configured; then ready && exit 0; fi
+# Save the UART binding before any failed setup can remove hci0.
+serdev=$(readlink -f "$hci/device")
 driver=$(readlink -f "$serdev/driver")
+case "$driver" in
+	/sys/bus/serial/drivers/hci_uart_qca) ;;
+	*) echo 'gts3-bdaddr: unexpected Bluetooth serdev driver' >&2; exit 1 ;;
+esac
 name=$(basename "$serdev")
-echo "$name" > "$driver/unbind"
+if set_addr && ready; then exit 0; fi
+
+echo 'gts3-bdaddr: controller unavailable; retrying QCA UART binding once' >&2
+printf '%s' "$name" > "$driver/unbind"
 sleep 2
-echo "$name" > "$driver/bind"
+printf '%s' "$name" > "$driver/bind"
 i=0
-until [ -e /sys/class/bluetooth/hci0 ]; do
+until [ -e "$hci" ]; do
 	i=$((i + 1))
-	[ "$i" -lt 30 ] || { echo "gts3-bdaddr: hci0 did not reappear" >&2; exit 1; }
+	[ "$i" -lt 30 ] || { echo 'gts3-bdaddr: hci0 did not reappear' >&2; exit 1; }
 	sleep 1
 done
-set_addr
-configured || { echo "gts3-bdaddr: hci0 still not configured" >&2; exit 1; }
+if set_addr && ready; then
+	echo 'gts3-bdaddr: controller recovered after QCA UART rebind' >&2
+else
+	echo 'gts3-bdaddr: controller still unavailable after QCA UART rebind' >&2
+	exit 1
+fi
