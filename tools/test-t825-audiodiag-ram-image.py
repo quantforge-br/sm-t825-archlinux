@@ -22,6 +22,8 @@ def main(bundle):
     fdtget=subprocess.run(['fdtget','-t','s',str(bundle/'dtbs/qcom/msm8996-samsung-gts3llte.dtb'),'/soc/remoteproc@2080000','status'],capture_output=True,text=True,check=True).stdout.strip()
     fdtget=='disabled' or fail('LTE MSS enabled')
     raw=gzip.decompress(kernel); budget=(52428800-rs)//page*page-2097152-32768; len(raw)<=budget or fail('memory budget exceeded')
+    if 'clk_qcom.rcg_update_trace=1' in words:
+        b'clk_qcom.rcg_update_trace' in raw or fail('kernel lacks RCG update trace parameter')
     with tempfile.TemporaryDirectory(prefix='t825-audio-image-') as tmp:
         tree=Path(tmp)
         data=subprocess.run(['unzstd','-c',str(bundle/'initramfs')],check=True,capture_output=True).stdout

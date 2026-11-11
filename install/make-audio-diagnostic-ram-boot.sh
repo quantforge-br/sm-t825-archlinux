@@ -12,9 +12,11 @@ root_opts=${T825_ROOTFSOPTS:?root options required}
 transaction_diag=${T825_SLIM_TRANSACTION_DIAGNOSTICS:-0}
 channel_removal=${T825_NGD_CHANNEL_REMOVAL:-0}
 event_trace=${T825_AUDIO_EVENT_TRACE:-0}
+rcg_trace=${T825_RCG_UPDATE_TRACE:-0}
 case "$transaction_diag" in 0|1) ;; *) echo 'invalid transaction diagnostic opt-in' >&2; exit 2 ;; esac
 case "$channel_removal" in 0|1) ;; *) echo 'invalid channel removal opt-in' >&2; exit 2 ;; esac
 case "$event_trace" in 0|1) ;; *) echo 'invalid audio event trace opt-in' >&2; exit 2 ;; esac
+case "$rcg_trace" in 0|1) ;; *) echo 'invalid RCG update trace opt-in' >&2; exit 2 ;; esac
 if [ "$channel_removal" = 1 ] && [ "$transaction_diag" != 1 ]; then
 	echo 'channel removal requires transaction diagnostics' >&2; exit 2
 fi
@@ -30,6 +32,10 @@ if [ "$channel_removal" = 1 ]; then
 fi
 if [ "$event_trace" = 1 ]; then
 	transaction_cmdline="$transaction_cmdline slimbus.event_trace=1"
+fi
+if [ "$rcg_trace" = 1 ]; then
+	# Built-in clk_qcom parameter; the kernel must carry the diagnostic patch.
+	transaction_cmdline="$transaction_cmdline clk_qcom.rcg_update_trace=1"
 fi
 [ -f "$normal/initramfs" ] && [ -f "$normal/t825-readonly-ram.img" ] || { echo 'normal candidate incomplete' >&2; exit 2; }
 [ -f "$audio_build/out/arch/arm64/boot/Image.gz" ] || { echo 'audio Image.gz missing' >&2; exit 2; }
@@ -102,6 +108,7 @@ cat > "$out/decision.json" <<JSON
   "transaction_diagnostics_requested": $transaction_diag,
   "channel_removal_requested": $channel_removal,
   "event_trace_requested": $event_trace,
+  "rcg_update_trace_requested": $rcg_trace,
   "mss": "disabled on samsung,gts3llte",
   "normal_candidate_sha256": "$expected",
   "scope": "read-only direct-root candidate; no tablet load or audio stream",
