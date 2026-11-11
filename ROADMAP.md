@@ -197,6 +197,11 @@ running another experiment that can lose USB, SSH, or modem responsiveness.
   and last power-off reason PS_HOLD (`0x80c=0x02`). The decoder can attribute a
   later PMIC watchdog power-off; no expiry has been tested:
   `artifacts/roadmap-7.3/pm8994-pon-readonly-20261111T151136Z/`.
+  **BLOCKED**: the deliberate expiry test was deferred to the operator-present
+  batch (user decision, 2026-11-11), because an expiry whose reset destination
+  is unknown can leave the tablet off or in a boot loop without remote
+  recovery. The PON driver module is built and hashed but has not been loaded:
+  `artifacts/roadmap-7.3/pm8916-wdt-module-20261111/`.
 - [x] Separate reset action from boot-mode selection in a read-only audit.
   Live qcom-pon exposes `bootloader=0x02`, `recovery=0x01` and `normal=0x14`;
   PS_HOLD performs the reset. The documented lk2nd base reads PON `0x02` for
@@ -389,6 +394,10 @@ Post-reboot evidence from 2026-11-09:
   installed-boot series is permitted until recovery and workload are integrated.
   Audit and containment tests:
   `artifacts/roadmap-7.3/qca-address-source-check-20261111T111509Z/`.
+  **BLOCKED**: an installed-boot series needs independent recovery for
+  installed boots (watchdog gate, line 180) or the operator present; 18
+  frozen-payload rebinds never reproduced the timeout:
+  `artifacts/roadmap-7.3/bluetooth-hci-trace-series-20261111T172014Z/`.
 - [x] Reduce the boot fault rate after separating HCI readiness from BlueZ
   daemon readiness. The helper candidate now accepts a configured `btmgmt`
   controller while `bluetoothd` is stopped, avoiding an unnecessary
@@ -426,6 +435,10 @@ Post-reboot evidence from 2026-11-09:
   its exact runtime branch and the Reset cause remain unproven. Preserve the
   stock firmware and investigate early address-property provisioning separately.
   Source execution, format tests and input hashes:
+  `artifacts/roadmap-7.3/qca-address-source-check-20261111T111509Z/`.
+  **BLOCKED**: discriminating the runtime branch needs installed boots with
+  BlueZ, which have no independent recovery (line 180), and the stock firmware
+  must stay unmodified. Source-level evidence:
   `artifacts/roadmap-7.3/qca-address-source-check-20261111T111509Z/`.
 - [x] Capture a read-only runtime snapshot of the restored r11 control. Four
   QCA setup sequences were visible at 12.380118, 23.199581, 2058.268627 and
@@ -717,6 +730,10 @@ MSS diagnostic kernel APK SHA-256:
   recovery from a still-running diagnostic.
 - [ ] Test both microphones, every speaker and CTIA insertion/removal, including
   twenty route cycles without audible or recurring kernel errors.
+  **BLOCKED**: audible speaker checks, acoustic microphone input and CTIA plug
+  cycles need a person at the tablet. Remote RAM captures pass three phases
+  with zero channel-removal errors and a lossless event trace:
+  `artifacts/roadmap-7.3/authorized-audio-event-ring-20261111T133727Z/`.
 - [x] Investigate `pclk0_clk_src: rcg didn't update its configuration` using
   before/after clock and power state; verify patches 0147 and 0148 on the T825.
   The installed kernel reproduces two `pclk0` and two `pclk1` warnings at boot,
@@ -793,6 +810,9 @@ MSS diagnostic kernel APK SHA-256:
   it could pass without observing suspend success and provided no independent
   recovery timer. A calibrated external power measurement or
   charger-disconnected matched test is still required.
+  **BLOCKED**: needs a calibrated external meter or an operator to disconnect
+  the charger for a matched run. Last software-only evidence:
+  `artifacts/roadmap-7.3/suspend-bt-10-20261110T065730Z/`.
 
 ## Phase 3: GPU and compositor
 
@@ -820,6 +840,10 @@ MSS diagnostic kernel APK SHA-256:
   Build and validate a read-only root with RAM-backed graphical-session writes,
   assert the complete kernel build identity, and observe actual RAM boot plus
   independent reset before performing the GPU comparison.
+  **BLOCKED**: the comparison needs the Hyprland session of an installed boot,
+  and a GPU hang there has no remote recovery until the watchdog gate (line
+  180) passes; run it with the operator present. r1 baseline:
+  `artifacts/roadmap-7.3/gpu-r1-20261110T080117Z/`.
 - [ ] Capture DRM state, kernel logs and Hyprland crash reports from real hangs;
   distinguish kernel recovery, Mesa command generation and compositor reset handling.
   The bounded runner `tools/t825-chromium-gpu-test.sh` supports Chromium and the
@@ -827,8 +851,13 @@ MSS diagnostic kernel APK SHA-256:
   Brave with Hyprland's PID unchanged and no new GPU reset lines; this is a
   workload baseline, not the required real-hang reproduction. Report:
   `artifacts/roadmap-7.3/chromium-gpu-20261110T084239Z/`.
+  **BLOCKED**: real hangs in an installed graphical session can wedge the SoC
+  with no remote recovery (line 180); needs the operator present. Baseline:
+  `artifacts/roadmap-7.3/chromium-gpu-20261110T084239Z/`.
 - [ ] Require 20 controlled reproductions without compositor restart or a
   subsequent hangcheck cascade before calling the correction accepted.
+  **BLOCKED**: depends on the real-hang capture above. Baseline:
+  `artifacts/roadmap-7.3/gpu-r1-20261110T080117Z/`.
 
 Use `tools/gpuhang.c` only with recovery verified and work saved. Enable tracing
 only as needed in diagnostic builds. Keep `--disable-gpu-rasterization` as a
@@ -870,6 +899,9 @@ Pin revisions and review changes individually rather than importing a branch.
   fastboot return.
 - [ ] Acquire satellites and a sustained antenna fix, then check SSR, suspend
   and coexistence with Wi-Fi/audio. Transport success does not establish a fix.
+  **BLOCKED**: needs the tablet under open sky; the latest MSS RAM cycle
+  answered LOC queries but got no fix:
+  `artifacts/roadmap-7.3/authorized-gnss-qmi-20261111T175504Z/`.
 
 Historical evidence: `artifacts/roadmap-7.3/gnss-ram-20261108/hardware-v17-20261109T173200Z/`.
 Old images through v58 are historical diagnostics and fail the current
@@ -881,8 +913,18 @@ See [GNSS/EFS audit](docs/gnss-efs-audit.md).
 ### LTE after GNSS
 
 - [ ] Verify TrustZone dependencies, SIM, calibration and QMI service behavior.
+  The MSS RAM cycle with read-only QMI queries shows the modem online
+  (MPSS.TH.2.0.1.c1-00127, gsm/umts/lte), DMS/UIM/NAS/WDS answering, and the
+  receiver camped with limited service on WCDMA at -78 dBm, so TrustZone
+  loading, QMI and RX calibration work. **BLOCKED**: the card slot reports
+  `absent`; SIM checks need a SIM inserted:
+  `artifacts/roadmap-7.3/authorized-gnss-qmi-20261111T175504Z/`.
 - [ ] Enumerate services, detect SIM, register and establish a data session in
   separate stages with explicit evidence at each boundary.
+  Stage 1 passed (QMI services enumerated). **BLOCKED** at stage 2: no SIM
+  card is present, so registration stays `not-registered-searching` and data
+  is `disconnected`:
+  `artifacts/roadmap-7.3/authorized-gnss-qmi-20261111T175504Z/`.
 - [ ] Investigate the IPA v2.5 data path; mainline IPA support starting at v3.0
   is a separate gap. Enabling MSS does not establish LTE data support.
   The pinned MSM8996 v2/v3 source describes IPA 2.5 with BAM/SPS transport,
@@ -893,8 +935,13 @@ See [GNSS/EFS audit](docs/gnss-efs-audit.md).
   ordinary DTS node names correctly and distinguishes DT presence from runtime
   binding; the production DT still has no IPA node. Driver implementation and
   hardware validation remain open.
+  **BLOCKED**: a data path cannot be validated without a registered data
+  session, which needs a SIM (stage 2 above):
+  `artifacts/roadmap-7.3/authorized-gnss-qmi-20261111T175504Z/`.
 - [ ] Require bidirectional traffic, signal-loss reconnect and suspend/resume.
   Voice and SMS need their own acceptance criteria if included later.
+  **BLOCKED**: needs a SIM data session and the IPA path above:
+  `artifacts/roadmap-7.3/authorized-gnss-qmi-20261111T175504Z/`.
 
   Static audit: the production DT keeps MSS disabled, the installed config has
   `CONFIG_GNSS` and `CONFIG_WWAN` disabled, and no IPA platform device exists;
@@ -916,6 +963,9 @@ complete modem stack in production before recovery and boot logs are established
   The detached kexec-proof launcher and WCD9335 artifact-layout validation are
   covered by `artifacts/roadmap-7.3/offline-checks-20261110T200510Z/`.
   The complete offline test suite and shell/static checks pass in
+  `artifacts/roadmap-7.3/full-offline-suite-20261110T200645Z/`.
+  **BLOCKED**: depends on the blocked gates above, which need the operator, a
+  SIM, open sky or a validated watchdog. Offline suite:
   `artifacts/roadmap-7.3/full-offline-suite-20261110T200645Z/`.
 - [x] Build and inspect config, modules, DTBs and artifact hashes. Validate the
   actual image/header, archive identity, legacy command-line limit and lk2nd budget.
@@ -939,6 +989,10 @@ complete modem stack in production before recovery and boot logs are established
   attribution, current v63 image validation default and the remaining open
   acceptance gates.
 - [ ] Test rollback with the preserved working image before an installed update.
+  The update/rollback scripts pass 44 offline tests. **BLOCKED** on hardware:
+  the test boots a new installed kernel, and a failed installed boot has no
+  remote recovery (line 180); run it with the operator present:
+  `artifacts/roadmap-7.3/rollback-offline-20261111/`.
 - [ ] Submit generic patches upstream separately from T825-specific changes.
   **BLOCKED** (2026-11-11): the series is prepared but not sent. 122 generic,
   1 board-only, 1 mixed and 78 excluded patches are classified; only one generic
