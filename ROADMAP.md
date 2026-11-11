@@ -751,6 +751,13 @@ MSS diagnostic kernel APK SHA-256:
   identical, and byte RCGs are never dirty. The pixel RCGs did not latch their
   configuration. Whether dsi0pll was not yet running at the update is untested.
   Evidence: `artifacts/roadmap-7.3/pclk-state-correlation-20261111T153349Z/`.
+  The opt-in RAM trace (patch 0209, `clk_qcom.rcg_update_trace`) identifies the
+  mechanism. In a warning boot the first pixel update starts with the RCG root
+  running (`CMD_RCGR=0x000000f0`) and CMD_UPDATE never clears; in a clean boot it
+  starts with the root off (`0x800000f0`) and latches at once. In both, CCF has
+  dsi0pll unprepared and disabled. A running RCG cannot switch to a stopped
+  source, so the warning depends on the inherited root state. A parent-enable
+  fix is untested. Evidence: `artifacts/roadmap-7.3/rcg-trace-analysis-20261111/`.
 - [ ] Compare charge/idle/suspend consumption under matched load and temperature.
   An exploratory profile sampled the SM5705 fuel gauge during idle,
   a fixed Python CPU loop and a window after 20-second s2idle, without changing

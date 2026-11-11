@@ -115,3 +115,24 @@ it. Both pixel RCGs use dsi0pll in bonded DSI mode. One explanation is that
 CMD_UPDATE is requested before the dsi0pll output runs, but that is untested; it
 needs a PLL lock read at the time of `clk_pixel_set_rate`. Evidence:
 `artifacts/roadmap-7.3/pclk-state-correlation-20261111T153349Z/`.
+
+## Update trace
+
+Patch 0209 adds an opt-in trace to `update_config()` (`clk_qcom.rcg_update_trace=1`,
+RAM diagnostic only) that logs CMD_RCGR before the update and when the poll
+ends, plus the CCF state of up to five parent clocks. Two RAM boots with
+verified Arch restoration gave one warning boot and one clean boot.
+
+| Boot | first pclk update: before | after | polls left |
+| --- | --- | --- | --- |
+| warning | `0x000000f0` (root on) | `0x00000001` | 0 |
+| clean | `0x800000f0` (root off) | `0x80000000` | 500 |
+
+In both boots dsi0pll, its post-dividers and the VCO were unprepared and
+disabled in CCF when the pixel rate was set. Byte RCGs always started with
+ROOT_OFF set and latched. The warning therefore appears when the pixel RCG root
+is already running at Linux's first rate change while the selected source is
+stopped: the RCG cannot move a running root onto a stopped PLL. Whether the
+root runs on entry varies from boot to boot. The candidate fix, enabling the
+parent during the change (CLK_OPS_PARENT_ENABLE) or locking the PLL first, has
+not been tested. Evidence: `artifacts/roadmap-7.3/rcg-trace-analysis-20261111/`.
