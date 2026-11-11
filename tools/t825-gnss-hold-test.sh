@@ -95,7 +95,9 @@ gnss_probe_timeout=60
 				"/usr/bin/busybox timeout 6 qmicli --device=qrtr://0 --$query 2>&1 || true"
 		done
 	fi
-} | timeout "$gnss_probe_timeout" python3 "$runner/t825-telnet.py" --host 172.16.42.1 --port 23 > "$out/initramfs-gnss.txt" 2>&1 || true
+# The helper has its own 10 s default read deadline; give it the probe budget.
+} | timeout "$gnss_probe_timeout" python3 "$runner/t825-telnet.py" --timeout "$((gnss_probe_timeout - 5))" \
+	--host 172.16.42.1 --port 23 > "$out/initramfs-gnss.txt" 2>&1 || true
 printf '%s\n' 'touch /run/t825-mssdiag/continue-pivot; echo T825_PIVOT_RELEASED' |
 	timeout 10 python3 "$runner/t825-telnet.py" --host 172.16.42.1 --port 23 > "$out/pivot-release.txt" 2>&1 || true
 # A lingering initramfs telnet listener distinguishes a failed switch_root
