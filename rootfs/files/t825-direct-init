@@ -1,0 +1,80 @@
+#!/bin/sh
+set -eu
+
+exec >>/run/t825-recovery/direct-init.log 2>&1
+echo "direct init start $(date -u +%FT%TZ)"
+
+# The pmOS switch_root leaves these mounts to the real init. Direct PID 1
+# must provide them itself before network tools and OpenSSH inspect /dev,
+# /proc and /sys. They remain transient even when the root is read-only.
+mountpoint -q /proc || mount -t proc proc /proc
+mountpoint -q /sys || mount -t sysfs sysfs /sys
+mountpoint -q /dev || mount -t devtmpfs devtmpfs /dev
+mountpoint -q /sys/kernel/config || mount -t configfs configfs /sys/kernel/config
+case " $(cat /proc/cmdline) " in
+    *" t825.ramdiag "*)
+        mountpoint -q /tmp || mount -t tmpfs -o nosuid,nodev,mode=1777 tmpfs /tmp
+        ;;
+esac
+
+# The initramfs gadget is expected to survive the root handoff. Configure the
+# inherited network interface without touching configfs or the UDC binding.
+iface=
+for path in /sys/kernel/config/usb_gadget/g1/functions/ncm.usb0/ifname \
+    /sys/kernel/config/usb_gadget/g1/functions/rndis.usb0/ifname; do
+    if [ -r "$path" ]; then
+        iface=$(cat "$path" 2>/dev/null || true)
+        [ -n "$iface" ] && break
+    fi
+done
+[ -n "$iface" ] || iface=usb0
+ip link set "$iface" up || true
+ip addr replace 172.16.42.1/24 dev "$iface" || true
+
+# Some SM-T825 boots unbind the UDC while switch_root tears down the
+# initramfs. Keep a bounded post-pivot repair loop: it only calls the
+# idempotent helper when UDC is empty, and never rewrites a live gadget.
+(
+    helper=/usr/local/sbin/t825-usb-gadget
+    if [ -x /run/t825-recovery/usb-gadget ]; then
+        helper=/run/t825-recovery/usb-gadget
+    fi
+    for _ in $(seq 1 30); do
+        udc_state=$(cat /sys/kernel/config/usb_gadget/g1/UDC 2>/dev/null || true)
+        if [ -z "$udc_state" ] && [ -x "$helper" ]; then
+            "$helper" >>/run/t825-recovery/direct-usb.log 2>&1 || true
+        fi
+        sleep 1
+    done
+) &
+
+# systemd-tmpfiles normally creates this before sshd.service.  The direct
+# transient PID 1 bypasses that unit ordering, so create the privilege
+# separation directory explicitly before starting sshd.
+mkdir -p /run/sshd
+chmod 0755 /run/sshd
+# Arch is the installed root; Alpine is only the initramfs build root.
+sshd=$(command -v sshd || true)
+[ -n "$sshd" ] || sshd=/usr/sbin/sshd.pam
+set --
+if [ -s /run/t825-recovery/authorized_keys ]; then
+    set -- -o AuthorizedKeysFile=/run/t825-recovery/authorized_keys
+fi
+if [ -e /etc/ssh/ssh_host_ed25519_key ]; then
+    host_key=/etc/ssh/ssh_host_ed25519_key
+else
+    host_key=/run/t825-recovery/ssh_host_ed25519_key
+    /usr/bin/ssh-keygen -q -t ed25519 -N '' -f "$host_key"
+fi
+if "$sshd" -t -h "$host_key" "$@" >>/run/t825-recovery/direct-sshd.log 2>&1; then
+    "$sshd" -D -e -h "$host_key" "$@" >>/run/t825-recovery/direct-sshd.log 2>&1 &
+    echo "$!" > /run/t825-recovery/direct-sshd.pid
+    echo "direct sshd started: $sshd"
+else
+    echo "sshd configuration test failed: $sshd"
+fi
+
+# Keep PID 1 alive until the independent recovery supervisor expires.
+while :; do
+    sleep 5
+done
