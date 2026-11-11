@@ -1,0 +1,34 @@
+From: quantforge-br <218010578+quantforge-br@users.noreply.github.com>
+Subject: [PATCH] clk: qcom: mmcc-msm8996: enable the parent across pixel rate changes
+
+Private RAM-only experiment for the SM-T825 pclk0/pclk1 "rcg didn't
+update its configuration" warning. The opt-in RCG update trace shows
+that the warning occurs when the pixel RCG root is already running at
+the first rate change while CCF still has dsi0pll unprepared and
+disabled; a running RCG cannot switch onto a stopped source. Setting
+CLK_OPS_PARENT_ENABLE makes the clock core prepare and enable the new
+parent around set_rate and set_parent, so the PLL is running when
+CMD_UPDATE is requested. Not yet accepted for normal builds.
+
+---
+diff --git a/drivers/clk/qcom/mmcc-msm8996.c b/drivers/clk/qcom/mmcc-msm8996.c
+--- a/drivers/clk/qcom/mmcc-msm8996.c
++++ b/drivers/clk/qcom/mmcc-msm8996.c
+@@ -687,7 +687,7 @@
+ 		.parent_data = mmss_xo_dsi0pll_dsi1pll,
+ 		.num_parents = ARRAY_SIZE(mmss_xo_dsi0pll_dsi1pll),
+ 		.ops = &clk_pixel_ops,
+-		.flags = CLK_SET_RATE_PARENT,
++		.flags = CLK_SET_RATE_PARENT | CLK_OPS_PARENT_ENABLE,
+ 	},
+ };
+ 
+@@ -701,7 +701,7 @@
+ 		.parent_data = mmss_xo_dsi0pll_dsi1pll,
+ 		.num_parents = ARRAY_SIZE(mmss_xo_dsi0pll_dsi1pll),
+ 		.ops = &clk_pixel_ops,
+-		.flags = CLK_SET_RATE_PARENT,
++		.flags = CLK_SET_RATE_PARENT | CLK_OPS_PARENT_ENABLE,
+ 	},
+ };
+ 
