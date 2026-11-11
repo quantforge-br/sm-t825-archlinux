@@ -1,0 +1,122 @@
+Subject: [PATCH] slimbus: add private NGD channel removal experiment
+
+Disabled production patch. Require slim_qcom_ngd_ctrl.channel_removal=1
+on an audio-only RAM candidate. Follow the pinned Samsung MSM8996 NGD
+remove-client/TID/channel-list and reconfigure sequence, checking the
+firmware success bit for both replies. Refuse empty or oversized streams,
+stop on allocation/transfer/NACK failure and preserve disable errors.
+
+This tests a missing teardown operation; it is not an accepted audio fix.
+No arbitrary delay, interrupt masking, new retry or persistent change.
+The generic teardown calls remain to preserve channel state bookkeeping;
+NGD locally bypasses their core reconfiguration messages as before.
+
+---
+
+--- a/drivers/slimbus/qcom-ngd-ctrl.c
++++ b/drivers/slimbus/qcom-ngd-ctrl.c
+@@ -80,6 +80,14 @@
+ #define SLIM_USR_MC_CONNECT_SINK	0x2D
+ #define SLIM_USR_MC_DISCONNECT_PORT	0x2E
+ #define SLIM_USR_MC_REPEAT_CHANGE_VALUE	0x0
++
++#define SLIM_NGD_CHAN_REMOVE	(2 << 6)
++#define SLIM_NGD_ACK_SUCCESS	BIT(5)
++
++/* Private RAM experiment; keep the installed/production path unchanged. */
++static bool channel_removal;
++module_param(channel_removal, bool, 0444);
++MODULE_PARM_DESC(channel_removal, "Experimental NGD channel removal on stream disable");
+ 
+ #define SLIM_RX_MSGQ_TIMEOUT_VAL	0x10000
+ 
+@@ -1086,6 +1094,69 @@
+ 	return ret;
+ }
+ 
++static int qcom_slim_ngd_remove_xfer(struct slim_controller *ctrl,
++				     struct slim_msg_txn *txn, u8 *tid)
++{
++	int ret;
++
++	/* Fail closed if the response has no success bit (including an empty ACK). */
++	memset(txn->msg->rbuf, 0, SLIM_MSGQ_BUF_LEN);
++	ret = slim_alloc_txn_tid(ctrl, txn);
++	if (ret)
++		return ret;
++
++	*tid = txn->tid;
++	ret = qcom_slim_ngd_xfer_msg_sync(ctrl, txn);
++	if (ret) {
++		slim_free_txn_tid(ctrl, txn);
++		return ret;
++	}
++
++	return (txn->msg->rbuf[0] & SLIM_NGD_ACK_SUCCESS) ? 0 : -EIO;
++}
++
++static int qcom_slim_ngd_disable_stream(struct slim_stream_runtime *rt)
++{
++	struct slim_device *sdev = rt->dev;
++	struct slim_controller *ctrl = sdev->ctrl;
++	u8 wbuf[SLIM_MSGQ_BUF_LEN];
++	u8 rbuf[SLIM_MSGQ_BUF_LEN];
++	struct slim_val_inf msg = { };
++	struct slim_msg_txn txn = { };
++	int i, ret;
++
++	/* Two payload bytes and four header bytes precede the channel list. */
++	if (!rt->ports || rt->num_ports <= 0 ||
++	    rt->num_ports > SLIM_MSGQ_BUF_LEN - 6)
++		return -EINVAL;
++
++	msg.wbuf = wbuf;
++	msg.rbuf = rbuf;
++	msg.num_bytes = rt->num_ports + 2;
++	txn.mt = SLIM_MSG_MT_DEST_REFERRED_USER;
++	txn.dt = SLIM_MSG_DEST_LOGICALADDR;
++	txn.la = SLIM_LA_MGR;
++	txn.msg = &msg;
++	txn.mc = SLIM_USR_MC_CHAN_CTRL;
++	txn.rl = msg.num_bytes + 4;
++	/* Samsung NGD protocol: remove operation, five-bit client, TID, channels. */
++	wbuf[0] = SLIM_NGD_CHAN_REMOVE | (sdev->laddr & 0x1f);
++	for (i = 0; i < rt->num_ports; i++)
++		wbuf[i + 2] = rt->ports[i].ch.id;
++
++	ret = qcom_slim_ngd_remove_xfer(ctrl, &txn, &wbuf[1]);
++	if (ret)
++		return ret;
++
++	/* Commit only after successful removal ACK; use a new transaction ID. */
++	txn.mc = SLIM_USR_MC_RECONFIG_NOW;
++	msg.num_bytes = 2;
++	txn.rl = msg.num_bytes + 4;
++	wbuf[1] = sdev->laddr;
++
++	return qcom_slim_ngd_remove_xfer(ctrl, &txn, &wbuf[0]);
++}
++
+ static int qcom_slim_ngd_get_laddr(struct slim_controller *ctrl,
+ 				   struct slim_eaddr *ea, u8 *laddr)
+ {
+@@ -1625,6 +1696,8 @@
+ 	ctrl->ctrl.clkgear = SLIM_MAX_CLK_GEAR;
+ 	ctrl->ctrl.get_laddr = qcom_slim_ngd_get_laddr;
+ 	ctrl->ctrl.enable_stream = qcom_slim_ngd_enable_stream;
++	if (channel_removal)
++		ctrl->ctrl.disable_stream = qcom_slim_ngd_disable_stream;
+ 	ctrl->ctrl.xfer_msg = qcom_slim_ngd_xfer_msg;
+ 	ctrl->ctrl.wakeup = NULL;
+ 	ctrl->state = QCOM_SLIM_NGD_CTRL_DOWN;
+--- a/drivers/slimbus/stream.c
++++ b/drivers/slimbus/stream.c
+@@ -453,6 +453,8 @@
+ 	if (ctrl->disable_stream) {
+ 		ret = ctrl->disable_stream(stream);
+ 		slim_stream_diag_result(stream, NULL, "controller-disable", -1, ret);
++		if (ret)
++			return ret;
+ 	}
+ 
+ 	ret = slim_stream_diag_transfer(stream, NULL, &txn, __func__);

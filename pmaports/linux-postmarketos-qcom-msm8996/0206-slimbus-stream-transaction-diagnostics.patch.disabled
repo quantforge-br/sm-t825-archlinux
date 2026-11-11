@@ -1,0 +1,227 @@
+Subject: [PATCH] slimbus: add private bounded stream transaction diagnostics
+
+Log actual per-transaction return values and controller stream
+callback results. Default off; enable with
+slimbus.transaction_diagnostics=1 in a separate audio RAM diagnostic.
+Limit output to 128 rows per module load. No new transactions,
+register reads, retries, error propagation or changes to stream/IRQ
+handling. Preserve the requested message code before a controller can
+rewrite it.
+
+The MSM8996 NGD controller supplies enable_stream: its aggregate
+result is logged instead of attributing the unused generic enable path
+to this device. These records are host API results, not proof of
+firmware or wire behavior. Logging perturbs timing and budget
+exhaustion makes absence claims invalid.
+
+---
+
+diff --git a/drivers/slimbus/stream.c b/drivers/slimbus/stream.c
+--- a/drivers/slimbus/stream.c
++++ b/drivers/slimbus/stream.c
+@@ -1,13 +1,49 @@
+ // SPDX-License-Identifier: GPL-2.0
+ // Copyright (c) 2018, Linaro Limited
+ 
++#include <linux/atomic.h>
+ #include <linux/kernel.h>
++#include <linux/module.h>
+ #include <linux/errno.h>
+ #include <linux/slab.h>
+ #include <linux/list.h>
+ #include <linux/slimbus.h>
+ #include <uapi/sound/asound.h>
+ #include "slimbus.h"
++
++/* Private observation only; preserve transaction order and returned errors. */
++static bool transaction_diagnostics;
++module_param(transaction_diagnostics, bool, 0444);
++MODULE_PARM_DESC(transaction_diagnostics, "Bounded SLIMbus stream transaction diagnostics");
++static atomic_t transaction_diag_budget = ATOMIC_INIT(128);
++
++static void slim_stream_diag_result(struct slim_stream_runtime *stream,
++				    struct slim_port *port, const char *stage,
++				    int mc, int ret)
++{
++	if (!transaction_diagnostics ||
++	    !atomic_add_unless(&transaction_diag_budget, -1, 0))
++		return;
++
++	dev_info(&stream->dev->dev,
++		 "streamdiag stage=%s dir=%d port=%d channel=%d mc=%d rc=%d rate=%u bps=%u ports=%d\n",
++		 stage, stream->direction, port ? port->id : -1,
++		 port ? port->ch.id : -1, mc, ret, stream->rate,
++		 stream->bps, stream->num_ports);
++}
++
++static int slim_stream_diag_transfer(struct slim_stream_runtime *stream,
++				     struct slim_port *port,
++				     struct slim_msg_txn *txn,
++				     const char *stage)
++{
++	/* A controller may rewrite the transaction; retain the requested opcode. */
++	int mc = txn->mc;
++	int ret = slim_do_transfer(stream->dev->ctrl, txn);
++
++	slim_stream_diag_result(stream, port, stage, mc, ret);
++	return ret;
++}
+ 
+ /**
+  * struct segdist_code - Segment Distributions code from
+@@ -125,7 +161,6 @@
+ static int slim_connect_port_channel(struct slim_stream_runtime *stream,
+ 				     struct slim_port *port)
+ {
+-	struct slim_device *sdev = stream->dev;
+ 	u8 wbuf[2];
+ 	struct slim_val_inf msg = {0, 2, NULL, wbuf, NULL};
+ 	u8 mc = SLIM_MSG_MC_CONNECT_SOURCE;
+@@ -139,13 +174,12 @@
+ 	port->ch.state = SLIM_CH_STATE_ASSOCIATED;
+ 	port->state = SLIM_PORT_UNCONFIGURED;
+ 
+-	return slim_do_transfer(sdev->ctrl, &txn);
++	return slim_stream_diag_transfer(stream, port, &txn, __func__);
+ }
+ 
+ static int slim_disconnect_port(struct slim_stream_runtime *stream,
+ 				struct slim_port *port)
+ {
+-	struct slim_device *sdev = stream->dev;
+ 	u8 wbuf[1];
+ 	struct slim_val_inf msg = {0, 1, NULL, wbuf, NULL};
+ 	u8 mc = SLIM_MSG_MC_DISCONNECT_PORT;
+@@ -155,13 +189,12 @@
+ 	port->ch.state = SLIM_CH_STATE_DISCONNECTED;
+ 	port->state = SLIM_PORT_DISCONNECTED;
+ 
+-	return slim_do_transfer(sdev->ctrl, &txn);
++	return slim_stream_diag_transfer(stream, port, &txn, __func__);
+ }
+ 
+ static int slim_deactivate_remove_channel(struct slim_stream_runtime *stream,
+ 					  struct slim_port *port)
+ {
+-	struct slim_device *sdev = stream->dev;
+ 	u8 wbuf[1];
+ 	struct slim_val_inf msg = {0, 1, NULL, wbuf, NULL};
+ 	u8 mc = SLIM_MSG_MC_NEXT_DEACTIVATE_CHANNEL;
+@@ -169,14 +202,14 @@
+ 	int ret;
+ 
+ 	wbuf[0] = port->ch.id;
+-	ret = slim_do_transfer(sdev->ctrl, &txn);
++	ret = slim_stream_diag_transfer(stream, port, &txn, __func__);
+ 	if (ret)
+ 		return ret;
+ 
+ 	txn.mc = SLIM_MSG_MC_NEXT_REMOVE_CHANNEL;
+ 	port->ch.state = SLIM_CH_STATE_REMOVED;
+ 
+-	return slim_do_transfer(sdev->ctrl, &txn);
++	return slim_stream_diag_transfer(stream, port, &txn, __func__);
+ }
+ 
+ static int slim_get_prate_code(int rate)
+@@ -272,7 +305,6 @@
+ static int slim_define_channel_content(struct slim_stream_runtime *stream,
+ 				       struct slim_port *port)
+ {
+-	struct slim_device *sdev = stream->dev;
+ 	u8 wbuf[4];
+ 	struct slim_val_inf msg = {0, 4, NULL, wbuf, NULL};
+ 	u8 mc = SLIM_MSG_MC_NEXT_DEFINE_CONTENT;
+@@ -289,7 +321,7 @@
+ 	wbuf[3] = stream->bps/SLIM_SLOT_LEN_BITS;
+ 	port->ch.state = SLIM_CH_STATE_CONTENT_DEFINED;
+ 
+-	return slim_do_transfer(sdev->ctrl, &txn);
++	return slim_stream_diag_transfer(stream, port, &txn, __func__);
+ }
+ 
+ static int slim_get_segdist_code(int ratem)
+@@ -307,7 +339,6 @@
+ static int slim_define_channel(struct slim_stream_runtime *stream,
+ 				       struct slim_port *port)
+ {
+-	struct slim_device *sdev = stream->dev;
+ 	u8 wbuf[4];
+ 	struct slim_val_inf msg = {0, 4, NULL, wbuf, NULL};
+ 	u8 mc = SLIM_MSG_MC_NEXT_DEFINE_CHANNEL;
+@@ -325,13 +356,12 @@
+ 
+ 	port->ch.state = SLIM_CH_STATE_DEFINED;
+ 
+-	return slim_do_transfer(sdev->ctrl, &txn);
++	return slim_stream_diag_transfer(stream, port, &txn, __func__);
+ }
+ 
+ static int slim_activate_channel(struct slim_stream_runtime *stream,
+ 				 struct slim_port *port)
+ {
+-	struct slim_device *sdev = stream->dev;
+ 	u8 wbuf[1];
+ 	struct slim_val_inf msg = {0, 1, NULL, wbuf, NULL};
+ 	u8 mc = SLIM_MSG_MC_NEXT_ACTIVATE_CHANNEL;
+@@ -342,7 +372,7 @@
+ 	wbuf[0] = port->ch.id;
+ 	port->ch.state = SLIM_CH_STATE_ACTIVE;
+ 
+-	return slim_do_transfer(sdev->ctrl, &txn);
++	return slim_stream_diag_transfer(stream, port, &txn, __func__);
+ }
+ 
+ /**
+@@ -365,6 +395,7 @@
+ 
+ 	if (ctrl->enable_stream) {
+ 		ret = ctrl->enable_stream(stream);
++		slim_stream_diag_result(stream, NULL, "controller-enable", -1, ret);
+ 		if (ret)
+ 			return ret;
+ 
+@@ -374,7 +405,7 @@
+ 		return ret;
+ 	}
+ 
+-	ret = slim_do_transfer(ctrl, &txn);
++	ret = slim_stream_diag_transfer(stream, NULL, &txn, __func__);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -394,7 +425,7 @@
+ 	}
+ 	txn.mc = SLIM_MSG_MC_RECONFIGURE_NOW;
+ 
+-	return slim_do_transfer(ctrl, &txn);
++	return slim_stream_diag_transfer(stream, NULL, &txn, __func__);
+ }
+ EXPORT_SYMBOL_GPL(slim_stream_enable);
+ 
+@@ -419,10 +450,12 @@
+ 	if (!stream->ports || !stream->num_ports)
+ 		return -EINVAL;
+ 
+-	if (ctrl->disable_stream)
+-		ctrl->disable_stream(stream);
+-
+-	ret = slim_do_transfer(ctrl, &txn);
++	if (ctrl->disable_stream) {
++		ret = ctrl->disable_stream(stream);
++		slim_stream_diag_result(stream, NULL, "controller-disable", -1, ret);
++	}
++
++	ret = slim_stream_diag_transfer(stream, NULL, &txn, __func__);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -431,7 +464,7 @@
+ 
+ 	txn.mc = SLIM_MSG_MC_RECONFIGURE_NOW;
+ 
+-	return slim_do_transfer(ctrl, &txn);
++	return slim_stream_diag_transfer(stream, NULL, &txn, __func__);
+ }
+ EXPORT_SYMBOL_GPL(slim_stream_disable);
+ 

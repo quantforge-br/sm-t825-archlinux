@@ -1,0 +1,218 @@
+Subject: [PATCH] ASoC: wcd9335: add opt-in bounded port diagnostics
+
+Private instrumentation for the SM-T825 TX1 overflow investigation.
+Disabled unless port_diagnostics=1 is passed at module load. Limit
+output to 128 records per module load and retain the existing API calls,
+ignored return values, stream order and IRQ fault handling. Additional
+register reads only cover configuration/mapping/interrupt-enable
+registers, never clear registers.
+
+Record actual configuration and per-read errors, channel selection,
+SLIMbus API return codes, and the original fault source before IRQ
+handling clears it. Diagnostic reads/logging perturb timing and are not
+a production fix.
+
+---
+
+diff --git a/sound/soc/codecs/wcd9335.c b/sound/soc/codecs/wcd9335.c
+--- a/sound/soc/codecs/wcd9335.c
++++ b/sound/soc/codecs/wcd9335.c
+@@ -3,6 +3,7 @@
+ // Copyright (c) 2017-2018, Linaro Limited
+ 
+ #include <linux/module.h>
++#include <linux/atomic.h>
+ #include <linux/init.h>
+ #include <linux/platform_device.h>
+ #include <linux/cleanup.h>
+@@ -60,6 +61,17 @@
+ #define WCD9335_SLIM_IRQ_OVERFLOW (1 << 0)
+ #define WCD9335_SLIM_IRQ_UNDERFLOW (1 << 1)
+ #define WCD9335_SLIM_IRQ_PORT_CLOSED (1 << 2)
++
++/* Private diagnostic only: preserve the existing stream/IRQ behaviour. */
++static bool port_diagnostics;
++module_param(port_diagnostics, bool, 0444);
++MODULE_PARM_DESC(port_diagnostics, "Bounded read-only SLIMbus port diagnostics");
++static atomic_t port_diag_budget = ATOMIC_INIT(128);
++
++static bool wcd9335_port_diag_claim(void)
++{
++	return port_diagnostics && atomic_add_unless(&port_diag_budget, -1, 0);
++}
+ 
+ #define WCD9335_NUM_INTERPOLATORS 9
+ #define WCD9335_RX_START	16
+@@ -1742,6 +1754,59 @@
+ 	return 0;
+ }
+ 
++static void wcd9335_port_diag(struct wcd9335_codec *wcd, const char *stage,
++			      bool tx, unsigned int port)
++{
++	unsigned int cfg = 0, low = 0, high = 0, enabled = 0;
++	int cfg_rc, low_rc, high_rc = 0, en_rc;
++
++	if (!wcd9335_port_diag_claim())
++		return;
++
++	if (tx) {
++		cfg_rc = regmap_read(wcd->if_regmap,
++				WCD9335_SLIM_PGD_TX_PORT_CFG(port), &cfg);
++		low_rc = regmap_read(wcd->if_regmap,
++				WCD9335_SLIM_PGD_TX_PORT_MULTI_CHNL_0(port), &low);
++		high_rc = regmap_read(wcd->if_regmap,
++				WCD9335_SLIM_PGD_TX_PORT_MULTI_CHNL_1(port), &high);
++		en_rc = regmap_read(wcd->if_regmap,
++				WCD9335_SLIM_PGD_PORT_INT_TX_EN0 + port / 8,
++				&enabled);
++	} else {
++		/* IRQ indices are RX-local; register macros use SLIMbus ports. */
++		unsigned int rx_port = port + WCD9335_RX_START;
++
++		cfg_rc = regmap_read(wcd->if_regmap,
++				WCD9335_SLIM_PGD_RX_PORT_CFG(rx_port), &cfg);
++		low_rc = regmap_read(wcd->if_regmap,
++				WCD9335_SLIM_PGD_RX_PORT_MULTI_CHNL_0(rx_port), &low);
++		en_rc = regmap_read(wcd->if_regmap,
++				WCD9335_SLIM_PGD_PORT_INT_EN0 + port / 8,
++				&enabled);
++	}
++	/* Read only configuration registers, never IRQ status/clear registers. */
++	dev_info(wcd->dev,
++		 "portdiag stage=%s dir=%s port=%u cfg=%#x cfg_rc=%d map_lo=%#x lo_rc=%d map_hi=%#x hi_rc=%d irq_en=%#x en_rc=%d\n",
++		 stage, tx ? "TX" : "RX", port, cfg, cfg_rc, low, low_rc,
++		 high, high_rc, enabled, en_rc);
++}
++
++static void wcd9335_stream_diag(struct wcd9335_codec *wcd,
++				struct wcd_slim_codec_dai_data *data,
++				const char *stage)
++{
++	struct wcd9335_slim_ch *ch;
++	bool tx = data->sconfig.direction == SNDRV_PCM_STREAM_CAPTURE;
++
++	if (!port_diagnostics)
++		return;
++
++	list_for_each_entry(ch, &data->slim_ch_list, list)
++		wcd9335_port_diag(wcd, stage, tx,
++				tx ? ch->port : ch->port - WCD9335_RX_START);
++}
++
+ static int wcd9335_slim_set_hw_params(struct wcd9335_codec *wcd,
+ 				 struct wcd_slim_codec_dai_data *dai_data,
+ 				 int direction)
+@@ -1762,6 +1827,11 @@
+ 		payload |= 1 << ch->shift;
+ 		cfg->port_mask |= BIT(ch->port);
+ 	}
++	if (wcd9335_port_diag_claim())
++		dev_info(wcd->dev,
++			 "portdiag stage=params dir=%d rate=%u bps=%u channels=%u mask=%#lx payload=%#x watermark=%#x\n",
++			 direction, cfg->rate, cfg->bps, cfg->ch_count,
++			 cfg->port_mask, payload, WCD9335_SLIM_WATER_MARK_VAL);
+ 
+ 	cfg->chs = kcalloc(cfg->ch_count, sizeof(unsigned int), GFP_KERNEL);
+ 	if (!cfg->chs)
+@@ -1770,6 +1840,10 @@
+ 	i = 0;
+ 	list_for_each_entry(ch, slim_ch_list, list) {
+ 		cfg->chs[i++] = ch->ch_num;
++		if (wcd9335_port_diag_claim())
++			dev_info(wcd->dev,
++				 "portdiag stage=channel dir=%d port=%u shift=%u channel=%u\n",
++				 direction, ch->port, ch->shift, ch->ch_num);
+ 		if (direction == SNDRV_PCM_STREAM_PLAYBACK) {
+ 			/* write to interface device */
+ 			ret = regmap_write(wcd->if_regmap,
+@@ -1810,6 +1884,10 @@
+ 	}
+ 
+ 	dai_data->sruntime = slim_stream_allocate(wcd->slim, "WCD9335-SLIM");
++	if (wcd9335_port_diag_claim())
++		dev_info(wcd->dev, "portdiag stage=allocate rc=%d\n",
++			 PTR_ERR_OR_ZERO(dai_data->sruntime));
++	wcd9335_stream_diag(wcd, dai_data, "params-done");
+ 
+ 	return 0;
+ 
+@@ -1979,7 +2057,10 @@
+ 	}
+ 
+ 	wcd->dai[dai->id].sconfig.rate = params_rate(params);
+-	wcd9335_slim_set_hw_params(wcd, &wcd->dai[dai->id], substream->stream);
++	ret = wcd9335_slim_set_hw_params(wcd, &wcd->dai[dai->id], substream->stream);
++	if (wcd9335_port_diag_claim())
++		dev_info(wcd->dev, "portdiag stage=hw-params dai=%d rc=%d\n",
++			 dai->id, ret);
+ 
+ 	return 0;
+ }
+@@ -1990,28 +2071,42 @@
+ 	struct wcd_slim_codec_dai_data *dai_data;
+ 	struct wcd9335_codec *wcd;
+ 	struct slim_stream_config *cfg;
++	int first, second;
+ 
+ 	wcd = snd_soc_component_get_drvdata(dai->component);
+ 
+ 	dai_data = &wcd->dai[dai->id];
++	if (wcd9335_port_diag_claim())
++		dev_info(wcd->dev, "portdiag stage=trigger-begin dai=%d cmd=%d\n",
++			 dai->id, cmd);
++	wcd9335_stream_diag(wcd, dai_data, "trigger-before");
+ 
+ 	switch (cmd) {
+ 	case SNDRV_PCM_TRIGGER_START:
+ 	case SNDRV_PCM_TRIGGER_RESUME:
+ 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
+ 		cfg = &dai_data->sconfig;
+-		slim_stream_prepare(dai_data->sruntime, cfg);
+-		slim_stream_enable(dai_data->sruntime);
++		first = slim_stream_prepare(dai_data->sruntime, cfg);
++		second = slim_stream_enable(dai_data->sruntime);
++		if (wcd9335_port_diag_claim())
++			dev_info(wcd->dev,
++				 "portdiag stage=trigger-start dai=%d prepare_rc=%d enable_rc=%d\n",
++				 dai->id, first, second);
+ 		break;
+ 	case SNDRV_PCM_TRIGGER_STOP:
+ 	case SNDRV_PCM_TRIGGER_SUSPEND:
+ 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
+-		slim_stream_disable(dai_data->sruntime);
+-		slim_stream_unprepare(dai_data->sruntime);
++		first = slim_stream_disable(dai_data->sruntime);
++		second = slim_stream_unprepare(dai_data->sruntime);
++		if (wcd9335_port_diag_claim())
++			dev_info(wcd->dev,
++				 "portdiag stage=trigger-stop dai=%d disable_rc=%d unprepare_rc=%d\n",
++				 dai->id, first, second);
+ 		break;
+ 	default:
+ 		break;
+ 	}
++	wcd9335_stream_diag(wcd, dai_data, "trigger-after");
+ 
+ 	return 0;
+ }
+@@ -4035,6 +4130,19 @@
+ 			dev_err_ratelimited(wcd->dev,
+ 			   "%s: underflow error on %s port %d, value %x\n",
+ 			   __func__, (tx ? "TX" : "RX"), port_id, val);
++
++		if (val & (WCD9335_SLIM_IRQ_OVERFLOW |
++			   WCD9335_SLIM_IRQ_UNDERFLOW)) {
++			if (wcd9335_port_diag_claim())
++				dev_info(wcd->dev,
++					 "portdiag stage=irq dir=%s port=%u source=%#x overflow=%u underflow=%u closed=%u irq_en=%#x\n",
++					 tx ? "TX" : "RX", port_id, val,
++					 !!(val & WCD9335_SLIM_IRQ_OVERFLOW),
++					 !!(val & WCD9335_SLIM_IRQ_UNDERFLOW),
++					 !!(val & WCD9335_SLIM_IRQ_PORT_CLOSED),
++					 int_val);
++			wcd9335_port_diag(wcd, "irq-before-clear", tx, port_id);
++		}
+ 
+ 		if ((val & WCD9335_SLIM_IRQ_OVERFLOW) ||
+ 			(val & WCD9335_SLIM_IRQ_UNDERFLOW)) {

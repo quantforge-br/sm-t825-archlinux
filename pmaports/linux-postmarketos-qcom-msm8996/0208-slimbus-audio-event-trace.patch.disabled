@@ -1,0 +1,250 @@
+Subject: [PATCH] slimbus: add bounded cross-driver audio event trace
+
+Private RAM-only timing evidence, default off. A 256-record ring
+overwrites the oldest entry so the stop, disable and IRQ tail survives a
+busy capture; event_cursor pages through it and every read reports the
+records overwritten before the cursor. The SLIMbus module exports the
+helper and exposes a read-only event_records page; codec, Q6AFE and NGD
+record trigger, stop, ACK and IRQ boundaries.
+Existing stream and IRQ behavior is unchanged. Snapshot copying avoids
+holding the spinlock while formatting. This is not a production fix.
+
+---
+
+--- a/drivers/slimbus/stream.c
++++ b/drivers/slimbus/stream.c
+@@ -3,6 +3,8 @@
+ 
+ #include <linux/atomic.h>
+ #include <linux/kernel.h>
++#include <linux/spinlock.h>
++#include <linux/timekeeping.h>
+ #include <linux/module.h>
+ #include <linux/errno.h>
+ #include <linux/slab.h>
+@@ -16,11 +18,111 @@
+ module_param(transaction_diagnostics, bool, 0444);
+ MODULE_PARM_DESC(transaction_diagnostics, "Bounded SLIMbus stream transaction diagnostics");
+ static atomic_t transaction_diag_budget = ATOMIC_INIT(128);
++static bool event_trace;
++module_param(event_trace, bool, 0444);
++MODULE_PARM_DESC(event_trace, "Buffered audio events without extra diagnostic reads/printks");
++
++/*
++ * Overwrite the oldest record so the stop, disable and IRQ tail survives a
++ * busy capture. Reads page through the ring from event_cursor: 36 lines of at
++ * most 98 bytes plus the header fit the minimum 4096-byte sysfs page.
++ */
++#define SLIM_TRACE_CAPACITY 256
++#define SLIM_TRACE_PAGE_RECORDS 36
++static_assert((SLIM_TRACE_CAPACITY & (SLIM_TRACE_CAPACITY - 1)) == 0,
++	      "trace capacity must be a power of two");
++struct slim_trace_record {
++	u64 ns;
++	char tag[32];
++	int a;
++	int b;
++};
++static struct slim_trace_record slim_trace[SLIM_TRACE_CAPACITY];
++static u64 slim_trace_total;
++static DEFINE_SPINLOCK(slim_trace_lock);
++static unsigned long long event_cursor;
++module_param(event_cursor, ullong, 0644);
++MODULE_PARM_DESC(event_cursor, "First event sequence returned by event_records");
++
++bool slim_trace_enabled(void)
++{
++	return event_trace;
++}
++EXPORT_SYMBOL_GPL(slim_trace_enabled);
++
++void slim_trace_event(const char *tag, int a, int b)
++{
++	unsigned long flags;
++	struct slim_trace_record *record;
++
++	if (!event_trace)
++		return;
++	spin_lock_irqsave(&slim_trace_lock, flags);
++	record = &slim_trace[slim_trace_total++ & (SLIM_TRACE_CAPACITY - 1)];
++	record->ns = ktime_get_boottime_ns();
++	strscpy(record->tag, tag, sizeof(record->tag));
++	record->a = a;
++	record->b = b;
++	spin_unlock_irqrestore(&slim_trace_lock, flags);
++}
++EXPORT_SYMBOL_GPL(slim_trace_event);
++
++static int slim_trace_get(char *buffer, const struct kernel_param *kp)
++{
++	struct slim_trace_record *snapshot;
++	unsigned long flags;
++	u64 total, cursor, first, start;
++	unsigned int count, i;
++	int len;
++
++	(void)kp;
++	snapshot = kmalloc_array(SLIM_TRACE_PAGE_RECORDS, sizeof(*snapshot),
++				 GFP_KERNEL);
++	if (!snapshot)
++		return -ENOMEM;
++	cursor = READ_ONCE(event_cursor);
++	spin_lock_irqsave(&slim_trace_lock, flags);
++	total = slim_trace_total;
++	first = total > SLIM_TRACE_CAPACITY ? total - SLIM_TRACE_CAPACITY : 0;
++	start = cursor > first ? cursor : first;
++	if (start > total)
++		start = total;
++	count = min_t(u64, total - start, SLIM_TRACE_PAGE_RECORDS);
++	for (i = 0; i < count; i++)
++		snapshot[i] = slim_trace[(start + i) & (SLIM_TRACE_CAPACITY - 1)];
++	spin_unlock_irqrestore(&slim_trace_lock, flags);
++
++	/* Format after releasing the IRQ-safe lock; reads do not consume events. */
++	len = scnprintf(buffer, PAGE_SIZE,
++			"enabled=%u count=%u total=%llu dropped=%llu first=%llu next=%llu\n",
++			event_trace, count, total,
++			start > cursor ? start - cursor : 0, start, start + count);
++	for (i = 0; i < count; i++) {
++		struct slim_trace_record *record = &snapshot[i];
++
++		len += scnprintf(buffer + len, PAGE_SIZE - len,
++			"%llu %llu %s %d %d\n", start + i, record->ns, record->tag,
++			record->a, record->b);
++	}
++	kfree(snapshot);
++	return len;
++}
++static const struct kernel_param_ops slim_trace_ops = {
++	.get = slim_trace_get,
++};
++module_param_cb(event_records, &slim_trace_ops, NULL, 0444);
++MODULE_PARM_DESC(event_records, "Audio event page from event_cursor with explicit loss count");
+ 
+ static void slim_stream_diag_result(struct slim_stream_runtime *stream,
+ 				    struct slim_port *port, const char *stage,
+ 				    int mc, int ret)
+ {
++	if (event_trace) {
++		slim_trace_event(stage, mc, ret);
++		/* Retain negative diagnostic printk for the existing first-fault gate. */
++		if (!ret)
++			return;
++	}
+ 	if (!transaction_diagnostics ||
+ 	    !atomic_add_unless(&transaction_diag_budget, -1, 0))
+ 		return;
+--- a/drivers/slimbus/qcom-ngd-ctrl.c
++++ b/drivers/slimbus/qcom-ngd-ctrl.c
+@@ -1106,7 +1106,9 @@
+ 		return ret;
+ 
+ 	*tid = txn->tid;
++	slim_trace_event("ngd_remove_before", txn->mc, txn->msg->num_bytes);
+ 	ret = qcom_slim_ngd_xfer_msg_sync(ctrl, txn);
++	slim_trace_event("ngd_remove_after", txn->mc, ret);
+ 	if (ret) {
+ 		slim_free_txn_tid(ctrl, txn);
+ 		return ret;
+--- a/include/linux/slimbus.h
++++ b/include/linux/slimbus.h
+@@ -200,6 +200,8 @@
+ 
+ /* SLIMbus Stream apis */
+ struct slim_stream_runtime;
++bool slim_trace_enabled(void);
++void slim_trace_event(const char *tag, int a, int b);
+ struct slim_stream_runtime *slim_stream_allocate(struct slim_device *dev,
+ 						 const char *sname);
+ int slim_stream_prepare(struct slim_stream_runtime *stream,
+--- a/sound/soc/qcom/qdsp6/q6afe-dai.c
++++ b/sound/soc/qcom/qdsp6/q6afe-dai.c
+@@ -15,6 +15,7 @@
+ #include "q6dsp-lpass-ports.h"
+ #include "q6dsp-common.h"
+ #include "q6afe.h"
++#include <linux/slimbus.h>
+ 
+ 
+ struct q6afe_dai_priv_data {
+@@ -381,7 +382,9 @@
+ 	if (!dai_data->is_port_started[dai->id])
+ 		return;
+ 
++	slim_trace_event("afe_shutdown_before", dai->id, 0);
+ 	rc = q6afe_port_stop(dai_data->port[dai->id]);
++	slim_trace_event("afe_shutdown_after", dai->id, rc);
+ 	if (rc < 0)
+ 		dev_err(dai->dev, "fail to close AFE port (%d)\n", rc);
+ 
+@@ -397,7 +400,9 @@
+ 
+ 	if (dai_data->is_port_started[dai->id]) {
+ 		/* stop the port and restart with new port config */
++		slim_trace_event("afe_prepare_stop_before", dai->id, 0);
+ 		rc = q6afe_port_stop(dai_data->port[dai->id]);
++		slim_trace_event("afe_prepare_stop_after", dai->id, rc);
+ 		if (rc < 0) {
+ 			dev_err(dai->dev, "fail to close AFE port (%d)\n", rc);
+ 			return rc;
+--- a/sound/soc/codecs/wcd9335.c
++++ b/sound/soc/codecs/wcd9335.c
+@@ -3,6 +3,7 @@
+ // Copyright (c) 2017-2018, Linaro Limited
+ 
+ #include <linux/module.h>
++#include <linux/slimbus.h>
+ #include <linux/atomic.h>
+ #include <linux/init.h>
+ #include <linux/platform_device.h>
+@@ -70,7 +71,8 @@
+ 
+ static bool wcd9335_port_diag_claim(void)
+ {
+-	return port_diagnostics && atomic_add_unless(&port_diag_budget, -1, 0);
++	return !slim_trace_enabled() && port_diagnostics &&
++	       atomic_add_unless(&port_diag_budget, -1, 0);
+ }
+ 
+ #define WCD9335_NUM_INTERPOLATORS 9
+@@ -2076,6 +2078,7 @@
+ 	wcd = snd_soc_component_get_drvdata(dai->component);
+ 
+ 	dai_data = &wcd->dai[dai->id];
++	slim_trace_event("codec_trigger_before", dai->id, cmd);
+ 	if (wcd9335_port_diag_claim())
+ 		dev_info(wcd->dev, "portdiag stage=trigger-begin dai=%d cmd=%d\n",
+ 			 dai->id, cmd);
+@@ -2088,6 +2091,7 @@
+ 		cfg = &dai_data->sconfig;
+ 		first = slim_stream_prepare(dai_data->sruntime, cfg);
+ 		second = slim_stream_enable(dai_data->sruntime);
++		slim_trace_event("codec_start_result", first, second);
+ 		if (wcd9335_port_diag_claim())
+ 			dev_info(wcd->dev,
+ 				 "portdiag stage=trigger-start dai=%d prepare_rc=%d enable_rc=%d\n",
+@@ -2098,6 +2102,7 @@
+ 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
+ 		first = slim_stream_disable(dai_data->sruntime);
+ 		second = slim_stream_unprepare(dai_data->sruntime);
++		slim_trace_event("codec_stop_result", first, second);
+ 		if (wcd9335_port_diag_claim())
+ 			dev_info(wcd->dev,
+ 				 "portdiag stage=trigger-stop dai=%d disable_rc=%d unprepare_rc=%d\n",
+@@ -2107,6 +2112,7 @@
+ 		break;
+ 	}
+ 	wcd9335_stream_diag(wcd, dai_data, "trigger-after");
++	slim_trace_event("codec_trigger_after", dai->id, cmd);
+ 
+ 	return 0;
+ }
+@@ -4120,6 +4126,8 @@
+ 			if (!(int_val & (1 << (port_id % 8))))
+ 				continue;
+ 		}
++
++		slim_trace_event("codec_irq_status", tx ? port_id : -port_id - 1, val);
+ 
+ 		if (val & WCD9335_SLIM_IRQ_OVERFLOW)
+ 			dev_err_ratelimited(wcd->dev,

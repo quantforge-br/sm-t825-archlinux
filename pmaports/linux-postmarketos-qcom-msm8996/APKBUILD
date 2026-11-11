@@ -229,13 +229,25 @@ source="
 	0202-arm64-dts-qcom-gts3llte-top-speakers.patch
 	0203-arm64-dts-qcom-gts3llte-enable-mss-diagnostic.patch.disabled
 	0204-drm-msm-a5xx-hangcheck-progress.patch
+	0205-asoc-wcd9335-port-diagnostics.patch.disabled
+	0206-slimbus-stream-transaction-diagnostics.patch.disabled
+	0207-slimbus-ngd-channel-removal-experiment.patch.disabled
+	0208-slimbus-audio-event-trace.patch.disabled
 "
 builddir="$srcdir/linux-$pkgver"
 
 prepare() {
-	local mss=0
+	local mss=0 audio=0
 	if [ "${T825_MSS_DIAGNOSTIC:-0}" = 1 ] || [ -e "$startdir/.t825-enable-mss" ]; then
 		mss=1
+	fi
+	if [ "${T825_AUDIO_DIAGNOSTIC:-0}" = 1 ] || [ -e "$startdir/.t825-enable-audio-diag" ]; then
+		audio=1
+	fi
+	# Keep independent experiments distinguishable and fail before source edits.
+	if [ "$mss:$audio" = 1:1 ]; then
+		error "MSS and audio diagnostic builds must be separate"
+		return 1
 	fi
 	default_prepare
 	cp "$srcdir/config-$_flavor.$CARCH" .config
@@ -246,6 +258,14 @@ prepare() {
 		msg "enabling the SM-T825 MSS for a private diagnostic build"
 		patch -p1 < "$srcdir/0203-arm64-dts-qcom-gts3llte-enable-mss-diagnostic.patch.disabled"
 		sed -i 's/^CONFIG_LOCALVERSION=.*/CONFIG_LOCALVERSION="-t825-mssdiag"/' .config
+	fi
+	if [ "$audio" = 1 ]; then
+		msg "enabling private SM-T825 WCD9335 port diagnostics"
+		patch -p1 < "$srcdir/0205-asoc-wcd9335-port-diagnostics.patch.disabled"
+		patch -p1 < "$srcdir/0206-slimbus-stream-transaction-diagnostics.patch.disabled"
+		patch -p1 < "$srcdir/0207-slimbus-ngd-channel-removal-experiment.patch.disabled"
+		patch -p1 < "$srcdir/0208-slimbus-audio-event-trace.patch.disabled"
+		sed -i 's/^CONFIG_LOCALVERSION=.*/CONFIG_LOCALVERSION="-t825-audiodiag"/' .config
 	fi
 }
 
@@ -490,4 +510,8 @@ e38dd6a448f0a372724f24583862d34c8f4e238e3ac359909e93b0e99da8a18b3e246f5a5dea48d9
 c306fa5ffb96d31c701d5f400963636f1ac5340c63992760506f1cd992c64bc5e36623af7d79d32c8ceda7a1d226b6ff3aed3daab52235b8e442c4dff8950002  0202-arm64-dts-qcom-gts3llte-top-speakers.patch
 44edc596cc55ad96e1994c2b79237353d6b5d2f5f1e73eba3561a8d360981a6df9771258ae87c859e16a85b436baeaaa2afc187bfd87ae2df7c73ff383cdaca9  0203-arm64-dts-qcom-gts3llte-enable-mss-diagnostic.patch.disabled
 b73dcb152dec56f77733405934ede400541b5a06ef7c45a9fb9a9b49c7ef39e2fe3099e22fb15c593ec0c79c92e1b4d954f4375dcaa2853f94b3ce2d1f8c9772  0204-drm-msm-a5xx-hangcheck-progress.patch
+d5e6cacf01f280598d678632c5c609370828b2424a533ec0117f715c11d01f477bfe811c98cd6bd229011b2855a9540abcb8fffb2a9e3645e6c5476b09206ef0  0205-asoc-wcd9335-port-diagnostics.patch.disabled
+291839df50cb735d278ebc574b613377eb305c8bab1cfa3f42faffcd2dd555ecaa181ab35a371860f46b7cb1683621ba80f7797dcc38dd6a8911d5cd4cd17415  0206-slimbus-stream-transaction-diagnostics.patch.disabled
+3ee8cbbceb804ed8c1a4d9ed416e12225a02fe7f8448dd437fc9b80f65c1e93db547d4125e226ecb7d3597f745b862bd059d3c98ac50a77df6592f923fb5e7e9  0207-slimbus-ngd-channel-removal-experiment.patch.disabled
+39d43c4559e6874fdd308df5d021ebfbd1e4ac3de05c75332bf7597221488ec7258ce54aced6203ab40ac26233d12a9eef8a06a23719c9da65898a50ab2cada1  0208-slimbus-audio-event-trace.patch.disabled
 "
