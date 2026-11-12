@@ -442,7 +442,7 @@ Post-reboot evidence from 2026-11-09:
   Source execution, format tests and input hashes:
   `artifacts/roadmap-7.3/qca-address-source-check-20261111T111509Z/`.
   **BLOCKED**: discriminating the runtime branch needs installed boots with
-  BlueZ, which have no independent recovery (line 180), and the stock firmware
+  BlueZ, which have no independent recovery (watchdog gate), and the stock firmware
   must stay unmodified. Source-level evidence:
   `artifacts/roadmap-7.3/qca-address-source-check-20261111T111509Z/`.
 - [x] Capture a read-only runtime snapshot of the restored r11 control. Four
@@ -523,7 +523,7 @@ Post-reboot evidence from 2026-11-09:
   reproduced it at cycle 4, 2.009 s after the second QCA setup completed, but
   without the IBS sampler: `artifacts/roadmap-7.3/bluetooth-attended-20boot-20261111T233757Z/summary.json`.
   **BLOCKED**: the first-failure capture needs the IBS/HCI collector inside an
-  attended boot series (or unattended recovery, line 180). Evidence:
+  attended boot series (or unattended recovery via the watchdog gate). Evidence:
   `artifacts/roadmap-7.3/bluetooth-hci-trace-series-20261111T172014Z/`.
 - [x] Guard the reboot runner against mixed payloads and repeated failing tests.
   It snapshots itself, records deployed helper/service/udev hashes, checks them
@@ -881,7 +881,7 @@ MSS diagnostic kernel APK SHA-256:
   `artifacts/roadmap-7.3/chromium-gpu-operator-20261111T223717Z-r2/`,
   `artifacts/roadmap-7.3/chromium-gpu-operator-20261111T223919Z-r3/`.
   **BLOCKED**: needs a workload that reproduces a real hang; unattended runs
-  also need the watchdog gate (line 180). Baseline:
+  also need the watchdog gate. Baseline:
   `artifacts/roadmap-7.3/chromium-gpu-20261110T084239Z/`.
 - [ ] Require 20 controlled reproductions without compositor restart or a
   subsequent hangcheck cascade before calling the correction accepted.
