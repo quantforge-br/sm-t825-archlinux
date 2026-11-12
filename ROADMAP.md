@@ -8,17 +8,16 @@ software reboot reproduced `-110`. Experimental r12 payloads were rejected.
 Diagnostic images use `7.3.1-t825-mssdiag` or `7.3.1-t825-audiodiag`
 and `fastboot boot` only.
 
-Current transport state after the audio transaction diagnostic (2026-11-11 UTC):
-installed r1 boots normally and SSH responds. Boot ID is
-`3d22d218-b993-4a87-99ab-26651917a4ff`,
+Current state after the operator session (2026-11-11 UTC): installed r1
+boots normally and SSH responds. Boot ID is
+`30ad05db-28db-4704-895d-4d1c03cbcb9a` (after the attended Bluetooth series),
 `extlinux.conf` retains SHA-256
 `03285dfe1f2016a4cf967fe22f9c68d8663801a61e1c07050eff6fa36ed2a397`,
-and no temporary fastboot filename remains. The audio diagnostic reproduced
-overflow; autonomous fastboot recovery and Arch restoration both passed.
-Evidence:
-`artifacts/roadmap-7.3/authorized-audio-ngd-removal-20261111T120110Z/`.
-The previous Bluetooth attempt recovered after a Reset `-110`; its acceptance
-remains open.
+and no temporary fastboot filename remains. An installed r2 update and its
+rollback restored r1 byte-for-byte:
+`artifacts/roadmap-7.3/rollback-preserve-20261111T225106Z/`.
+The roadmap audit reports no open gate; 16 gates are **BLOCKED** with evidence
+and Bluetooth acceptance remains blocked by the boot-time `-110`.
 The legacy Bluetooth reboot runner is now disabled because its polling/fallback
 did not establish independent recovery; use the validated RAM orchestration
 for future diagnostic extensions. The authorized extlinux controller remains
@@ -520,9 +519,11 @@ Post-reboot evidence from 2026-11-09:
   `no_new_hci_reset_timeout` and restored the controller; with the three earlier
   controls that is 18 rebinds without a timeout, while recent installed boots
   timed out in 1/5 and 1/1 runs. The timeout depends on boot-time conditions
-  that a rebind does not reproduce. **BLOCKED**: the first-failure IBS capture
-  needs an installed-boot series, which needs independent recovery for
-  installed boots (watchdog gate, line 180) or the operator present. Evidence:
+  that a rebind does not reproduce. The operator-attended installed-boot series
+  reproduced it at cycle 4, 2.009 s after the second QCA setup completed, but
+  without the IBS sampler: `artifacts/roadmap-7.3/bluetooth-attended-20boot-20261111T233757Z/summary.json`.
+  **BLOCKED**: the first-failure capture needs the IBS/HCI collector inside an
+  attended boot series (or unattended recovery, line 180). Evidence:
   `artifacts/roadmap-7.3/bluetooth-hci-trace-series-20261111T172014Z/`.
 - [x] Guard the reboot runner against mixed payloads and repeated failing tests.
   It snapshots itself, records deployed helper/service/udev hashes, checks them
@@ -873,8 +874,14 @@ MSS diagnostic kernel APK SHA-256:
   Brave with Hyprland's PID unchanged and no new GPU reset lines; this is a
   workload baseline, not the required real-hang reproduction. Report:
   `artifacts/roadmap-7.3/chromium-gpu-20261110T084239Z/`.
-  **BLOCKED**: real hangs in an installed graphical session can wedge the SoC
-  with no remote recovery (line 180); needs the operator present. Baseline:
+  Three operator-attended 120-second Brave runs on r1 (2026-11-11) also ended
+  by timeout with Hyprland's PID unchanged and no new GPU kernel lines, so no
+  real hang was reproduced:
+  `artifacts/roadmap-7.3/chromium-gpu-operator-20261111T223516Z-r1/`,
+  `artifacts/roadmap-7.3/chromium-gpu-operator-20261111T223717Z-r2/`,
+  `artifacts/roadmap-7.3/chromium-gpu-operator-20261111T223919Z-r3/`.
+  **BLOCKED**: needs a workload that reproduces a real hang; unattended runs
+  also need the watchdog gate (line 180). Baseline:
   `artifacts/roadmap-7.3/chromium-gpu-20261110T084239Z/`.
 - [ ] Require 20 controlled reproductions without compositor restart or a
   subsequent hangcheck cascade before calling the correction accepted.
@@ -983,9 +990,9 @@ complete modem stack in production before recovery and boot logs are established
   The read-only audit tool `tools/audit-roadmap-7.3.py` now enumerates every
   unchecked gate, verifies referenced local artifacts and records current
   fastboot/ADB/USB state. The latest result is
-  `artifacts/roadmap-7.3/roadmap-audit-20261110T200147Z.json` (22 hardware or
-  offline gates remain open; no referenced artifact is missing; SSH and fastboot
-  are unavailable and the NCM carrier is `0`).
+  `artifacts/roadmap-7.3/roadmap-audit-20261112T003126Z.json`: no gate is open
+  without evidence, 16 are **BLOCKED** and no referenced artifact is missing
+  (the 2026-11-10 audit listed 22 open gates).
   The detached kexec-proof launcher and WCD9335 artifact-layout validation are
   covered by `artifacts/roadmap-7.3/offline-checks-20261110T200510Z/`.
   The complete offline test suite and shell/static checks pass in
