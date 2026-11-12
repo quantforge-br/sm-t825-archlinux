@@ -394,10 +394,16 @@ Post-reboot evidence from 2026-11-09:
   installed-boot series is permitted until recovery and workload are integrated.
   Audit and containment tests:
   `artifacts/roadmap-7.3/qca-address-source-check-20261111T111509Z/`.
-  **BLOCKED**: an installed-boot series needs independent recovery for
-  installed boots (watchdog gate, line 180) or the operator present; 18
-  frozen-payload rebinds never reproduced the timeout:
+  18 frozen-payload rebinds never reproduced the timeout:
   `artifacts/roadmap-7.3/bluetooth-hci-trace-series-20261111T172014Z/`.
+  An operator-attended installed-boot series
+  (`tools/t825-bluetooth-attended-boots.py`) passed cycles 1-3 and stopped
+  at cycle 4: the second QCA setup (after `MGMT ver`) completed at 24.040 s
+  and `Opcode 0x0c03 failed: -110` followed at 26.049 s, one 2 s HCI command
+  timeout later; the service re-ran setup at 40.6 s and the controller came
+  back with the EFS address. **BLOCKED**: acceptance fails on the current
+  payload (about 1 fault in 4-5 boots) and needs a driver/sequencing fix
+  before another series: `artifacts/roadmap-7.3/bluetooth-attended-20boot-20261111T233757Z/summary.json`.
 - [x] Reduce the boot fault rate after separating HCI readiness from BlueZ
   daemon readiness. The helper candidate now accepts a configured `btmgmt`
   controller while `bluetoothd` is stopped, avoiding an unnecessary
